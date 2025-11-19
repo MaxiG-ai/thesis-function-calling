@@ -1,0 +1,28 @@
+# --- Experiment Matrix ---
+# The suite will iterate through the Cartesian product of these lists.
+
+experiment_name = "thesis-run-v1"
+results_dir = "results"
+
+# 1. Select keys from model_config.toml to test
+enabled_models = [
+    "llama3-small-local", 
+    "gemma-27b-free"
+]
+
+# 2. Define Memory Architectures to test
+enabled_memory_methods = [
+    "truncation",
+    "summarization"
+]
+
+# --- Memory Strategy Definitions ---
+
+[memory_strategies.truncation]
+type = "truncation"
+max_tokens = 2000
+
+[memory_strategies.summarization]
+type = "summarization"
+target_summary_length = 150
+summarizer_model = "llama3-small-local" # Helper model for the compression task
