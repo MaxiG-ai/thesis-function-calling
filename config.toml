@@ -6,8 +6,7 @@ results_dir = "results"
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [
-    "llama3-small-local", 
-    "gemma-27b-free"
+    "llama3-small-local"
 ]
 
 # 2. Define Memory Architectures to test
