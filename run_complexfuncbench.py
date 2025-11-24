@@ -1,89 +1,88 @@
-import os
-import subprocess
 import sys
-import logging
-from src.llm_orchestrator import LLMOrchestrator
+import os
 
-# Setup Logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("ComplexFunc-Adapter")
+from benchmarks.ComplexFuncBench.utils.utils import load_json
+from benchmarks.ComplexFuncBench.evaluation import process_example, get_args, MODEL_MAPPING
+from multiprocessing import Pool, Manager
+from functools import partial
+
+# Import our custom adapter
+from benchmarks.AdapterComplexFuncBench.runner import LocalRunner
 
 # --- CONFIGURATION ---
-BENCH_DIR = "benchmarks/ComplexFuncBench"
-PROXY_URL = "http://localhost:8000/v1"
-PROXY_KEY = "sk-thesis-proxy"
+# Update this path to point to where you cloned the ComplexFuncBench repo
+COMPLEX_BENCH_PATH = os.path.abspath(".benchmarks/ComplexFuncBench")
+DATASET_PATH = os.path.join(COMPLEX_BENCH_PATH, "data/ComplexFuncBench.jsonl")
+# ---------------------
 
 
-def run_complex_eval(model_key: str):
-    """
-    Runs ComplexFuncBench against our local Middleware Proxy.
-    """
-
-    # 1. Setup the Environment to Trick the Benchmark
-    env = os.environ.copy()
-
-    # The Benchmark likely uses the standard OpenAI client.
-    # We override the base URL to point to OUR server.
-    env["OPENAI_BASE_URL"] = PROXY_URL
-    env["OPENAI_API_KEY"] = PROXY_KEY
-
-    # Some benchmarks look for specific "Eval" keys
-    env["EVAL_MODEL"] = model_key
-
-    logger.info(f"🚀 Starting ComplexFuncBench for {model_key}...")
-    logger.info(f"   Target: {PROXY_URL}")
-
-    # 2. Construct the Command
-    # Note: I am inferring the script name based on standard patterns.
-    # You MUST check the repo for the exact python file (e.g., eval.py, main.py).
-    # Based on their docs, it's likely `evaluate.py` or similar in the root.
-
-    cmd = [
-        sys.executable,
-        "evaluation.py",  # <--- ⚠️ VERIFY THIS FILENAME in the repo!
-        "--model_name",
-        model_key,
-    ]
-
-    # 3. Run it
-    try:
-        # We stream output so you can see progress
-        process = subprocess.Popen(
-            cmd,
-            env=env,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            cwd=BENCH_DIR,  # Run from inside the benchmark dir to find relative paths
+def setup_environment():
+    """Injects ComplexFuncBench into sys.path so imports work natively."""
+    if not os.path.exists(COMPLEX_BENCH_PATH):
+        raise FileNotFoundError(
+            f"Could not find ComplexFuncBench at: {COMPLEX_BENCH_PATH}"
         )
+    sys.path.insert(0, COMPLEX_BENCH_PATH)
 
-        for line in process.stdout:
-            print(f"[BENCH] {line.strip()}")
 
-        process.wait()
+def main():
+    # Register our LocalRunner into the benchmark's mapping
+    # We use a custom key "local-proxy" that we will pass as --model_name
+    MODEL_MAPPING["local-proxy"] = LocalRunner
 
-        if process.returncode == 0:
-            logger.info("✅ Benchmark Finished Successfully.")
-        else:
-            logger.error(f"❌ Benchmark Failed with code {process.returncode}")
+    # Parse arguments (simulating command line args for the benchmark)
+    # You can pass arguments to this script, and they will be parsed by get_args()
+    try:
+        args = get_args()
+    except SystemExit:
+        # Handle case where get_args might try to exit if required args are missing
+        # We force defaults if running without args
+        class Args:
+            model_name = "local-proxy"
+            input_file = DATASET_PATH
+            log_dir = "logs/complex_bench_proxy.log"
+            output_dir = "results/complex_bench_proxy.jsonl"
+            exp_name = "local-test"
+            proc_num = 1  # Use 1 for local debugging/proxy safety
+            debug = False
 
-    except Exception as e:
-        logger.error(f"Execution Error: {e}")
+        args = Args()
+
+    # Ensure output dirs exist (replicating logic from evaluation.py)
+    os.makedirs(os.path.dirname(args.output_dir), exist_ok=True)
+    os.makedirs(os.path.dirname(args.log_dir), exist_ok=True)
+
+    print(f"🚀 Starting ComplexFuncBench on Local Proxy...")
+    print(f"📂 Dataset: {args.input_file}")
+    print(f"💾 Results: {args.output_dir}")
+
+    # Load Data
+    test_data = load_json(args.input_file)
+
+    # Filter already processed IDs
+    if os.path.exists(args.output_dir):
+        finished_data = load_json(args.output_dir)
+        finished_ids = {d["id"] for d in finished_data}
+        test_data = [d for d in test_data if d["id"] not in finished_ids]
+        print(f"⏭️  Skipping {len(finished_ids)} already completed items.")
+
+    if not test_data:
+        print("✅ All items completed.")
+        return
+
+    # Run Evaluation Loop
+    # We use 1 process by default to avoid overwhelming the local proxy state
+    with Manager() as manager:
+        # Note: If your proxy handles concurrency well, you can increase processes
+        pool = Pool(processes=args.proc_num)
+        process_func = partial(process_example)
+
+        # Map the process function
+        pool.starmap(process_func, [(data, args) for data in test_data])
+
+        pool.close()
+        pool.join()
 
 
 if __name__ == "__main__":
-    # 1. Check if Proxy is Alive
-    import requests
-
-    try:
-        requests.get("http://localhost:8000/health")
-    except Exception:
-        logger.error("⛔ Middleware is NOT running. Start 'main.py' first!")
-        sys.exit(1)
-
-    # 2. Get Active Model from Config
-    orchestrator = LLMOrchestrator()
-    active_model = orchestrator.active_model_key
-
-    # 3. Run
-    run_complex_eval(active_model)
+    main()
