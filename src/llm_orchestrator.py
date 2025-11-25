@@ -1,6 +1,7 @@
 import logging
 from typing import List, Dict, Optional, Any, Union
-from litellm import completion, ModelResponse
+from litellm.files.main import ModelResponse
+from litellm import completion
 from .config import load_configs, ExperimentConfig, ModelDef, MemoryDef
 
 # Configure Logging
@@ -66,9 +67,14 @@ class LLMOrchestrator:
         model_def = self._get_active_model_def()
         target_litellm_name = model_def.litellm_name
 
-        # 2. SANITIZATION:
-        # Benchmarks (like MCP-Bench) often send 'model="gpt-4"' hardcoded.
-        # We MUST override this to ensure we test the model we intend to test.
+        # 👇 Prepare dynamic connection args
+        connection_args = {}
+        if model_def.api_base:
+            connection_args["api_base"] = model_def.api_base
+        if model_def.api_key:
+            connection_args["api_key"] = model_def.api_key
+
+        # 2. SANITIZATION (remove model from kwargs to avoid conflicts, when benchmarks sends model):
         kwargs.pop("model", None)
 
         try:
@@ -78,7 +84,8 @@ class LLMOrchestrator:
                 messages=messages,
                 tools=tools,
                 tool_choice=tool_choice,
-                drop_params=True,  # Crucial: Ignores unsupported OpenAI params sent by benchmarks
+                drop_params=True,
+                **connection_args, # 👈 Inject the connection args here
                 **kwargs,
             )
             return response

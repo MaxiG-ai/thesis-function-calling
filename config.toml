@@ -7,13 +7,14 @@ results_dir = "results"
 # 1. Select keys from model_config.toml to test
 enabled_models = [
     "llama3-small-local", 
-    "gemma-27b-free"
+    "gemma-27b-free",
+    "gpt-5-mini"
 ]
 
 # 2. Define Memory Architectures to test
 enabled_memory_methods = [
     "truncation",
-    "summarization"
+    # "summarization"
 ]
 
 # --- Memory Strategy Definitions ---

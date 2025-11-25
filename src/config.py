@@ -7,6 +7,8 @@ class ModelDef(BaseModel):
     litellm_name: str
     context_window: int
     provider: str
+    api_base: Optional[str] = None 
+    api_key: Optional[str] = None
 
 
 class MemoryDef(BaseModel):
