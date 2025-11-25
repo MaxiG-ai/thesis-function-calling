@@ -1,0 +1,3 @@
+[submodule "benchmarks/nestful"]
+	path = benchmarks/nestful
+	url = https://github.com/IBM/NESTFUL
