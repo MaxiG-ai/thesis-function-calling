@@ -6,9 +6,8 @@ results_dir = "results"
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [
-    "llama3-small-local", 
-    "gemma-27b-free",
-    "gpt-5-mini"
+    "gpt-4-1", 
+    "gpt-5-mini",
 ]
 
 # 2. Define Memory Architectures to test
@@ -26,4 +25,4 @@ max_tokens = 2000
 [memory_strategies.summarization]
 type = "summarization"
 target_summary_length = 150
-summarizer_model = "llama3-small-local" # Helper model for the compression task
+summarizer_model = "gpt-5-mini" # Helper model for the compression task

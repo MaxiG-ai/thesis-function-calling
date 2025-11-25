@@ -3,6 +3,7 @@ import os
 import logging
 import sys
 import copy
+import random
 from datetime import datetime
 
 # 1. Configure Logging (Matching thesis-function-calling style)
@@ -61,7 +62,7 @@ def main():
         return
 
     # Optional: Test with a subset
-    # dataset = dataset[:5]
+    dataset = random.sample(dataset, 5)
     logger.info(f"Loaded {len(dataset)} evaluation samples.")
 
     # 4. Iterate Configurations
@@ -99,7 +100,8 @@ def main():
                 case_id = case.get('id', i)
                 
                 # Use debug for per-turn info to avoid cluttering console
-                logger.debug(f"Processing Case {case_id}...") 
+                logger.info("###" * 20) 
+                logger.info(f"Processing Case {case_id}...") 
                 
                 try:
                     # Run the case (deepcopy to prevent mutation of original dataset)

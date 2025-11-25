@@ -12,7 +12,7 @@ class GPTModel:
     def __init__(self, model_name):
         super().__init__()
         self.model_name = model_name
-        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.client = OpenAI(base_url="http://localhost:3030/v1", api_key=os.getenv("OPENAI_API_KEY"))
         
 
     def __call__(self, prefix, prompt: SimpleTemplatePrompt, **kwargs: Any):
@@ -29,7 +29,7 @@ class GPTModel:
                     {"role": "system", "content": prefix},
                     {"role": "user", "content": text}
                 ],
-                temperature=0.0,
+                # temperature=0.0, #disabled, because gpt-5-mini doesn't support it
                 )
             return completion.choices[0].message.content
         except Exception as e:
