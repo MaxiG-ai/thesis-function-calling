@@ -35,7 +35,8 @@ class DummyBenchmark:
             # A. CALL LLM
             try:
                 response = self.orchestrator.generate(
-                    messages=self.messages, tools=TOOLS_SCHEMA
+                    input_messages=self.messages, 
+                    tools=TOOLS_SCHEMA
                 )
             except Exception as e:
                 logger.error(f"❌ Benchmark Crashed during LLM call: {e}")

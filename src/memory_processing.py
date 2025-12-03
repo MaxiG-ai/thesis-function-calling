@@ -1,6 +1,7 @@
 import logging
-from typing import List, Dict
+from typing import List, Dict, Optional
 from .config import ExperimentConfig
+from .strategies.memory_bank.memory_bank import MemoryBank
 
 logger = logging.getLogger("MemoryProcessor")
 
@@ -8,6 +9,15 @@ logger = logging.getLogger("MemoryProcessor")
 class MemoryProcessor:
     def __init__(self, config: ExperimentConfig):
         self.config = config
+        self.active_bank: Optional[MemoryBank] = None
+        self.processed_message_ids: set = set()
+
+    def reset_state(self):
+        "Called by Orchestrator to reset memory between runs."
+        if self.active_bank:
+            self.active_bank.reset()
+        self.processed_message_ids.clear()
+        logger.info("🧠 Memory State Reset")
 
     def apply_strategy(self, messages: List[Dict], strategy_key: str) -> List[Dict]:
         """
@@ -25,8 +35,8 @@ class MemoryProcessor:
         # 2. Route to specific implementation
         if settings.type == "truncation":
             return self._apply_truncation(messages, settings.max_tokens or 2000)
-        elif settings.type == "summarization":
-            return self._apply_summarization_stub(messages, settings)
+        elif settings.type == "memory_bank":
+            return self._apply_memory_bank(messages, settings)
 
         return messages
 
@@ -48,9 +58,52 @@ class MemoryProcessor:
         )
         return system_msg + recent_history
 
-    def _apply_summarization_stub(self, messages: List[Dict], settings) -> List[Dict]:
+    def _apply_memory_bank(self, messages: List[Dict], settings) -> List[Dict]:
         """
-        Placeholder for your advanced logic.
-        """
-        logger.info("🤔 (Stub) Summarizing tool outputs...")
-        return messages
+        Implements Memory Bank Retrieval logic.
+        """        
+        # Initialize Bank if needed
+        if self.active_bank is None:
+            self.active_bank = MemoryBank(settings.embedding_model)
+
+        # 1. Update Bank with new messages (Store Phase)
+
+        for i, msg in enumerate(messages[:-1]):
+            msg_id = f"{i}_{len(msg['content'])}"
+            if msg_id not in self.processed_message_ids:
+                if msg["role"] in ["user", "assistant", "tools"]:
+                    self.active_bank.add_memory(f"{msg['role']}: {msg['content']}")
+                self.processed_message_ids.add(msg_id)
+
+        # 2. Advance Time (Forgetting Phase)
+        self.active_bank.update_time()
+
+        # 3. Retrieve Context for Current Query (Retrieval Phase)
+        last_msg = messages[-1]
+        retrieved_context = []
+        if last_msg['role'] == "user":
+            retrieved_context = self.active_bank.retrieve(
+                query = last_msg['content'], 
+                top_k = settings.top_k or 3,
+            )
+        
+        # 4. Construct Final Context (System + Active Memory Context + Recent History/Working Memory)
+
+        system_msgs = [m for m in messages if m['role'] == "system"]
+
+        # Keep last N turn to maintain conversation flow
+        working_memory_limit = 2
+        recent_msgs = messages[-working_memory_limit:]
+
+        # create memory context message
+        context_str = "\n".join(retrieved_context)
+        memory_msg = []
+        if context_str:
+            memory_block = (
+                f"Relevant Past Info: \n{context_str}\n"
+                "End of Past Info"
+            )
+            memory_msg = [{"role": "system", "content": memory_block}]
+            logger.info(f"🧠 Injected {len(retrieved_context)} memories into context.")
+
+        return system_msgs + memory_msg + recent_msgs

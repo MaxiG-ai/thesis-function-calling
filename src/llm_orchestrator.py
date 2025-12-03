@@ -3,6 +3,7 @@ from typing import List, Dict, Optional, Any, Union
 from litellm.files.main import ModelResponse
 from litellm import completion
 from .config import load_configs, ExperimentConfig, ModelDef, MemoryDef
+from .memory_processing import MemoryProcessor
 
 # Configure Logging
 logging.basicConfig(
@@ -16,12 +17,20 @@ class LLMOrchestrator:
         # 1. Load static config
         self.cfg: ExperimentConfig = load_configs(exp_path, model_path)
 
+        self.memory_processor = MemoryProcessor(self.cfg)
         # 2. State variables (mutable)
         self.active_model_key: str = self.cfg.enabled_models[0]
         self.active_memory_key: str = self.cfg.enabled_memory_methods[0]
 
         logger.info(f"🚀 Orchestrator initialized for: {self.cfg.experiment_name}")
         self._log_active_state()
+
+    def reset_session(self):
+        """
+        Clears memory state. Call this before starting a new benchmark conversation.
+        """
+        self.memory_processor.reset_state()
+        logger.info("🔄 Session Reset")
 
     def set_active_context(self, model_key: str, memory_key: str):
         """
@@ -55,7 +64,7 @@ class LLMOrchestrator:
 
     def generate(
         self,
-        messages: List[Dict[str, str]],
+        input_messages: List[Dict[str, str]],
         tools: Optional[List[Dict]] = None,
         tool_choice: Optional[str] = "auto",
         **kwargs,
@@ -63,6 +72,12 @@ class LLMOrchestrator:
         """
         Executes the request using the CURRENTLY ACTIVE model.
         """
+        # Init
+        # Pass through the processor before sending to LLM
+        messages = self.memory_processor.apply_strategy(
+            input_messages, self.active_memory_key
+        )
+
         # 1. Get the definition for the active model
         model_def = self._get_active_model_def()
         target_litellm_name = model_def.litellm_name

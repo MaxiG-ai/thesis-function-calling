@@ -17,6 +17,10 @@ class MemoryDef(BaseModel):
     target_summary_length: Optional[int] = None
     summarizer_model: Optional[str] = None
 
+    # New fields for MemoryBank
+    embedding_model: Optional[str] = "BAAI/bge-small-en-v1.5"
+    top_k: Optional[int] = 3
+
 
 class ExperimentConfig(BaseModel):
     experiment_name: str

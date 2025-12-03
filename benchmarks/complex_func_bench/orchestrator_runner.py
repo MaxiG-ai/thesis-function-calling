@@ -29,6 +29,12 @@ class OrchestratorRunner(ModelRunner):
             return None
 
     def run(self, data):
+        """
+        Running the actual benchmark.
+        """
+        # 1. Reset Memory for new conversation
+        self.orchestrator.reset_session() 
+        
         convs, functions = data['conversations'], data['functions']
         self.CompareClass.add_free_function(convs)
         
@@ -47,7 +53,7 @@ class OrchestratorRunner(ModelRunner):
             # It handles Memory/Compression internally before calling the LLM.
             try:
                 response = self.orchestrator.generate(
-                    messages=messages, 
+                    input_messages=messages, 
                     tools=self.get_standard_functions(functions)
                 )
                 llm_message = response.choices[0].message
