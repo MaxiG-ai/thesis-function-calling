@@ -1,15 +1,11 @@
-import logging
 from typing import List, Dict, Optional, Any, Union
 from litellm.files.main import ModelResponse
 from litellm import completion
 from .config import load_configs, ExperimentConfig, ModelDef, MemoryDef
 from .memory_processing import MemoryProcessor
+from .utils.logger import get_logger
 
-# Configure Logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger("Orchestrator")
+logger = get_logger("Orchestrator")
 
 
 class LLMOrchestrator:

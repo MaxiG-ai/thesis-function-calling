@@ -3,12 +3,12 @@ Decorators for memory processing methods to add visibility and metrics.
 """
 
 import time
-import logging
 from functools import wraps
 from typing import List, Dict, Callable, Optional
 from .token_counter import count_tokens, count_messages
+from .logger import get_logger
 
-logger = logging.getLogger("MemoryDecorator")
+logger = get_logger("MemoryDecorator")
 
 
 def log_token_reduction(func: Callable) -> Callable:

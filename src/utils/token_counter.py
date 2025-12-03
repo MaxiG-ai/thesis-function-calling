@@ -3,10 +3,10 @@ Token counting utility for measuring context size.
 Uses tiktoken for accurate token counting.
 """
 
-import logging
 from typing import List, Dict
+from .logger import get_logger
 
-logger = logging.getLogger("TokenCounter")
+logger = get_logger("TokenCounter")
 
 # Try to import tiktoken, fall back to simple estimation if unavailable
 try:

@@ -1,10 +1,10 @@
-import logging
 from typing import List, Dict, Optional
 from .config import ExperimentConfig
 from .strategies.memory_bank.memory_bank import MemoryBank
 from .utils.memory_decorators import log_token_reduction
+from .utils.logger import get_logger
 
-logger = logging.getLogger("MemoryProcessor")
+logger = get_logger("MemoryProcessor")
 
 
 class MemoryProcessor:

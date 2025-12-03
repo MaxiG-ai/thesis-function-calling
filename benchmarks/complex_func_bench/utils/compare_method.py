@@ -4,9 +4,9 @@ import torch
 from FlagEmbedding import FlagModel
 from scipy.optimize import linear_sum_assignment
 
-from utils.utils import load_json, decode_json
+from benchmarks.complex_func_bench.utils.utils import load_json, decode_json
 
-from utils.rapidapi import RapidAPICall
+from benchmarks.complex_func_bench.utils.rapidapi import RapidAPICall
 from models.gpt import GPTModel
 from prompts.compare import system_prompt, user_prompt
 

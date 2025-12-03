@@ -1,24 +1,20 @@
 import json
 import os
-import logging
 import sys
 import copy
 import random
+import logging
 from datetime import datetime
-
-# 1. Configure Logging (Matching thesis-function-calling style)
-# We use a StreamHandler to ensure logs appear in the console.
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[logging.StreamHandler(sys.stdout)]
-)
-logger = logging.getLogger("CFB_Runner")
+from src.utils.logger import get_logger
 
 # Ensure we can find the src module and benchmark modules
 sys.path.append(os.getcwd())
 cfb_path = os.path.join(os.getcwd(), "benchmarks", "complex_func_bench")
 sys.path.append(cfb_path)
+
+# Import custom logger
+
+logger = get_logger("CFB_Runner")
 
 # Import your Orchestrator
 try:
@@ -92,7 +88,7 @@ def main():
                 def __init__(self):
                     self.log_dir = log_dir
             
-            runner = OrchestratorRunner(RunnerArgs(), runner_logger, orchestrator)
+            runner = OrchestratorRunner(RunnerArgs(), runner_logger,orchestrator)
             
             results = []
             success_count = 0

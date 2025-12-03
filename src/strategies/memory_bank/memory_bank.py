@@ -1,14 +1,19 @@
 import math
-import logging
 import numpy as np
 from typing import List
 from FlagEmbedding import FlagModel
+
+# Add parent directory to path to import custom logger
+import sys
+import os
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+from utils.logger import get_logger
 
 # Minimal implementation of the SiliconFriend Forgetting Curve
 # S = Strength, t = Time elapsed (turns)
 # Retention R = exp( -t / (5 * S) )
 
-logger = logging.getLogger("MemoryBank")
+logger = get_logger("MemoryBank")
 
 class MemoryNode:
     def __init__(self, content: str, embedding: np.ndarray, turn_created: int):
