@@ -3,6 +3,7 @@
 
 experiment_name = "thesis-run-v1"
 results_dir = "results"
+logging_level = "INFO"
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [
