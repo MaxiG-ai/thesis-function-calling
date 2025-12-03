@@ -62,7 +62,9 @@ def main():
         return
 
     # Optional: Test with a subset
-    dataset = random.sample(dataset, 5)
+    sample_size = orchestrator.cfg.benchmark_sample_size
+    if sample_size:
+        dataset = random.sample(dataset, sample_size)
     logger.info(f"Loaded {len(dataset)} evaluation samples.")
 
     # 4. Iterate Configurations
@@ -78,12 +80,12 @@ def main():
 
             # Setup a file logger specifically for the CFB internal runner
             # (The runner expects a logger instance that handles file writing)
-            run_timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            log_dir = os.path.join("logs", f"cfb_{model}_{memory}_{run_timestamp}")
+            run_timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+            log_dir = os.path.join("results", orchestrator.cfg.experiment_name, f"cfb_{model}_{memory}_{run_timestamp}")
             os.makedirs(log_dir, exist_ok=True)
             
             # This 'runner_logger' is passed to the benchmark class
-            runner_logger = FileLogger(f"runner_{run_timestamp}", os.path.join(log_dir, "runner.log"))
+            runner_logger = FileLogger(f"runner_{run_timestamp}", os.path.join(log_dir, f"{orchestrator.cfg.experiment_name}.log"), level = logging.DEBUG)
             
             # Create Dummy Args for the Runner (it expects an object with attributes)
             class RunnerArgs:
@@ -128,8 +130,8 @@ def main():
             logger.info(f"📊 Result: {success_count}/{len(dataset)} ({pass_rate:.1f}%) passed")
 
             # Save Results
-            result_file = os.path.join("results", f"cfb_{model}_{memory}_{run_timestamp}.json")
-            os.makedirs("results", exist_ok=True)
+            result_file = os.path.join("results", orchestrator.cfg.experiment_name, f"cfb_{model}_{memory}_{run_timestamp}", f"cfb_{model}_{memory}_{run_timestamp}.json")
+            os.makedirs(os.path.dirname(result_file), exist_ok=True)
             with open(result_file, 'w') as f:
                 json.dump(results, f, indent=2)
             logger.info(f"💾 Results saved to {result_file}")

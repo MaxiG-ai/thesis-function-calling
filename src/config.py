@@ -25,6 +25,8 @@ class MemoryDef(BaseModel):
 class ExperimentConfig(BaseModel):
     experiment_name: str
     results_dir: str
+    logging_level: str
+    benchmark_sample_size: Optional[int]=None
     enabled_models: List[str]
     enabled_memory_methods: List[str]
 

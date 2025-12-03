@@ -2,6 +2,7 @@ import logging
 from typing import List, Dict, Optional
 from .config import ExperimentConfig
 from .strategies.memory_bank.memory_bank import MemoryBank
+from .utils.memory_decorators import log_token_reduction
 
 logger = logging.getLogger("MemoryProcessor")
 
@@ -11,6 +12,15 @@ class MemoryProcessor:
         self.config = config
         self.active_bank: Optional[MemoryBank] = None
         self.processed_message_ids: set = set()
+        self.current_model_key: Optional[str] = None
+
+    def set_current_model(self, model_key: str):
+        """
+        Set the active model for context window calculations.
+        Called by orchestrator before applying strategies.
+        """
+        self.current_model_key = model_key
+        logger.debug(f"Set current model to: {model_key}")
 
     def reset_state(self):
         "Called by Orchestrator to reset memory between runs."
@@ -40,24 +50,24 @@ class MemoryProcessor:
 
         return messages
 
+    @log_token_reduction
     def _apply_truncation(self, messages: List[Dict], max_tokens: int) -> List[Dict]:
         """
         Naive Baseline: Keeps only the system prompt + last N messages.
-        (Real implementation should count tokens, this is just message count for demo)
         """
         if len(messages) <= 2:
             return messages
 
         system_msg = [m for m in messages if m["role"] == "system"]
-        # Simple heuristic: keep last 5 messages if we are 'truncating'
-        # In your real thesis, you'll use tiktoken here to measure exactly.
-        recent_history = messages[-5:]
+        # Simple heuristic: keep last 3 messages if we are 'truncating'
+        recent_history = messages[-3:]
 
         logger.info(
             f"✂️  Truncated context from {len(messages)} to {len(system_msg) + len(recent_history)} msgs"
         )
         return system_msg + recent_history
 
+    @log_token_reduction
     def _apply_memory_bank(self, messages: List[Dict], settings) -> List[Dict]:
         """
         Implements Memory Bank Retrieval logic.
@@ -69,7 +79,11 @@ class MemoryProcessor:
         # 1. Update Bank with new messages (Store Phase)
 
         for i, msg in enumerate(messages[:-1]):
-            msg_id = f"{i}_{len(msg['content'])}"
+            try:
+                msg_id = f"{i}_{len(msg['content'])}"
+            except Exception as e:
+                logger.error(f"Failed to generate message ID for memory storage: {e}")
+                msg_id = f"{i}_no_content"
             if msg_id not in self.processed_message_ids:
                 if msg["role"] in ["user", "assistant", "tools"]:
                     self.active_bank.add_memory(f"{msg['role']}: {msg['content']}")
@@ -104,6 +118,7 @@ class MemoryProcessor:
                 "End of Past Info"
             )
             memory_msg = [{"role": "system", "content": memory_block}]
-            logger.info(f"🧠 Injected {len(retrieved_context)} memories into context.")
+            len_retrieved_context = len(retrieved_context) if retrieved_context else 0
+            logger.info(f"🧠 Injected {len_retrieved_context} memories into context.")
 
         return system_msgs + memory_msg + recent_msgs
