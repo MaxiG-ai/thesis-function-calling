@@ -84,6 +84,8 @@ class OrchestratorRunner(ModelRunner):
                 )
 
                 # If totally wrong, stop
+                if not success_map:
+                    return self.return_result(messages, self.error_message)
                 if len(success_map) == 0 and format_error == {}:
                     return self.return_result(messages, self.error_message)
                 

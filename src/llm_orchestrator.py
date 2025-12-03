@@ -21,6 +21,9 @@ class LLMOrchestrator:
         # 2. State variables (mutable)
         self.active_model_key: str = self.cfg.enabled_models[0]
         self.active_memory_key: str = self.cfg.enabled_memory_methods[0]
+        
+        # Set initial model for memory processor
+        self.memory_processor.set_current_model(self.active_model_key)
 
         logger.info(f"🚀 Orchestrator initialized for: {self.cfg.experiment_name}")
         self._log_active_state()
@@ -44,6 +47,9 @@ class LLMOrchestrator:
 
         self.active_model_key = model_key
         self.active_memory_key = memory_key
+        
+        # Notify memory processor of the active model for context window calculations
+        self.memory_processor.set_current_model(model_key)
 
         logger.info("🔄 Context Switched")
         self._log_active_state()
