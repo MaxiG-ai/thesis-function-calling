@@ -43,11 +43,20 @@ class MemoryProcessor:
         logger.info(f"🧠 Applying Memory Strategy: {settings.type}")
 
         # 2. Route to specific implementation
-        if settings.type == "truncation":
+        if settings.type == "no_strategy":
+            return self._apply_no_strategy(messages)        
+        elif settings.type == "truncation":
             return self._apply_truncation(messages, settings.max_tokens or 2000)
         elif settings.type == "memory_bank":
             return self._apply_memory_bank(messages, settings)
 
+        return messages
+    
+    def _apply_no_strategy(self, messages: List[Dict]) -> List[Dict]:
+        """
+        No memory processing; return messages as-is.
+        """
+        logger.info("🧠 No memory strategy applied; returning original messages.")
         return messages
 
     @log_token_reduction
@@ -106,7 +115,7 @@ class MemoryProcessor:
         system_msgs = [m for m in messages if m['role'] == "system"]
 
         # Keep last N turn to maintain conversation flow
-        working_memory_limit = 2
+        working_memory_limit = 3
         recent_msgs = messages[-working_memory_limit:]
 
         # create memory context message
@@ -121,4 +130,11 @@ class MemoryProcessor:
             len_retrieved_context = len(retrieved_context) if retrieved_context else 0
             logger.info(f"🧠 Injected {len_retrieved_context} memories into context.")
 
+        logger.debug(
+            f"""🧠 Memory Bank Context:
+SystemMessages:{system_msgs} 
+MemoryMessages:{memory_msg} 
+RecentMessages:{recent_msgs}
+"""
+        )
         return system_msgs + memory_msg + recent_msgs

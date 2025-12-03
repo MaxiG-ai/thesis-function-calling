@@ -4,7 +4,7 @@
 experiment_name = "initial_tests"
 results_dir = "results"
 logging_level = "INFO"
-benchmark_sample_size = 5
+benchmark_sample_size = 2
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [
@@ -14,8 +14,9 @@ enabled_models = [
 
 # 2. Define Memory Architectures to test
 enabled_memory_methods = [
-    # "truncation",
+    "no_strategy",
     "memory_bank",
+    # "truncation",
 ]
 
 # --- Memory Strategy Definitions ---
@@ -28,3 +29,6 @@ max_tokens = 2000
 type = "memory_bank"
 embedding_model = "BAAI/bge-small-en-v1.5" # or local path
 top_k = 3
+
+[memory_strategies.no_strategy]
+type = "no_strategy"

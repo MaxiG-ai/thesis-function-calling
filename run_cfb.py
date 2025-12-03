@@ -63,6 +63,8 @@ def main():
         dataset = random.sample(dataset, sample_size)
     logger.info(f"Loaded {len(dataset)} evaluation samples.")
 
+    run_timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+
     # 4. Iterate Configurations
     for model in orchestrator.cfg.enabled_models:
         for memory in orchestrator.cfg.enabled_memory_methods:
@@ -76,12 +78,11 @@ def main():
 
             # Setup a file logger specifically for the CFB internal runner
             # (The runner expects a logger instance that handles file writing)
-            run_timestamp = datetime.now().strftime('%Y%m%d_%H%M')
-            log_dir = os.path.join("results", orchestrator.cfg.experiment_name, f"cfb_{model}_{memory}_{run_timestamp}")
+            log_dir = os.path.join("results", orchestrator.cfg.experiment_name, run_timestamp, memory, model)
             os.makedirs(log_dir, exist_ok=True)
             
             # This 'runner_logger' is passed to the benchmark class
-            runner_logger = FileLogger(f"runner_{run_timestamp}", os.path.join(log_dir, f"{orchestrator.cfg.experiment_name}.log"), level = logging.DEBUG)
+            runner_logger = FileLogger(f"runner_{run_timestamp}", os.path.join(log_dir, f"cfb_{model}_{memory}_{run_timestamp}.log"), level = logging.DEBUG)
             
             # Create Dummy Args for the Runner (it expects an object with attributes)
             class RunnerArgs:
@@ -112,6 +113,8 @@ def main():
                     results.append({
                         "id": case_id,
                         "status": status,
+                        # added to showcase memory impact
+                        "memory_method": memory,
                         "message": msg,
                         "turns": turns,
                         "correct_calls": correct_calls
@@ -126,7 +129,7 @@ def main():
             logger.info(f"📊 Result: {success_count}/{len(dataset)} ({pass_rate:.1f}%) passed")
 
             # Save Results
-            result_file = os.path.join("results", orchestrator.cfg.experiment_name, f"cfb_{model}_{memory}_{run_timestamp}", f"cfb_{model}_{memory}_{run_timestamp}.json")
+            result_file = os.path.join("results", orchestrator.cfg.experiment_name, run_timestamp, memory, model, f"cfb_{model}_{memory}_{run_timestamp}.json")
             os.makedirs(os.path.dirname(result_file), exist_ok=True)
             with open(result_file, 'w') as f:
                 json.dump(results, f, indent=2)
