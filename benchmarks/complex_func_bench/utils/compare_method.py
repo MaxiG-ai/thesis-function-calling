@@ -4,9 +4,9 @@ import torch
 from FlagEmbedding import FlagModel
 from scipy.optimize import linear_sum_assignment
 
-from utils.utils import load_json, decode_json
+from benchmarks.complex_func_bench.utils.utils import load_json, decode_json
 
-from utils.rapidapi import RapidAPICall
+from benchmarks.complex_func_bench.utils.rapidapi import RapidAPICall
 from models.gpt import GPTModel
 from prompts.compare import system_prompt, user_prompt
 
@@ -14,7 +14,7 @@ class CompareFCBase:
     def __init__(self, args, logger) -> None:
         self.embedding = FlagModel('BAAI/bge-large-en-v1.5', 
                         query_instruction_for_retrieval="Represent this sentence for searching relevant passages:",
-                        use_fp16=True)
+                        use_fp16=False)
 
         with open("benchmarks/complex_func_bench/utils/tool_info.json", 'r') as f:
             tool_info = json.load(f)

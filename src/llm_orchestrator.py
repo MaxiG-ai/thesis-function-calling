@@ -1,14 +1,11 @@
-import logging
 from typing import List, Dict, Optional, Any, Union
-from litellm.files.main import ModelResponse
-from litellm import completion
+from openai import OpenAI
+from openai.types.chat import ChatCompletion
 from .config import load_configs, ExperimentConfig, ModelDef, MemoryDef
+from .memory_processing import MemoryProcessor
+from .utils.logger import get_logger
 
-# Configure Logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger("Orchestrator")
+logger = get_logger("Orchestrator")
 
 
 class LLMOrchestrator:
@@ -16,12 +13,30 @@ class LLMOrchestrator:
         # 1. Load static config
         self.cfg: ExperimentConfig = load_configs(exp_path, model_path)
 
+        self.memory_processor = MemoryProcessor(self.cfg)
         # 2. State variables (mutable)
         self.active_model_key: str = self.cfg.enabled_models[0]
         self.active_memory_key: str = self.cfg.enabled_memory_methods[0]
 
+        # 3. Initialize OpenAI Client pointing to Apantli
+        # Apantli is the "Gateway" now.
+        self.client = OpenAI(
+            base_url="http://localhost:4000/v1",
+            api_key="just-a-placeholder-key" # Arbitrary key, Apantli ignores it but SDK requires it
+        )
+        
+        # Set initial model for memory processor
+        self.memory_processor.set_current_model(self.active_model_key)
+
         logger.info(f"🚀 Orchestrator initialized for: {self.cfg.experiment_name}")
         self._log_active_state()
+
+    def reset_session(self):
+        """
+        Clears memory state. Call this before starting a new benchmark conversation.
+        """
+        self.memory_processor.reset_state()
+        logger.info("🔄 Session Reset")
 
     def set_active_context(self, model_key: str, memory_key: str):
         """
@@ -35,6 +50,9 @@ class LLMOrchestrator:
 
         self.active_model_key = model_key
         self.active_memory_key = memory_key
+        
+        # Notify memory processor of the active model for context window calculations
+        self.memory_processor.set_current_model(model_key)
 
         logger.info("🔄 Context Switched")
         self._log_active_state()
@@ -55,14 +73,20 @@ class LLMOrchestrator:
 
     def generate(
         self,
-        messages: List[Dict[str, str]],
+        input_messages: List[Dict[str, str]],
         tools: Optional[List[Dict]] = None,
         tool_choice: Optional[str] = "auto",
         **kwargs,
-    ) -> Union[ModelResponse, Any]:
+    ) -> Union[ChatCompletion, Any]:
         """
         Executes the request using the CURRENTLY ACTIVE model.
         """
+        # Init
+        # Pass through the processor before sending to LLM
+        messages = self.memory_processor.apply_strategy(
+            input_messages, self.active_memory_key
+        )
+
         # 1. Get the definition for the active model
         model_def = self._get_active_model_def()
         target_litellm_name = model_def.litellm_name
@@ -78,15 +102,15 @@ class LLMOrchestrator:
         kwargs.pop("model", None)
 
         try:
-            # 3. Execute via LiteLLM
-            response = completion(
-                model=target_litellm_name,
+            # 3. Execute via OpenAI SDK
+            # We simply pass the model name (e.g. "gpt-5-mini"). 
+            # Apantli handles the lookup and forwarding to port 3030.
+            response = self.client.chat.completions.create(
+                model=self.active_model_key,
                 messages=messages,
                 tools=tools,
                 tool_choice=tool_choice,
-                drop_params=True,
-                **connection_args, # 👈 Inject the connection args here
-                **kwargs,
+                # **kwargs,
             )
             return response
 

@@ -6,7 +6,7 @@ import os
 # Ensure we can import from the local directories
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from runner.base_runner import ModelRunner
+from benchmarks.complex_func_bench.utils.runner.base_runner import ModelRunner
 
 class OrchestratorRunner(ModelRunner):
     def __init__(self, args, logger, orchestrator):
@@ -29,6 +29,12 @@ class OrchestratorRunner(ModelRunner):
             return None
 
     def run(self, data):
+        """
+        Running the actual benchmark.
+        """
+        # 1. Reset Memory for new conversation
+        self.orchestrator.reset_session() 
+        
         convs, functions = data['conversations'], data['functions']
         self.CompareClass.add_free_function(convs)
         
@@ -47,7 +53,7 @@ class OrchestratorRunner(ModelRunner):
             # It handles Memory/Compression internally before calling the LLM.
             try:
                 response = self.orchestrator.generate(
-                    messages=messages, 
+                    input_messages=messages, 
                     tools=self.get_standard_functions(functions)
                 )
                 llm_message = response.choices[0].message
@@ -78,6 +84,8 @@ class OrchestratorRunner(ModelRunner):
                 )
 
                 # If totally wrong, stop
+                if not success_map:
+                    return self.return_result(messages, self.error_message)
                 if len(success_map) == 0 and format_error == {}:
                     return self.return_result(messages, self.error_message)
                 

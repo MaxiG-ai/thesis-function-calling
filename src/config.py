@@ -17,10 +17,16 @@ class MemoryDef(BaseModel):
     target_summary_length: Optional[int] = None
     summarizer_model: Optional[str] = None
 
+    # New fields for MemoryBank
+    embedding_model: Optional[str] = "BAAI/bge-small-en-v1.5"
+    top_k: Optional[int] = 3
+
 
 class ExperimentConfig(BaseModel):
     experiment_name: str
     results_dir: str
+    logging_level: str
+    benchmark_sample_size: Optional[int]=None
     enabled_models: List[str]
     enabled_memory_methods: List[str]
 
@@ -36,6 +42,7 @@ def load_configs(
 ) -> ExperimentConfig:
     """
     Loads and merges the experiment config with the model registry.
+    Also sets the global logging level based on the config.
     """
     if not os.path.exists(exp_path) or not os.path.exists(model_path):
         raise FileNotFoundError(f"Missing config files: {exp_path} or {model_path}")
@@ -51,7 +58,13 @@ def load_configs(
     exp_data["model_registry"] = model_data.get("models", {})
 
     try:
-        return ExperimentConfig(**exp_data)
+        config = ExperimentConfig(**exp_data)
+        
+        # Set global logging level from config
+        from .utils.logger import set_global_log_level
+        set_global_log_level(config.logging_level)
+        
+        return config
     except ValidationError as e:
         print("❌ Configuration Error:")
         print(e)

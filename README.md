@@ -29,18 +29,31 @@ The core thesis work involves implementing `Context Transformation` functions. T
 
 ### Models & Providers
 
-LLM logic is abstracted using [LiteLLM](https://github.com/BerriAI/litellm).
+LLM logic is abstracted using [Apantli](https://github.com/pborenstein/apantli).
 The Middleware acts as a standard OpenAI-compatible API. The Benchmarks point to this proxy, unaware that their requests are being intercepted and optimized.
+
+To add/edit models the following files need to be changed:
+
+* `/dev/apantli/config.yaml` or wherever the apantli server is installed
+* `model_config.toml` important to send to AICore Proxy
+* `config.toml` use model in enabled model list
 
 ### Benchmarks (Clients)
 
 The benchmarks manage the execution loop and state. They send the accumulating history to the proxy at every turn.
 
+#### ComplexFuncBench (z.ai)
+
+* **Focus:** Complex and repeated function calls
+* **Source:** [GitHub](https://github.com/zai-org/ComplexFuncBench)
+
 #### NestFul (IBM)
+
 * **Focus:** Nested function calling and multi-step reasoning.
 * **Source:** [GitHub](https://github.com/IBM/NESTFUL)
 
 #### MCP-Bench (Accenture)
+
 * **Focus:** Complex tasks using Model Context Protocol (MCP) servers and cross-tool coordination.
 * **Source:** [GitHub](https://github.com/Accenture/mcp-bench)
 

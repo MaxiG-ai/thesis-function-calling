@@ -2,8 +2,7 @@ import json
 import requests
 import copy
 import os
-import random
-from utils.utils import *
+from benchmarks.complex_func_bench.utils.utils import retry
 
 
 class RapidAPICall():
@@ -39,7 +38,7 @@ class RapidAPICall():
         if response.status_code == 200:
             # print("Request success.")
             response = response.json()
-            if response['status'] == True:
+            if response['status']:
                 if "timestamp" in response:
                     response.pop("timestamp")
                 if "data" in response:

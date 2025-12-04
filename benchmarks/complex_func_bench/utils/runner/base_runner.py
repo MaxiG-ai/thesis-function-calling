@@ -1,6 +1,6 @@
 import json
 import copy
-from utils.compare_method import CompareFC
+from benchmarks.complex_func_bench.utils.compare_method import CompareFC
 
 class ModelRunner:
     def __init__(self, args, logger):

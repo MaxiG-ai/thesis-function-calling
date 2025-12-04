@@ -1,8 +1,8 @@
 import json
-from utils.utils import retry, decode_json
-from models.gpt import GPTModel
+from benchmarks.complex_func_bench.utils.utils import retry, decode_json
+from benchmarks.complex_func_bench.models.gpt import GPTModel
 
-from prompts.response import (
+from benchmarks.complex_func_bench.prompts.response import (
     complete_system_prompt, 
     complete_user_prompt, 
     correct_system_prompt, 
@@ -12,7 +12,7 @@ from prompts.response import (
 class RespEvalRunner:
     def __init__(self, args, logger):
         self.logger = logger
-        self.model = GPTModel("gpt-4o-2024-08-06")
+        self.model = GPTModel("gpt-5-mini")
 
     @retry(max_attempts=10)
     def completeness_eval(self, **kwargs):

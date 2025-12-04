@@ -1,5 +1,4 @@
 import time
-import logging
 import json
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
@@ -9,10 +8,10 @@ from typing import List, Optional, Dict, Any, Union
 # Import your custom modules
 from src.llm_orchestrator import LLMOrchestrator
 from src.memory_processing import MemoryProcessor
+from src.utils.logger import get_logger
 
 # --- Setup ---
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("Proxy")
+logger = get_logger("Proxy")
 
 app = FastAPI(title="Thesis Memory Proxy", version="0.1.0")
 
@@ -101,7 +100,7 @@ async def chat_completions(request: Request):
 
 async def _handle_synchronous(messages, api_args, start_time):
     """Handles standard Request-Response"""
-    response = orchestrator.generate(messages=messages, **api_args)
+    response = orchestrator.generate(input_messages=messages, **api_args)
 
     # Add Thesis Metrics header (Latency)
     duration = time.time() - start_time
@@ -115,7 +114,7 @@ async def _handle_streaming(messages, api_args):
     """Handles Streaming (Server-Sent Events)"""
 
     # Get the generator from LiteLLM
-    response_stream = orchestrator.generate(messages=messages, **api_args)
+    response_stream = orchestrator.generate(input_messages=messages, **api_args)
 
     async def stream_generator():
         # Iterate through the sync generator from LiteLLM
