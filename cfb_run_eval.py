@@ -308,8 +308,11 @@ def main():
 
     # Optional: Sample subset for testing
     sample_size = orchestrator.cfg.benchmark_sample_size
-    if sample_size:
-        dataset = random.sample(dataset, sample_size)
+    if sample_size is not None and sample_size > 0:
+        if sample_size > len(dataset):
+            logger.warning(f"Sample size {sample_size} exceeds dataset size {len(dataset)}, using full dataset")
+        else:
+            dataset = random.sample(dataset, sample_size)
     logger.info(f"Loaded {len(dataset)} evaluation samples.")
 
     # Initialize Response Evaluation Runner (reused across all configurations)
