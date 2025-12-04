@@ -6,7 +6,7 @@ import os
 # Ensure we can import from the local directories
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from runner.base_runner import ModelRunner
+from benchmarks.complex_func_bench.utils.runner.base_runner import ModelRunner
 
 class OrchestratorRunner(ModelRunner):
     def __init__(self, args, logger, orchestrator):

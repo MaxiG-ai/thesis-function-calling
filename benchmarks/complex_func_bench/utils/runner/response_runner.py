@@ -1,8 +1,8 @@
 import json
-from utils.utils import retry, decode_json
-from models.gpt import GPTModel
+from benchmarks.complex_func_bench.utils.utils import retry, decode_json
+from benchmarks.complex_func_bench.models.gpt import GPTModel
 
-from prompts.response import (
+from benchmarks.complex_func_bench.prompts.response import (
     complete_system_prompt, 
     complete_user_prompt, 
     correct_system_prompt, 
