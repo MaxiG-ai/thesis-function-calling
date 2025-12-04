@@ -69,7 +69,7 @@ def log_token_reduction(func: Callable) -> Callable:
         
         log_parts = [
             f"🔢 Memory Strategy '{strategy_name}' metrics:",
-            f"   Tokens: {tokens_before} → {tokens_after} ({-token_reduction:+d}, {-token_reduction_pct:+.1f}%)"
+            f"   Tokens: {tokens_before} → {tokens_after} ({-token_reduction:+d}, {-token_reduction_pct:+.1f}%)",
             f" | Messages: {messages_before} → {messages_after} ({-message_reduction:+d})"
         ]
         
