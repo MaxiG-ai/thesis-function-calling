@@ -4,11 +4,13 @@
 experiment_name = "initial_tests"
 results_dir = "results"
 logging_level = "INFO"
-benchmark_sample_size = 2
+benchmark_sample_size = 10
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [
-    # "gpt-4-1", 
+    "gpt-5",
+    "gpt-4-1",
+    "gpt-4-1-mini", 
     "gpt-5-mini",
 ]
 
@@ -16,7 +18,7 @@ enabled_models = [
 enabled_memory_methods = [
     "no_strategy",
     "memory_bank",
-    # "truncation",
+    "truncation",
 ]
 
 # --- Memory Strategy Definitions ---

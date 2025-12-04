@@ -12,7 +12,7 @@ from benchmarks.complex_func_bench.prompts.response import (
 class RespEvalRunner:
     def __init__(self, args, logger):
         self.logger = logger
-        self.model = GPTModel("gpt-4o-2024-08-06")
+        self.model = GPTModel("gpt-5-mini")
 
     @retry(max_attempts=10)
     def completeness_eval(self, **kwargs):
