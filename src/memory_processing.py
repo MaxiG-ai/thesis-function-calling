@@ -92,7 +92,7 @@ class MemoryProcessor:
                 msg_id = f"{i}_{len(msg['content'])}"
             except Exception as e:
                 logger.error(f"Failed to generate message ID for memory storage: {e}")
-                msg_id = f"{i}_no_content"
+                msg_id = f"{i}_{id(msg)}_{msg.get('role', 'unknown')}"
             if msg_id not in self.processed_message_ids:
                 if msg["role"] in ["user", "assistant", "tools"]:
                     self.active_bank.add_memory(f"{msg['role']}: {msg['content']}")
