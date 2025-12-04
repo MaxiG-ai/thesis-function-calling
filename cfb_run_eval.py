@@ -94,13 +94,13 @@ def basic_metric(result_dir):
     correct_score_avg = correct_score / correct_total if correct_total != 0 else 0
 
     
-    logging.info(f"🎯 Domain Success Rate: {domain_success_rate}")
-    logging.info(f"🎯 Domain Turn Accuracy: {domain_turn_acc}")
-    logging.info(f"🎯 Domain Call Accuracy: {domain_call_acc}")
-    logging.info(f"🎯 Overall Success Rate: {overall_success}")
-    logging.info(f"🎯 Overall Call Accuracy: {overall_call_acc}")
-    logging.info(f"🎯 Complete Score: {complete_score_avg}")
-    logging.info(f"🎯 Correct Score: {correct_score_avg}")
+    logger.info(f"🎯 Domain Success Rate: {domain_success_rate}")
+    logger.info(f"🎯 Domain Turn Accuracy: {domain_turn_acc}")
+    logger.info(f"🎯 Domain Call Accuracy: {domain_call_acc}")
+    logger.info(f"🎯 Overall Success Rate: {overall_success}")
+    logger.info(f"🎯 Overall Call Accuracy: {overall_call_acc}")
+    logger.info(f"🎯 Complete Score: {complete_score_avg}")
+    logger.info(f"🎯 Correct Score: {correct_score_avg}")
 
     # Save metrics to a summary file
     summary_path = os.path.join(os.path.dirname(result_dir), "summary_metrics.json")
