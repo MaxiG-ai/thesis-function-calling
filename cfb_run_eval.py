@@ -115,7 +115,7 @@ def basic_metric(result_dir):
     }
     with open(summary_path, 'w') as f:
         json.dump(summary_metrics, f, indent=2)
-    logging.info(f"Summary metrics saved to {summary_path}")
+    logger.info(f"Summary metrics saved to {summary_path}")
 
 
 def process_single_case(runner, case, resp_eval_runner):
