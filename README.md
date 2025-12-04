@@ -36,7 +36,7 @@ To add/edit models the following files need to be changed:
 
 * `/dev/apantli/config.yaml` or wherever the apantli server is installed
 * `model_config.toml` important to send to AICore Proxy
-* `config.toml` use model in enabeled model list
+* `config.toml` use model in enabled model list
 
 ### Benchmarks (Clients)
 
