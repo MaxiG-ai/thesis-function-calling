@@ -1,6 +1,6 @@
 from typing import List, Dict, Optional, Any, Union
-from litellm.files.main import ModelResponse
-from litellm import completion
+from openai import OpenAI
+from openai.types.chat import ChatCompletion
 from .config import load_configs, ExperimentConfig, ModelDef, MemoryDef
 from .memory_processing import MemoryProcessor
 from .utils.logger import get_logger
@@ -17,6 +17,13 @@ class LLMOrchestrator:
         # 2. State variables (mutable)
         self.active_model_key: str = self.cfg.enabled_models[0]
         self.active_memory_key: str = self.cfg.enabled_memory_methods[0]
+
+        # 3. Initialize OpenAI Client pointing to Apantli
+        # Apantli is the "Gateway" now.
+        self.client = OpenAI(
+            base_url="http://localhost:4000/v1",
+            api_key="just-a-placeholder-key" # Arbitrary key, Apantli ignores it but SDK requires it
+        )
         
         # Set initial model for memory processor
         self.memory_processor.set_current_model(self.active_model_key)
@@ -70,7 +77,7 @@ class LLMOrchestrator:
         tools: Optional[List[Dict]] = None,
         tool_choice: Optional[str] = "auto",
         **kwargs,
-    ) -> Union[ModelResponse, Any]:
+    ) -> Union[ChatCompletion, Any]:
         """
         Executes the request using the CURRENTLY ACTIVE model.
         """
@@ -95,15 +102,15 @@ class LLMOrchestrator:
         kwargs.pop("model", None)
 
         try:
-            # 3. Execute via LiteLLM
-            response = completion(
-                model=target_litellm_name,
+            # 3. Execute via OpenAI SDK
+            # We simply pass the model name (e.g. "gpt-5-mini"). 
+            # Apantli handles the lookup and forwarding to port 3030.
+            response = self.client.chat.completions.create(
+                model=self.active_model_key,
                 messages=messages,
                 tools=tools,
                 tool_choice=tool_choice,
-                drop_params=True,
-                **connection_args, # 👈 Inject the connection args here
-                **kwargs,
+                # **kwargs,
             )
             return response
 

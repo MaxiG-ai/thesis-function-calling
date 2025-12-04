@@ -12,7 +12,7 @@ class GPTModel:
     def __init__(self, model_name):
         super().__init__()
         self.model_name = model_name
-        self.client = OpenAI(base_url="http://localhost:3030/v1", api_key=os.getenv("OPENAI_API_KEY"))
+        self.client = OpenAI(base_url="http://localhost:3030/v1", api_key=os.getenv("OPENAI_API_KEY", "just-a-placeholder-key"))
         
 
     def __call__(self, prefix, prompt: SimpleTemplatePrompt, **kwargs: Any):
