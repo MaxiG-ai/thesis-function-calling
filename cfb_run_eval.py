@@ -51,7 +51,7 @@ def basic_metric(result_dir):
     complete_score_count = defaultdict(lambda: [0, 0])
     correct_score_count = defaultdict(lambda: [0, 0])
     if results is None:
-        logging.error(f"Failed to load results from {result_dir}")
+        logger.error(f"Failed to load results from {result_dir}")
         return
     for result in results:
         domain = result['id'].rsplit("-", 1)[0]
