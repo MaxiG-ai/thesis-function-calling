@@ -1,3 +1,5 @@
+import wandb
+import weave
 from typing import List, Dict, Optional
 from .config import ExperimentConfig
 from .strategies.memory_bank.memory_bank import MemoryBank
@@ -28,11 +30,13 @@ class MemoryProcessor:
         self.processed_message_ids.clear()
         logger.info("🧠 Memory State Reset")
 
+    @weave.op()
     def apply_strategy(self, messages: List[Dict], strategy_key: str) -> List[Dict]:
         """
         The core thesis function.
         Transforms Input Messages -> Optimized Messages based on active strategy.
         """
+        original_count = sum(len(m.get("content", "")) for m in messages)
         # 1. Get the active strategy settings
         if strategy_key not in self.config.memory_strategies:
             logger.warning(f"Strategy {strategy_key} not found. returning raw context.")
@@ -41,15 +45,26 @@ class MemoryProcessor:
         settings = self.config.memory_strategies[strategy_key]
         logger.info(f"🧠 Applying Memory Strategy: {settings.type}")
 
-        # 2. Route to specific implementation
-        if settings.type == "no_strategy":
-            return self._apply_no_strategy(messages)        
-        elif settings.type == "truncation":
-            return self._apply_truncation(messages, settings.max_tokens or 2000)
+        # 2. Route to specific implementation       
+        if settings.type == "truncation":
+            processed_messages = self._apply_truncation(messages, settings.max_tokens or 2000)
         elif settings.type == "memory_bank":
-            return self._apply_memory_bank(messages, settings)
+            processed_messages = self._apply_memory_bank(messages, settings)
+        else:
+            logger.error(f"Unknown memory strategy type: {settings.type}. Returning original messages.")
+            processed_messages = self._apply_no_strategy(messages)
 
-        return messages
+        final_count = sum(len(m.get("content", "")) for m in processed_messages)
+        reduction_ratio = 1 - (final_count / original_count) if original_count > 0 else 0
+        
+        wandb.log({
+            "memory/strategy": strategy_key,
+            "memory/original_chars": original_count,
+            "memory/final_chars": final_count,
+            "memory/reduction_ratio": reduction_ratio
+        })
+
+        return processed_messages
     
     def _apply_no_strategy(self, messages: List[Dict]) -> List[Dict]:
         """

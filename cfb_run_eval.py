@@ -1,110 +1,324 @@
+"""
+ComplexFuncBench Evaluation Script
+
+This script runs the ComplexFuncBench benchmark on various model/memory configurations.
+It uses:
+- Custom logger (src.utils.logger) for progress reporting and errors
+- Wandb/Weave for metrics tracking and LLM call tracing
+- Backwards-compatible result format for existing evaluation tools
+"""
 import json
 import os
 import sys
 import copy
 import random
 import logging
+import weave
 from datetime import datetime
-from benchmarks.complex_func_bench.utils.runner.response_runner import RespEvalRunner
-from benchmarks.complex_func_bench.utils.utils import load_json
-from collections import defaultdict 
+from typing import Dict, List, Optional
+from collections import defaultdict
+# Import custom logger
 from src.utils.logger import get_logger
+logger = get_logger("CFB_Runner")
 
 # Ensure we can find the src module and benchmark modules
 sys.path.append(os.getcwd())
 cfb_path = os.path.join(os.getcwd(), "benchmarks", "complex_func_bench")
 sys.path.append(cfb_path)
 
-# Import custom logger
 
-logger = get_logger("CFB_Runner")
-
-# Import your Orchestrator
+# Import Orchestrator
 try:
     from src.llm_orchestrator import LLMOrchestrator
 except ImportError:
     logger.error("❌ Could not import LLMOrchestrator. Run this script from the root of the repository.")
     sys.exit(1)
 
-# Import CFB Adapter and Utils
+# Import CFB components
 try:
     from benchmarks.complex_func_bench.orchestrator_runner import OrchestratorRunner
-    # We rename this to avoid confusion with the standard logging module
-    from benchmarks.complex_func_bench.utils.logger import Logger as FileLogger 
+    from benchmarks.complex_func_bench.utils.logger import Logger as FileLogger
+    from benchmarks.complex_func_bench.utils.runner.response_runner import RespEvalRunner
+    from benchmarks.complex_func_bench.utils.utils import load_json
 except ImportError as e:
     logger.error(f"❌ Failed to import CFB modules: {e}")
     sys.exit(1)
 
-def load_jsonl(path):
-    if not os.path.exists(path):
-        logger.error(f"Dataset not found at {path}")
-        return []
-    with open(path, 'r') as f:
-        return [json.loads(line) for line in f]
+
+# ============================================================================
+# HELPER FUNCTIONS
+# ============================================================================
+
+def initialize_orchestrator() -> LLMOrchestrator:
+    """Initialize the LLM Orchestrator."""
+    try:
+        orchestrator = LLMOrchestrator()
+        logger.info(f"✅ Orchestrator initialized: {orchestrator.cfg.experiment_name}")
+        return orchestrator
+    except Exception as e:
+        logger.error(f"❌ Failed to initialize Orchestrator: {e}")
+        raise
 
 
-def basic_metric(result_dir):
-    results = load_json(result_dir)
+def initialize_response_evaluator(log_dir: str) -> RespEvalRunner:
+    """Initialize the response quality evaluator."""
+    class RespEvalArgs:
+        def __init__(self, log_dir):
+            self.log_dir = log_dir
+    
+    return RespEvalRunner(args=RespEvalArgs(log_dir), logger=logger)
+
+
+def setup_directories(experiment_name: str, run_timestamp: str, model: str, memory: str) -> str:
+    """Create directory structure for results."""
+    log_dir = os.path.join("results", experiment_name, run_timestamp, memory, model)
+    os.makedirs(log_dir, exist_ok=True)
+    return log_dir
+
+
+def create_runner(orchestrator: LLMOrchestrator, log_dir: str) -> OrchestratorRunner:
+    """Create a CFB runner instance."""
+    class RunnerArgs:
+        def __init__(self, log_dir):
+            self.log_dir = log_dir
+    
+    runner_logger = FileLogger(
+        f"runner_{datetime.now().strftime('%Y%m%d_%H%M%S')}", 
+        os.path.join(log_dir, f"cfb_runner.log"), 
+        level=logging.DEBUG
+    )
+    
+    return OrchestratorRunner(RunnerArgs(log_dir), runner_logger, orchestrator)
+
+
+def extract_ground_truth_metrics(case: Dict) -> Dict[str, int]:
+    """Extract ground truth metrics from a test case."""
+    turn_count = 0
+    call_count = 0
+    
+    for turn in case['conversations']:
+        if turn['role'] == "assistant" and "function_call" in turn:
+            turn_count += 1
+            call_count += len(turn["function_call"])
+    
+    return {
+        "turn_count": turn_count,
+        "call_count": call_count
+    }
+
+
+def extract_actual_metrics(convs: List[Dict]) -> Dict[str, int]:
+    """Extract actual metrics from generated conversation."""
+    turn_count = 0
+    
+    for turn in convs:
+        if turn['role'] == "assistant" and "function_call" in turn:
+            turn_count += 1
+    
+    return {
+        "turn_count": turn_count
+    }
+
+
+def format_result_for_wandb(result: Dict) -> Dict:
+    """
+    Convert CFB result format to wandb-friendly format.
+    
+    This is a helper to transform the backwards-compatible result structure
+    into a cleaner format for wandb logging.
+    """
+    wandb_result = {
+        "case_id": result['id'],
+        "status": result.get('status', 'unknown'),
+        "success": result['message'] == "Success.",
+        "message": result['message'],
+    }
+    
+    # Add count metrics
+    count_dict = result.get('count_dict', {})
+    if count_dict:
+        total_turns = count_dict.get('total_turn_num', 1)
+        total_calls = count_dict.get('total_call_num', 1)
+        
+        wandb_result.update({
+            "turn_accuracy": count_dict.get('success_turn_num', 0) / total_turns if total_turns > 0 else 0,
+            "call_accuracy": count_dict.get('correct_call_num', 0) / total_calls if total_calls > 0 else 0,
+            "success_turns": count_dict.get('success_turn_num', 0),
+            "total_turns": total_turns,
+            "correct_calls": count_dict.get('correct_call_num', 0),
+            "total_calls": total_calls,
+        })
+    
+    # Add response evaluation scores if available
+    resp_eval = result.get('resp_eval')
+    if resp_eval:
+        wandb_result.update({
+            "response_complete_score": resp_eval.get('complete', {}).get('score', None),
+            "response_correct_score": resp_eval.get('correct', {}).get('score', None),
+        })
+    
+    # Extract domain from case ID (e.g., "Travel-001" -> "Travel")
+    domain = result['id'].rsplit("-", 1)[0]
+    wandb_result['domain'] = domain
+    
+    return wandb_result
+
+
+# ============================================================================
+# CORE EVALUATION FUNCTIONS
+# ============================================================================
+
+def evaluate_single_case(
+    case: Dict,
+    orchestrator: LLMOrchestrator,
+    resp_eval_runner: RespEvalRunner,
+    log_dir: str
+) -> Dict:
+    """
+    Evaluate a single test case.
+    
+    This function processes one case through the CFB benchmark runner.
+    LLM calls are automatically traced by orchestrator.generate() via @weave.op.
+    
+    Args:
+        case: Test case dictionary from the dataset
+        orchestrator: LLM Orchestrator instance
+        resp_eval_runner: Response quality evaluator
+        log_dir: Directory for logs
+        
+    Returns:
+        Result dictionary in backwards-compatible CFB format
+    """
+    case_id = case.get('id', 'unknown')
+    
+    # Create runner for this case
+    runner = create_runner(orchestrator, log_dir)
+    
+    # Extract ground truth metrics
+    ground_truth = extract_ground_truth_metrics(case)
+    
+    # Execute the case (runner.run internally calls orchestrator.generate multiple times)
+    try:
+        convs, message, success_turn_num, correct_call_num = runner.run(copy.deepcopy(case))
+    except Exception as e:
+        logger.error(f"❌ Exception on case {case_id}: {e}")
+        raise
+    
+    # Check for API errors
+    if isinstance(message, dict) and message.get("error_type") == "unknown_error":
+        logger.error(f"❌ API error on case {case_id}: {message}")
+        raise RuntimeError("API Error encountered during case execution.")
+    
+    # Extract actual metrics
+    actual = extract_actual_metrics(convs)
+    
+    # Evaluate response quality if available
+    resp_eval = None
+    if convs and convs[-1].get('role') == 'assistant' and 'content' in convs[-1]:
+        final_response = convs[-1]['content']
+        if final_response and resp_eval_runner:
+            resp_eval = resp_eval_runner.run(case, final_response)
+    
+    # Build result in backwards-compatible format
+    result = {
+        "id": case_id,
+        "gen_convs": convs,
+        "message": message,
+        "count_dict": {
+            "success_turn_num": success_turn_num,
+            "total_turn_num": ground_truth['turn_count'],
+            "correct_call_num": correct_call_num,
+            "total_call_num": ground_truth['call_count'],
+            "real_turn_num": actual['turn_count']
+        },
+        "resp_eval": resp_eval,
+        "status": "Success" if message == "Success." else "Failed"
+    }
+    
+    return result
+
+
+def calculate_metrics(results: List[Dict]) -> Dict:
+    """
+    Calculate aggregate metrics from evaluation results.
+    
+    This is a pure function that takes results and computes statistics.
+    Refactored from the original basic_metric function.
+    
+    Args:
+        results: List of result dictionaries
+        
+    Returns:
+        Dictionary of computed metrics
+    """
+    if not results:
+        logger.warning("⚠️ No results to calculate metrics from")
+        return {}
+    
+    # Initialize accumulators
     domain_success = defaultdict(int)
     domain_turn_count = defaultdict(lambda: [0, 0])
     domain_call_count = defaultdict(lambda: [0, 0])
     complete_score_count = defaultdict(lambda: [0, 0])
     correct_score_count = defaultdict(lambda: [0, 0])
-    if results is None:
-        logger.error(f"Failed to load results from {result_dir}")
-        return
+    
+    # Aggregate metrics
     for result in results:
         domain = result['id'].rsplit("-", 1)[0]
+        
         if result['message'] == "Success.":
             domain_success[domain] += 1
-        domain_turn_count[domain][0] += result['count_dict']['success_turn_num']
-        domain_turn_count[domain][1] += result['count_dict']['total_turn_num']
-
-        domain_call_count[domain][0] += result['count_dict']['correct_call_num']
-        domain_call_count[domain][1] += result['count_dict']['total_call_num']
-
-        if result["resp_eval"] is None:
-            continue
-
-        if result["resp_eval"]['complete']['score'] in {0, 1, 2}:
-            complete_score_count[domain][0] += result["resp_eval"]['complete']['score']
-            complete_score_count[domain][1] += 1
         
-        if result["resp_eval"]['correct']['score'] in {0, 1, 2}:
-            correct_score_count[domain][0] += result["resp_eval"]['correct']['score']
-            correct_score_count[domain][1] += 1
-
-    domain_success_rate = {k: v / 150 * 100 if k != "Cross" else v / 400 * 100 for k, v in domain_success.items()}
-    domain_turn_acc = {k: v[0] / v[1] * 100 if v[1] != 0 else 0 for k, v in domain_turn_count.items()}
-    domain_call_acc = {k: v[0] / v[1] * 100 if v[1] != 0 else 0 for k, v in domain_call_count.items()}
-
-    overall_success = sum(domain_success.values()) / 1000 * 100
-    overall_call_acc = sum([v[0] for v in domain_call_count.values()]) / sum([v[1] for v in domain_call_count.values()]) * 100
-
-    complete_score, complete_total = 0, 0
-    for k, v in complete_score_count.items():
-        complete_score += v[0]
-        complete_total += v[1]
-    complete_score_avg = complete_score / complete_total if complete_total != 0 else 0
-
-    correct_score, correct_total = 0, 0
-    for k, v in correct_score_count.items():
-        correct_score += v[0]
-        correct_total += v[1]  
-    correct_score_avg = correct_score / correct_total if correct_total != 0 else 0
-
+        count_dict = result['count_dict']
+        domain_turn_count[domain][0] += count_dict['success_turn_num']
+        domain_turn_count[domain][1] += count_dict['total_turn_num']
+        domain_call_count[domain][0] += count_dict['correct_call_num']
+        domain_call_count[domain][1] += count_dict['total_call_num']
+        
+        # Response evaluation scores
+        resp_eval = result.get("resp_eval")
+        if resp_eval:
+            complete_score = resp_eval.get('complete', {}).get('score')
+            if complete_score in {0, 1, 2}:
+                complete_score_count[domain][0] += complete_score
+                complete_score_count[domain][1] += 1
+            
+            correct_score = resp_eval.get('correct', {}).get('score')
+            if correct_score in {0, 1, 2}:
+                correct_score_count[domain][0] += correct_score
+                correct_score_count[domain][1] += 1
     
-    logger.info(f"🎯 Domain Success Rate: {domain_success_rate}")
-    logger.info(f"🎯 Domain Turn Accuracy: {domain_turn_acc}")
-    logger.info(f"🎯 Domain Call Accuracy: {domain_call_acc}")
-    logger.info(f"🎯 Overall Success Rate: {overall_success}")
-    logger.info(f"🎯 Overall Call Accuracy: {overall_call_acc}")
-    logger.info(f"🎯 Complete Score: {complete_score_avg}")
-    logger.info(f"🎯 Correct Score: {correct_score_avg}")
-
-    # Save metrics to a summary file
-    summary_path = os.path.join(os.path.dirname(result_dir), "summary_metrics.json")
-    summary_metrics = {
+    # Calculate rates and averages
+    domain_success_rate = {
+        k: v / 150 * 100 if k != "Cross" else v / 400 * 100 
+        for k, v in domain_success.items()
+    }
+    domain_turn_acc = {
+        k: v[0] / v[1] * 100 if v[1] != 0 else 0 
+        for k, v in domain_turn_count.items()
+    }
+    domain_call_acc = {
+        k: v[0] / v[1] * 100 if v[1] != 0 else 0 
+        for k, v in domain_call_count.items()
+    }
+    
+    overall_success = sum(domain_success.values()) / len(results) * 100
+    
+    total_correct_calls = sum([v[0] for v in domain_call_count.values()])
+    total_calls = sum([v[1] for v in domain_call_count.values()])
+    overall_call_acc = total_correct_calls / total_calls * 100 if total_calls > 0 else 0
+    
+    # Calculate average scores
+    complete_score_sum = sum([v[0] for v in complete_score_count.values()])
+    complete_score_total = sum([v[1] for v in complete_score_count.values()])
+    complete_score_avg = complete_score_sum / complete_score_total if complete_score_total > 0 else 0
+    
+    correct_score_sum = sum([v[0] for v in correct_score_count.values()])
+    correct_score_total = sum([v[1] for v in correct_score_count.values()])
+    correct_score_avg = correct_score_sum / correct_score_total if correct_score_total > 0 else 0
+    
+    # Build metrics dictionary
+    metrics = {
         "domain_success_rate": domain_success_rate,
         "domain_turn_acc": domain_turn_acc,
         "domain_call_acc": domain_call_acc,
@@ -113,123 +327,87 @@ def basic_metric(result_dir):
         "complete_score_avg": complete_score_avg,
         "correct_score_avg": correct_score_avg
     }
-    with open(summary_path, 'w') as f:
-        json.dump(summary_metrics, f, indent=2)
-    logger.info(f"Summary metrics saved to {summary_path}")
+    
+    return metrics
 
 
-def process_single_case(runner, case, resp_eval_runner):
+def save_results(
+    results: List[Dict],
+    metrics: Dict,
+    model: str,
+    memory: str,
+    log_dir: str,
+    run_timestamp: str
+):
+    """Save results and metrics to disk."""
+    # Save detailed results
+    result_file = os.path.join(log_dir, f"cfb_{model}_{memory}_{run_timestamp}.json")
+    with open(result_file, 'w') as f:
+        json.dump(results, f, indent=2)
+    logger.info(f"💾 Results saved to {result_file}")
+    
+    # Save metrics summary
+    metrics_file = os.path.join(log_dir, f"metrics_{model}_{memory}_{run_timestamp}.json")
+    with open(metrics_file, 'w') as f:
+        json.dump(metrics, f, indent=2)
+    logger.info(f"📊 Metrics saved to {metrics_file}")
+
+
+# ============================================================================
+# CONFIGURATION RUNNER
+# ============================================================================
+
+def run_single_configuration(
+    orchestrator: LLMOrchestrator,
+    dataset: List[Dict],
+    model: str,
+    memory: str,
+    run_timestamp: str,
+    resp_eval_runner: RespEvalRunner
+) -> Optional[Dict]:
     """
-    Process a single test case through the runner and evaluate the response.
+    Run evaluation for a single model/memory configuration.
+    
+    This function:
+    1. Sets the active context in the orchestrator
+    2. Processes all test cases
+    3. Calculates and logs metrics to wandb
+    4. Saves results to disk
     
     Args:
-        runner: OrchestratorRunner instance
-        case: Test case dictionary from the dataset
-        resp_eval_runner: RespEvalRunner instance for response evaluation
-        
-    Returns:
-        Dictionary with case results including metrics and evaluation scores
-    """
-    case_id = case.get('id', 'unknown')
-    
-    logger.info(f"Test Example {case_id}")
-    logger.info(f"Query: {case['conversations'][0]['content']}")
-    
-    # Extract ground truth metrics from the case
-    ground_truth_turn_count = 0
-    ground_truth_call_count = 0
-    for turn in case['conversations']:
-        if turn['role'] == "assistant" and "function_call" in turn:
-            ground_truth_turn_count += 1
-            ground_truth_call_count += len(turn["function_call"])
-    
-    # Run the case through the orchestrator
-    try:
-        convs, message, success_turn_num, correct_call_num = runner.run(copy.deepcopy(case))
-    except Exception as e:
-        logger.error(f"Exception during case execution: {e}")
-        return None
-    
-    # Check for API errors
-    if isinstance(message, dict) and message.get("error_type") == "unknown_error":
-        logger.error(f"API error on case {case_id}: {message}")
-        return None
-    
-    # Count actual turns with function calls in generated conversation
-    actual_turn_count = 0
-    for turn in convs:
-        if turn['role'] == "assistant" and "function_call" in turn:
-            actual_turn_count += 1
-    
-    # Evaluate final response quality if available
-    resp_eval_result = None
-    if convs and convs[-1]['role'] == "assistant" and "content" in convs[-1]:
-        gen_response = convs[-1]['content']
-        if gen_response and resp_eval_runner:
-            resp_eval_result = resp_eval_runner.run(case, gen_response)
-    
-    logger.info(f"Message: {message}")
-    logger.info(f"Success turn num = {success_turn_num}")
-    logger.info("-" * 100)
-    
-    # Build comprehensive result
-    result = {
-        "id": case_id,
-        "gen_convs": convs,
-        "message": message,
-        "count_dict": {
-            "success_turn_num": success_turn_num,
-            "total_turn_num": ground_truth_turn_count,
-            "correct_call_num": correct_call_num,
-            "total_call_num": ground_truth_call_count,
-            "real_turn_num": actual_turn_count
-        },
-        "resp_eval": resp_eval_result
-    }
-    
-    return result
-
-def run_configuration(orchestrator, dataset, model, memory, run_timestamp, resp_eval_runner=None):
-    """
-    Execute a complete benchmark run for a single model/memory configuration.
-    
-    Args:
-        orchestrator: LLMOrchestrator instance
+        orchestrator: LLM Orchestrator instance
         dataset: List of test cases
-        model: Model name string
-        memory: Memory method name string
+        model: Model identifier
+        memory: Memory method identifier
         run_timestamp: Timestamp string for this run
-        resp_eval_runner: Optional RespEvalRunner for response evaluation
+        resp_eval_runner: Response quality evaluator
         
     Returns:
-        Dictionary with run statistics
+        Summary statistics dictionary, or None if failed
     """
-    logger.info(f"🚀 Starting Run | Model: {model} | Memory: {memory}")
+    logger.info(f"🚀 Starting evaluation: {model}/{memory}")
     
-    # Set active context for this configuration
+    # Set active context
     try:
         orchestrator.set_active_context(model, memory)
     except Exception as e:
-        logger.error(f"Failed to switch context: {e}")
+        logger.error(f"❌ Failed to switch context: {e}")
         return None
     
-    # Setup directory structure
-    log_dir = os.path.join("results", orchestrator.cfg.experiment_name, run_timestamp, memory, model)
-    os.makedirs(log_dir, exist_ok=True)
-    
-    # Create file logger for the CFB runner
-    runner_logger = FileLogger(
-        f"runner_{run_timestamp}", 
-        os.path.join(log_dir, f"cfb_{model}_{memory}_{run_timestamp}.log"), 
-        level=logging.DEBUG
+    # Setup directories
+    log_dir = setup_directories(
+        orchestrator.cfg.experiment_name,
+        run_timestamp,
+        model,
+        memory
     )
     
-    # Create runner with dummy args
-    class RunnerArgs:
-        def __init__(self, log_dir):
-            self.log_dir = log_dir
-    
-    runner = OrchestratorRunner(RunnerArgs(log_dir), runner_logger, orchestrator)
+    # Initialize weave evaluation logger for this configuration
+    eval_logger = weave.EvaluationLogger(
+        name=f"{model}_{memory}",
+        model=model,
+        dataset="ComplexFuncBench"
+    )
     
     # Process all cases
     results = []
@@ -237,104 +415,143 @@ def run_configuration(orchestrator, dataset, model, memory, run_timestamp, resp_
     
     for i, case in enumerate(dataset):
         case_id = case.get('id', i)
-        
-        logger.info("###" * 20)
-        logger.info(f"Processing Case {case_id}...")
+        logger.info(f"Processing case {i+1}/{len(dataset)}: {case_id}")
         
         try:
-            result = process_single_case(runner, case, resp_eval_runner)
+            # Evaluate the case
+            result = evaluate_single_case(
+                case=case,
+                orchestrator=orchestrator,
+                resp_eval_runner=resp_eval_runner,
+                log_dir=log_dir
+            )
             
-            if result is None:
-                logger.warning(f"Case {case_id} returned None (likely API error)")
-                continue
-            
-            # Determine success status
-            status = "Success" if result['message'] == "Success." else "Failed"
-            if status == "Success":
+            # Track success
+            if result['message'] == "Success.":
                 success_count += 1
             
-            # Append to results with additional metadata
-            result['status'] = status
+            # Add metadata
             result['memory_method'] = memory
             results.append(result)
             
+            # Log case prediction to wandb
+            wandb_data = format_result_for_wandb(result)
+            pred = eval_logger.log_prediction(
+                inputs={"case_id": case_id, "domain": wandb_data['domain']},
+                output={"status": wandb_data['status'], "message": wandb_data['message']}
+            )
+            
+            # Log scores for this prediction
+            pred.log_score("success", 1.0 if wandb_data['success'] else 0.0)
+            pred.log_score("turn_accuracy", wandb_data.get('turn_accuracy', 0.0))
+            pred.log_score("call_accuracy", wandb_data.get('call_accuracy', 0.0))
+            
+            if wandb_data.get('response_complete_score') is not None:
+                pred.log_score("response_complete", wandb_data['response_complete_score'])
+            if wandb_data.get('response_correct_score') is not None:
+                pred.log_score("response_correct", wandb_data['response_correct_score'])
+            
         except Exception as e:
-            logger.error(f"❌ Exception on Case {case_id}: {e}")
+            logger.error(f"❌ Failed on case {case_id}: {e}")
+            # Continue with remaining cases
+            continue
     
-    # Calculate and report statistics
-    pass_rate = (success_count / len(dataset)) * 100 if dataset else 0
-    logger.info(f"🏁 Completed {model}/{memory}")
-    logger.info(f"📊 Result: {success_count}/{len(dataset)} ({pass_rate:.1f}%) passed")
+    # Calculate aggregate metrics
+    logger.info("🧮 Calculating aggregate metrics...")
+    metrics = calculate_metrics(results)
     
-    # Save results to JSON
-    result_file = os.path.join(log_dir, f"cfb_{model}_{memory}_{run_timestamp}.json")
-    with open(result_file, 'w') as f:
-        json.dump(results, f, indent=2)
-    logger.info(f"💾 Results saved to {result_file}")
+    # Log high-level metrics
+    logger.info(f"📊 Overall Success Rate: {metrics.get('overall_success', 0):.1f}%")
+    logger.info(f"📊 Overall Call Accuracy: {metrics.get('overall_call_acc', 0):.1f}%")
     
-    # Calculate detailed metrics
-    logger.info("🧮 Calculating detailed metrics...")
-    basic_metric(result_file)
+    # Save results to disk
+    save_results(results, metrics, model, memory, log_dir, run_timestamp)
     
-    return {
+    # Build summary
+    summary = {
         "model": model,
         "memory": memory,
         "total_cases": len(dataset),
         "success_count": success_count,
-        "pass_rate": pass_rate
+        "pass_rate": (success_count / len(dataset)) * 100 if dataset else 0,
+        **metrics
     }
+    
+    # Log summary to wandb
+    eval_logger.log_summary(summary)
+    
+    logger.info(f"✅ Completed evaluation: {model}/{memory}")
+    
+    return summary
+
+
+# ============================================================================
+# MAIN ORCHESTRATION
+# ============================================================================
 
 def main():
     """
-    Main orchestration function for running ComplexFuncBench evaluations.
-    Coordinates dataset loading, configuration iteration, and result aggregation.
+    Main orchestration function for ComplexFuncBench evaluation.
+    
+    This function:
+    1. Initializes wandb tracking
+    2. Loads the orchestrator and dataset
+    3. Iterates through all model/memory configurations
+    4. Aggregates and reports final results
     """
-    logger.info("Initializing ComplexFuncBench integration...")
-
-    # Initialize Orchestrator
-    try:
-        orchestrator = LLMOrchestrator()
-    except Exception as e:
-        logger.critical(f"Failed to initialize Orchestrator: {e}")
-        return
-
-    # Load Dataset
+    logger.info("=" * 80)
+    logger.info("ComplexFuncBench Evaluation")
+    logger.info("=" * 80)
+    
+    # Initialize orchestrator
+    orchestrator = initialize_orchestrator()
+    
+    # Initialize wandb for the entire experiment
+    weave.init(orchestrator.cfg.experiment_name)
+    logger.info(f"📊 Wandb initialized: {orchestrator.cfg.experiment_name}")
+    
+    # Load dataset
     data_path = os.path.join(cfb_path, "data", "ComplexFuncBench.jsonl")
-    dataset = load_jsonl(data_path)
+    dataset = load_json(data_path)
     
     if not dataset:
-        logger.warning("No data loaded. Exiting.")
+        logger.error("❌ No data loaded. Exiting.")
         return
-
-    # Optional: Sample subset for testing
+    
+    # Sample subset if configured
     sample_size = orchestrator.cfg.benchmark_sample_size
     if sample_size is not None and sample_size > 0:
         if sample_size > len(dataset):
-            logger.warning(f"Sample size {sample_size} exceeds dataset size {len(dataset)}, using full dataset")
+            logger.warning(
+                f"⚠️ Sample size {sample_size} exceeds dataset size {len(dataset)}, "
+                "using full dataset"
+            )
         else:
+            random.seed(42)
             dataset = random.sample(dataset, sample_size)
-    logger.info(f"Loaded {len(dataset)} evaluation samples.")
-
-    # Initialize Response Evaluation Runner (reused across all configurations)
-    run_timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+            logger.info(f"📊 Sampled {sample_size} cases from dataset")
     
-    # Create a temporary log dir for the response evaluator
+    # Initialize response evaluator (shared across all configurations)
+    run_timestamp = datetime.now().strftime('%Y%m%d_%H%M')
     temp_log_dir = os.path.join("results", orchestrator.cfg.experiment_name, run_timestamp, "temp")
     os.makedirs(temp_log_dir, exist_ok=True)
+    resp_eval_runner = initialize_response_evaluator(temp_log_dir)
     
-    class RespEvalArgs:
-        def __init__(self, log_dir):
-            self.log_dir = log_dir
+    # Track all run statistics
+    all_summaries = []
     
-    resp_eval_runner = RespEvalRunner(args=RespEvalArgs(temp_log_dir), logger=logger)
+    # Iterate over all configurations
+    total_configs = len(orchestrator.cfg.enabled_models) * len(orchestrator.cfg.enabled_memory_methods)
+    current_config = 0
     
-    # Track overall statistics
-    all_run_stats = []
-
-    # Iterate over all model/memory configurations
     for model in orchestrator.cfg.enabled_models:
         for memory in orchestrator.cfg.enabled_memory_methods:
-            stats = run_configuration(
+            current_config += 1
+            logger.info(f"\n{'=' * 80}")
+            logger.info(f"Configuration {current_config}/{total_configs}: {model}/{memory}")
+            logger.info(f"{'=' * 80}\n")
+            
+            summary = run_single_configuration(
                 orchestrator=orchestrator,
                 dataset=dataset,
                 model=model,
@@ -343,20 +560,23 @@ def main():
                 resp_eval_runner=resp_eval_runner
             )
             
-            if stats:
-                all_run_stats.append(stats)
+            if summary:
+                all_summaries.append(summary)
     
     # Final summary
-    logger.info("=" * 100)
+    logger.info("\n" + "=" * 80)
     logger.info("🎉 All configurations completed!")
-    logger.info("=" * 100)
+    logger.info("=" * 80)
     
-    for stats in all_run_stats:
+    for summary in all_summaries:
         logger.info(
-            f"{stats['model']}/{stats['memory']}: "
-            f"{stats['success_count']}/{stats['total_cases']} "
-            f"({stats['pass_rate']:.1f}%)"
+            f"{summary['model']}/{summary['memory']}: "
+            f"{summary['success_count']}/{summary['total_cases']} "
+            f"({summary['pass_rate']:.1f}%) - "
+            f"Overall Success: {summary.get('overall_success', 0):.1f}%"
         )
+    
+    logger.info("=" * 80)
 
 
 if __name__ == "__main__":

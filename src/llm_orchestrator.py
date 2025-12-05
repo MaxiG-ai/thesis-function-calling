@@ -29,9 +29,6 @@ class LLMOrchestrator:
         # Set initial model for memory processor
         self.memory_processor.set_current_model(self.active_model_key)
 
-        # init logging via wandb
-        weave.init('maxigraf-karlsruhe-institute-of-technology/quickstart_playground')
-
         logger.info(f"🚀 Orchestrator initialized for: {self.cfg.experiment_name}")
         self._log_active_state()
 
@@ -86,8 +83,8 @@ class LLMOrchestrator:
         """
         Executes the request using the CURRENTLY ACTIVE model.
         """
-        # Init
         # Pass through the processor before sending to LLM
+        
         messages = self.memory_processor.apply_strategy(
             input_messages, self.active_memory_key
         )

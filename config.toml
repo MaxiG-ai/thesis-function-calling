@@ -4,7 +4,7 @@
 experiment_name = "initial_tests"
 results_dir = "results"
 logging_level = "INFO"
-benchmark_sample_size = 1
+benchmark_sample_size = 3
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [
@@ -16,7 +16,7 @@ enabled_models = [
 
 # 2. Define Memory Architectures to test
 enabled_memory_methods = [
-    "no_strategy",
+    # "no_strategy",
     "memory_bank",
     "truncation",
 ]
