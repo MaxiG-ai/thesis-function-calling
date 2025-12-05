@@ -1,3 +1,4 @@
+import weave
 from typing import List, Dict, Optional, Any, Union
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
@@ -27,6 +28,9 @@ class LLMOrchestrator:
         
         # Set initial model for memory processor
         self.memory_processor.set_current_model(self.active_model_key)
+
+        # init logging via wandb
+        weave.init('maxigraf-karlsruhe-institute-of-technology/quickstart_playground')
 
         logger.info(f"🚀 Orchestrator initialized for: {self.cfg.experiment_name}")
         self._log_active_state()
@@ -71,6 +75,7 @@ class LLMOrchestrator:
         )
         logger.info(f"   Target: {m.litellm_name}")
 
+    @weave.op
     def generate(
         self,
         input_messages: List[Dict[str, str]],
@@ -104,7 +109,6 @@ class LLMOrchestrator:
         try:
             # 3. Execute via OpenAI SDK
             # We simply pass the model name (e.g. "gpt-5-mini"). 
-            # Apantli handles the lookup and forwarding to port 3030.
             response = self.client.chat.completions.create(
                 model=self.active_model_key,
                 messages=messages,

@@ -4,13 +4,13 @@
 experiment_name = "initial_tests"
 results_dir = "results"
 logging_level = "INFO"
-benchmark_sample_size = 10
+benchmark_sample_size = 1
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [
-    "gpt-5",
-    "gpt-4-1",
-    "gpt-4-1-mini", 
+    # "gpt-5",
+    # "gpt-4-1",
+    # "gpt-4-1-mini", 
     "gpt-5-mini",
 ]
 

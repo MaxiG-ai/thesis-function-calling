@@ -76,3 +76,8 @@ The proxy implementation handles the **Stateless Transformation**:
 5. **Return:** Stream the response back to the Benchmark.
 
 > **Note:** All transformations strictly preserve `tool_call_id` integrity to ensure the Benchmark's execution loop remains valid.
+
+## Getting Started
+
+1. Run local SAP AI Core Proxy `cd dev/sap` and run `sap`
+2. Run cost orchestration `cd dev/apantli`, activate env and run `apantli --port 4000`.
