@@ -14,6 +14,7 @@ import copy
 import random
 import logging
 import weave
+import wandb
 from datetime import datetime
 from typing import Dict, List, Optional
 from collections import defaultdict
@@ -53,7 +54,7 @@ def initialize_orchestrator() -> LLMOrchestrator:
     """Initialize the LLM Orchestrator."""
     try:
         orchestrator = LLMOrchestrator()
-        logger.info(f"✅ Orchestrator initialized: {orchestrator.cfg.experiment_name}")
+        logger.info(f"✅ Orchestrator and wandb initialized: {orchestrator.cfg.experiment_name}")
         return orchestrator
     except Exception as e:
         logger.error(f"❌ Failed to initialize Orchestrator: {e}")
@@ -167,7 +168,7 @@ def format_result_for_wandb(result: Dict) -> Dict:
 # ============================================================================
 # CORE EVALUATION FUNCTIONS
 # ============================================================================
-
+@weave.op
 def evaluate_single_case(
     case: Dict,
     orchestrator: LLMOrchestrator,
@@ -176,9 +177,7 @@ def evaluate_single_case(
 ) -> Dict:
     """
     Evaluate a single test case.
-    
     This function processes one case through the CFB benchmark runner.
-    LLM calls are automatically traced by orchestrator.generate() via @weave.op.
     
     Args:
         case: Test case dictionary from the dataset
@@ -419,37 +418,42 @@ def run_single_configuration(
         
         try:
             # Evaluate the case
-            result = evaluate_single_case(
-                case=case,
-                orchestrator=orchestrator,
-                resp_eval_runner=resp_eval_runner,
-                log_dir=log_dir
-            )
+            with wandb.init(
+                project=orchestrator.cfg.experiment_name,
+                name=f"{model}_{memory}_{case_id}",
+                reinit=True
+            ) as run:
+                result = evaluate_single_case(
+                    case=case,
+                    orchestrator=orchestrator,
+                    resp_eval_runner=resp_eval_runner,
+                    log_dir=log_dir
+                )
+                run.log({"result": result})
             
-            # Track success
-            if result['message'] == "Success.":
-                success_count += 1
-            
-            # Add metadata
-            result['memory_method'] = memory
-            results.append(result)
-            
-            # Log case prediction to wandb
-            wandb_data = format_result_for_wandb(result)
-            pred = eval_logger.log_prediction(
-                inputs={"case_id": case_id, "domain": wandb_data['domain']},
-                output={"status": wandb_data['status'], "message": wandb_data['message']}
-            )
-            
-            # Log scores for this prediction
-            pred.log_score("success", 1.0 if wandb_data['success'] else 0.0)
-            pred.log_score("turn_accuracy", wandb_data.get('turn_accuracy', 0.0))
-            pred.log_score("call_accuracy", wandb_data.get('call_accuracy', 0.0))
-            
-            if wandb_data.get('response_complete_score') is not None:
-                pred.log_score("response_complete", wandb_data['response_complete_score'])
-            if wandb_data.get('response_correct_score') is not None:
-                pred.log_score("response_correct", wandb_data['response_correct_score'])
+                # Track success
+                if result['message'] == "Success.":
+                    success_count += 1
+                
+                # Add metadata
+                result['memory_method'] = memory
+                results.append(result)
+                
+                # Log case prediction to wandb
+                wandb_data = format_result_for_wandb(result)
+                with eval_logger.log_prediction(
+                    inputs={"case_id": case_id, "domain": wandb_data['domain']},
+                    output={"status": wandb_data['status'], "message": wandb_data['message']}
+                ) as pred:
+                    # Log scores for this prediction
+                    pred.log_score("success", 1.0 if wandb_data['success'] else 0.0)
+                    pred.log_score("turn_accuracy", wandb_data.get('turn_accuracy', 0.0))
+                    pred.log_score("call_accuracy", wandb_data.get('call_accuracy', 0.0))
+                    
+                    if wandb_data.get('response_complete_score') is not None:
+                        pred.log_score("response_complete", wandb_data['response_complete_score'])
+                    if wandb_data.get('response_correct_score') is not None:
+                        pred.log_score("response_correct", wandb_data['response_correct_score'])
             
         except Exception as e:
             logger.error(f"❌ Failed on case {case_id}: {e}")
@@ -508,7 +512,7 @@ def main():
     
     # Initialize wandb for the entire experiment
     weave.init(orchestrator.cfg.experiment_name)
-    logger.info(f"📊 Wandb initialized: {orchestrator.cfg.experiment_name}")
+    logger.info(f"📊 Weave initialized: {orchestrator.cfg.experiment_name}")
     
     # Load dataset
     data_path = os.path.join(cfb_path, "data", "ComplexFuncBench.jsonl")

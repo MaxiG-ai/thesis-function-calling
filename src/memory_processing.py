@@ -36,7 +36,7 @@ class MemoryProcessor:
         The core thesis function.
         Transforms Input Messages -> Optimized Messages based on active strategy.
         """
-        original_count = sum(len(m.get("content", "")) for m in messages)
+        original_count = sum(len((m.get("content") or "")) for m in messages)
         # 1. Get the active strategy settings
         if strategy_key not in self.config.memory_strategies:
             logger.warning(f"Strategy {strategy_key} not found. returning raw context.")
@@ -54,7 +54,7 @@ class MemoryProcessor:
             logger.error(f"Unknown memory strategy type: {settings.type}. Returning original messages.")
             processed_messages = self._apply_no_strategy(messages)
 
-        final_count = sum(len(m.get("content", "")) for m in processed_messages)
+        final_count = sum(len((m.get("content") or "")) for m in processed_messages)
         reduction_ratio = 1 - (final_count / original_count) if original_count > 0 else 0
         
         wandb.log({
@@ -73,25 +73,106 @@ class MemoryProcessor:
         logger.info("🧠 No memory strategy applied; returning original messages.")
         return messages
 
+    def _validate_and_repair_tool_pairs(self, processed_messages: List[Dict], original_messages: List[Dict]) -> List[Dict]:
+        """
+        Ensures that tool messages always have their corresponding assistant message with tool_calls.
+        If a tool message is orphaned, this function finds and injects the missing assistant message.
+        
+        Args:
+            processed_messages: Messages after memory strategy has been applied
+            original_messages: Original unprocessed messages for lookup
+            
+        Returns:
+            Validated and repaired message list
+        """
+        validated = []
+        i = 0
+        
+        while i < len(processed_messages):
+            msg = processed_messages[i]
+            
+            # If we encounter a tool message, ensure its assistant message with tool_calls is present
+            if msg.get('role') == 'tool':
+                # Check if the previous message is an assistant with tool_calls
+                has_valid_preceding = (
+                    len(validated) > 0 and 
+                    validated[-1].get('role') == 'assistant' and 
+                    'tool_calls' in validated[-1]
+                )
+                
+                if not has_valid_preceding:
+                    # Find the corresponding assistant message in original_messages
+                    tool_call_id = msg.get('tool_call_id')
+                    assistant_msg = None
+                    
+                    # Search backwards in original messages for the assistant message with this tool_call_id
+                    for orig_idx in range(len(original_messages) - 1, -1, -1):
+                        orig_msg = original_messages[orig_idx]
+                        if (orig_msg.get('role') == 'assistant' and 
+                            'tool_calls' in orig_msg):
+                            # Check if this assistant message has the matching tool_call_id
+                            for tc in orig_msg.get('tool_calls', []):
+                                if tc.get('id') == tool_call_id:
+                                    assistant_msg = orig_msg
+                                    break
+                            if assistant_msg:
+                                break
+                    
+                    if assistant_msg:
+                        logger.debug(f"🔧 Injecting missing assistant message before tool response")
+                        validated.append(assistant_msg)
+                    else:
+                        logger.warning(f"⚠️ Could not find assistant message for tool call {tool_call_id}, skipping tool message")
+                        i += 1
+                        continue
+                
+                validated.append(msg)
+            else:
+                validated.append(msg)
+            
+            i += 1
+        
+        return validated
+
     def _apply_truncation(self, messages: List[Dict], max_tokens: int) -> List[Dict]:
         """
         Naive Baseline: Keeps only the system prompt + last N messages.
+        Ensures assistant+tool message pairs are kept together.
         """
         if len(messages) <= 2:
             return messages
 
         system_msg = [m for m in messages if m["role"] == "system"]
-        # Simple heuristic: keep last 3 messages if we are 'truncating'
-        recent_history = messages[-3:]
+        
+        # Start with last 3 messages, but expand to include complete tool call sequences
+        recent_count = 3
+        recent_start_idx = max(0, len(messages) - recent_count)
+        
+        # Check if we're cutting off in the middle of a tool call sequence
+        # If the first message in our selection is a tool message, we need its assistant message
+        while recent_start_idx > 0 and messages[recent_start_idx].get('role') == 'tool':
+            recent_start_idx -= 1
+            # Also need to include the assistant message with tool_calls
+            if recent_start_idx > 0 and messages[recent_start_idx].get('role') == 'assistant':
+                if 'tool_calls' not in messages[recent_start_idx]:
+                    # Keep going back to find the assistant with tool_calls
+                    recent_start_idx -= 1
+        
+        recent_history = messages[recent_start_idx:]
+        
+        # Validate and repair any remaining issues
+        result = system_msg + recent_history
+        result = self._validate_and_repair_tool_pairs(result, messages)
 
         logger.info(
-            f"✂️  Truncated context from {len(messages)} to {len(system_msg) + len(recent_history)} msgs"
+            f"✂️  Truncated context from {len(messages)} to {len(result)} msgs"
         )
-        return system_msg + recent_history
+        return result
 
     def _apply_memory_bank(self, messages: List[Dict], settings) -> List[Dict]:
         """
         Implements Memory Bank Retrieval logic.
+        Ensures assistant+tool message pairs are kept together in working memory.
         """        
         # Initialize Bank if needed
         if self.active_bank is None:
@@ -126,9 +207,21 @@ class MemoryProcessor:
 
         system_msgs = [m for m in messages if m['role'] == "system"]
 
-        # Keep last N turn to maintain conversation flow
+        # Keep last N messages in working memory, but expand to include complete tool call sequences
         working_memory_limit = 3
-        recent_msgs = messages[-working_memory_limit:]
+        recent_start_idx = max(0, len(messages) - working_memory_limit)
+        
+        # Check if we're cutting off in the middle of a tool call sequence
+        # If the first message in our selection is a tool message, we need its assistant message
+        while recent_start_idx > 0 and messages[recent_start_idx].get('role') == 'tool':
+            recent_start_idx -= 1
+            # Also need to include the assistant message with tool_calls
+            if recent_start_idx > 0 and messages[recent_start_idx].get('role') == 'assistant':
+                if 'tool_calls' not in messages[recent_start_idx]:
+                    # Keep going back to find the assistant with tool_calls
+                    recent_start_idx -= 1
+        
+        recent_msgs = messages[recent_start_idx:]
 
         # create memory context message
         context_str = "\n".join(retrieved_context)
@@ -142,11 +235,16 @@ class MemoryProcessor:
             len_retrieved_context = len(retrieved_context) if retrieved_context else 0
             logger.info(f"🧠 Injected {len_retrieved_context} memories into context.")
 
+        # Validate and repair any remaining issues
+        result = system_msgs + memory_msg + recent_msgs
+        result = self._validate_and_repair_tool_pairs(result, messages)
+
         logger.debug(
             f"""🧠 Memory Bank Context:
-SystemMessages:{system_msgs} 
-MemoryMessages:{memory_msg} 
-RecentMessages:{recent_msgs}
+SystemMessages:{len(system_msgs)} 
+MemoryMessages:{len(memory_msg)} 
+RecentMessages:{len(recent_msgs)}
+FinalMessages:{len(result)}
 """
         )
-        return system_msgs + memory_msg + recent_msgs
+        return result

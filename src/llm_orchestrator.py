@@ -1,4 +1,3 @@
-import weave
 from typing import List, Dict, Optional, Any, Union
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
@@ -72,7 +71,6 @@ class LLMOrchestrator:
         )
         logger.info(f"   Target: {m.litellm_name}")
 
-    @weave.op
     def generate(
         self,
         input_messages: List[Dict[str, str]],

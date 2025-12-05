@@ -209,3 +209,6 @@ __marimo__/
 # Results
 results/*.json
 results/
+
+# WandB
+wandb/
