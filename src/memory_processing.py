@@ -1,7 +1,6 @@
 from typing import List, Dict, Optional
 from .config import ExperimentConfig
 from .strategies.memory_bank.memory_bank import MemoryBank
-from .utils.memory_decorators import log_token_reduction
 from .utils.logger import get_logger
 
 logger = get_logger("MemoryProcessor")
@@ -59,7 +58,6 @@ class MemoryProcessor:
         logger.info("🧠 No memory strategy applied; returning original messages.")
         return messages
 
-    @log_token_reduction
     def _apply_truncation(self, messages: List[Dict], max_tokens: int) -> List[Dict]:
         """
         Naive Baseline: Keeps only the system prompt + last N messages.
@@ -76,7 +74,6 @@ class MemoryProcessor:
         )
         return system_msg + recent_history
 
-    @log_token_reduction
     def _apply_memory_bank(self, messages: List[Dict], settings) -> List[Dict]:
         """
         Implements Memory Bank Retrieval logic.
