@@ -4,23 +4,22 @@ import torch
 from FlagEmbedding import FlagModel
 from scipy.optimize import linear_sum_assignment
 
-from benchmarks.complex_func_bench.utils.utils import load_json, decode_json
-
-from benchmarks.complex_func_bench.utils.rapidapi import RapidAPICall
-from models.gpt import GPTModel
+from utils.utils import load_json, decode_json
+from utils.rapidapi import RapidAPICall
+from models.sap_gpt import SAPGPTModel
 from prompts.compare import system_prompt, user_prompt
 
 class CompareFCBase:
     def __init__(self, args, logger) -> None:
         self.embedding = FlagModel('BAAI/bge-large-en-v1.5', 
                         query_instruction_for_retrieval="Represent this sentence for searching relevant passages:",
-                        use_fp16=False)
+                        use_fp16=True)
 
         with open("benchmarks/complex_func_bench/utils/tool_info.json", 'r') as f:
             tool_info = json.load(f)
         tool_info = tool_info['booking-com15']
         self.api_call = RapidAPICall(tool="booking-com15", tool_info=tool_info)
-        self.model = GPTModel("gpt-5-mini")
+        self.model = SAPGPTModel("gpt-5")
         self.logger = logger
         self.error_message = []
         self.exact_match_dict = load_json("benchmarks/complex_func_bench/utils/exact_match_values.json")
@@ -104,12 +103,12 @@ class CompareFCBase:
                 self.error_message = f"API call failed for {predict}."
                 return False
             if isinstance(resp_1, dict):
-                if "status" in resp_1 and not resp_1["status"]:
+                if "status" in resp_1 and resp_1["status"] == False:
                     self.error_response = resp_1
             else:
                 self.error_response = resp_1
             resp_2 = self.api_call._call(golden)
-        except Exception:
+        except:
             return False
         if resp_1 is None or resp_2 is None:
             return False
@@ -169,7 +168,7 @@ class CompareFC(CompareFCBase):
     def remove_called_fc(self, golden, golden_obs):
         pop_index = []
         for singel_golden in golden:
-            if json.dumps(singel_golden) in self.free_functions and self.free_functions[json.dumps(singel_golden)]['called']:
+            if json.dumps(singel_golden) in self.free_functions and self.free_functions[json.dumps(singel_golden)]['called'] == True:
                 pop_index.append(golden.index(singel_golden))
         
         for index in sorted(pop_index, reverse=True):
@@ -271,7 +270,7 @@ class CompareFC(CompareFCBase):
         self.logger.info(f"Start compare_single_call: \n{pred_call}\n{golden_call}")
         # rule-based
         if self.rule_based(pred_call, golden_call):
-            self.logger.info("Rule-based compare success.")
+            self.logger.info(f"Rule-based compare success.")
             return True, None
         
         is_valid, error_message = self.value_checker(pred_call, golden_call)
@@ -281,15 +280,15 @@ class CompareFC(CompareFCBase):
         
         # Response-based
         if self.response_based(pred_call, golden_call):
-            self.logger.info("Response-based compare success.")
+            self.logger.info(f"Response-based compare success.")
             return True, None
         
         # LLM-based
         if self.llm_based(functions, history, pred_call, golden_call):
-            self.logger.info("LLM-based compare success.")
+            self.logger.info(f"LLM-based compare success.")
             return True, None
         
-        self.logger.info("All compare method failed.")
+        self.logger.info(f"All compare method failed.")
         return False, None
 
     def compare_turn_prediction(self, functions, history, predict, golden, golden_obs):
@@ -306,7 +305,7 @@ class CompareFC(CompareFCBase):
         for match_item in match_list:
             # format error check
             message = self.format_check(match_item['pred_call'], functions)
-            if message:
+            if message == True:
                 is_match, single_message = self.compare_single_call(functions, history, match_item['pred_call'], match_item['golden_call'])
                 if is_match:
                     success_map[match_item['idx']] = match_item['golden_obs']

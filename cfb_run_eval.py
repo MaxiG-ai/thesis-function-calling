@@ -22,24 +22,19 @@ from collections import defaultdict
 from src.utils.logger import get_logger
 logger = get_logger("CFB_Runner")
 
-# Ensure we can find the src module and benchmark modules
-sys.path.append(os.getcwd())
-cfb_path = os.path.join(os.getcwd(), "benchmarks", "complex_func_bench")
-sys.path.append(cfb_path)
-
-
 # Import Orchestrator
 try:
     from src.llm_orchestrator import LLMOrchestrator
-except ImportError:
+except ImportError as e:
     logger.error("❌ Could not import LLMOrchestrator. Run this script from the root of the repository.")
+    logger.error(f"ImportError: {e}")
     sys.exit(1)
 
 # Import CFB components
 try:
-    from benchmarks.complex_func_bench.orchestrator_runner import OrchestratorRunner
+    from benchmarks.complex_func_bench.runner.sap_gpt_runner import SAPGPTRunner
     from benchmarks.complex_func_bench.utils.logger import Logger as FileLogger
-    from benchmarks.complex_func_bench.utils.runner.response_runner import RespEvalRunner
+    from benchmarks.complex_func_bench.runner.response_runner import RespEvalRunner
     from benchmarks.complex_func_bench.utils.utils import load_json
 except ImportError as e:
     logger.error(f"❌ Failed to import CFB modules: {e}")
@@ -77,7 +72,7 @@ def setup_directories(experiment_name: str, run_timestamp: str, model: str, memo
     return log_dir
 
 
-def create_runner(orchestrator: LLMOrchestrator, log_dir: str) -> OrchestratorRunner:
+def create_runner(log_dir: str) -> SAPGPTRunner:
     """Create a CFB runner instance."""
     class RunnerArgs:
         def __init__(self, log_dir):
@@ -85,11 +80,11 @@ def create_runner(orchestrator: LLMOrchestrator, log_dir: str) -> OrchestratorRu
     
     runner_logger = FileLogger(
         f"runner_{datetime.now().strftime('%Y%m%d_%H%M%S')}", 
-        os.path.join(log_dir, f"cfb_runner.log"), 
+        os.path.join(log_dir, "cfb_runner.log"), 
         level=logging.DEBUG
     )
     
-    return OrchestratorRunner(RunnerArgs(log_dir), runner_logger, orchestrator)
+    return SAPGPTRunner(model_name="gpt-5", args=RunnerArgs(log_dir), logger=runner_logger)
 
 
 def extract_ground_truth_metrics(case: Dict) -> Dict[str, int]:
@@ -191,7 +186,7 @@ def evaluate_single_case(
     case_id = case.get('id', 'unknown')
     
     # Create runner for this case
-    runner = create_runner(orchestrator, log_dir)
+    runner = create_runner(log_dir=orchestrator.cfg.results_dir)
     
     # Extract ground truth metrics
     ground_truth = extract_ground_truth_metrics(case)
@@ -515,7 +510,7 @@ def main():
     logger.info(f"📊 Weave initialized: {orchestrator.cfg.experiment_name}")
     
     # Load dataset
-    data_path = os.path.join(cfb_path, "data", "ComplexFuncBench.jsonl")
+    data_path = os.path.join("benchmarks", "complex_func_bench", "data", "ComplexFuncBench.jsonl")
     dataset = load_json(data_path)
     
     if not dataset:

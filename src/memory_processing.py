@@ -1,9 +1,9 @@
 import wandb
 import weave
 from typing import List, Dict, Optional
-from .config import ExperimentConfig
-from .strategies.memory_bank.memory_bank import MemoryBank
-from .utils.logger import get_logger
+from src.utils.config import ExperimentConfig
+from src.strategies.memory_bank.memory_bank import MemoryBank
+from src.utils.logger import get_logger
 
 logger = get_logger("MemoryProcessor")
 

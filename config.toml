@@ -3,8 +3,11 @@
 
 experiment_name = "initial_tests"
 results_dir = "results"
+log_dir = "results/logs"
 logging_level = "INFO"
-benchmark_sample_size = 20
+debug = false
+input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
+benchmark_sample_size = 5
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [

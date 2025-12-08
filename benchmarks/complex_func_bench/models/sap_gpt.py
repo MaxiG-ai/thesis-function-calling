@@ -1,21 +1,20 @@
-from typing import Any, Dict
+from typing import Any
 import os
 from openai import OpenAI
 import json
 import sys
 import copy
-import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from prompts.prompts import SimpleTemplatePrompt
-from utils.utils import *
+from utils.utils import retry
 
 
-class GPTModel:
+class SAPGPTModel:
     def __init__(self, model_name):
         super().__init__()
         self.model_name = model_name
-        self.client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        self.client = OpenAI(api_key="placeholder_api_key", base_url="http://localhost:4000/v1")
         
 
     def __call__(self, prefix, prompt: SimpleTemplatePrompt, **kwargs: Any):
@@ -32,7 +31,6 @@ class GPTModel:
                     {"role": "system", "content": prefix},
                     {"role": "user", "content": text}
                 ],
-                temperature=0.0,
                 )
             return completion.choices[0].message.content
         except Exception as e:
@@ -40,7 +38,7 @@ class GPTModel:
             return None
 
 
-class FunctionCallGPT(GPTModel):
+class FunctionCallSAPGPT(SAPGPTModel):
     def __init__(self, model_name):
         super().__init__(None)
         self.model_name = model_name
@@ -54,7 +52,6 @@ class FunctionCallGPT(GPTModel):
             completion = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=self.messages,
-                temperature=0.0,
                 tools=tools,
                 tool_choice="auto",
                 max_tokens=2048
@@ -66,6 +63,6 @@ class FunctionCallGPT(GPTModel):
 
 
 if __name__ == "__main__":
-    model = GPTModel("gpt-4")
+    model = SAPGPTModel("gpt-5-mini")
     response = model("You are a helpful assistant.", SimpleTemplatePrompt(template=("What is the capital of France?"), args_order=[]))
     print(response)

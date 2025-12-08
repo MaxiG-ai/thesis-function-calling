@@ -3,13 +3,20 @@ import re
 import time
 import traceback
 import logging
+from typing import List
+from functools import wraps
 
 
-def load_json(dir_path):
+
+def load_json(dir_path:str) -> List:
     if dir_path.endswith('.json'):
-        return json.load(open(dir_path, 'r'))
+        with open(dir_path, 'r') as f:
+            return json.load(f)
     elif dir_path.endswith('.jsonl'):
-        return [json.loads(line) for line in open(dir_path, 'r')]
+        with open(dir_path, 'r') as f:
+            return [json.loads(line) for line in f]
+    else:
+        raise ValueError("Unsupported file format. Please use .json or .jsonl files.")
 
 
 def save_json(data, dir_path):
@@ -26,7 +33,8 @@ def decode_json(json_str):
     json_str = json_str.replace('\n', '').replace('False', 'false').replace('True', 'true')
     try:
         return json.loads(json_str)
-    except:
+    except Exception as e:
+        print(f"JSON decoding error: {e}")
         return None
 
 
@@ -51,7 +59,6 @@ def apply_decorator_to_all_methods(decorator):
     return class_decorator
 
 
-from functools import wraps
 def retry(max_attempts=5, delay=2):
     def decorator(func):
         @wraps(func)

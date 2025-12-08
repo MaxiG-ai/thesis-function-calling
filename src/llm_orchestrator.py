@@ -1,9 +1,9 @@
 from typing import List, Dict, Optional, Any, Union
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
-from .config import load_configs, ExperimentConfig, ModelDef, MemoryDef
-from .memory_processing import MemoryProcessor
-from .utils.logger import get_logger
+from src.utils.config import load_configs, ExperimentConfig, ModelDef, MemoryDef
+from src.memory_processing import MemoryProcessor
+from src.utils.logger import get_logger
 
 logger = get_logger("Orchestrator")
 
