@@ -1,4 +1,4 @@
-from prompts.prompts import SimpleTemplatePrompt
+from benchmarks.complex_func_bench.prompts.prompts import SimpleTemplatePrompt
 
 """
 Completeness Evaluation.

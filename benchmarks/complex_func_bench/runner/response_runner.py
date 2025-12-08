@@ -3,7 +3,7 @@ import weave
 from benchmarks.complex_func_bench.utils.utils import retry, decode_json
 from benchmarks.complex_func_bench.models.sap_gpt import SAPGPTModel
 
-from prompts.response import (
+from benchmarks.complex_func_bench.prompts.response import (
     complete_system_prompt, 
     complete_user_prompt, 
     correct_system_prompt, 

@@ -1,5 +1,4 @@
-from prompts.prompts import SimpleTemplatePrompt
-
+from benchmarks.complex_func_bench.prompts.prompts import SimpleTemplatePrompt
 
 system_prompt = """"You are an assistant for function call comparison. Your task is to determine whether two function calls are equivalent based on the conversation history and the function descriptions, and provide specific reasons.
 # Instructions:

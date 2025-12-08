@@ -7,8 +7,8 @@ import copy
 import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from prompts.prompts import SimpleTemplatePrompt
-from utils.utils import *
+from benchmarks.complex_func_bench.prompts.prompts import SimpleTemplatePrompt
+from benchmarks.complex_func_bench.utils.utils import *
 
 
 class GPTModel:
