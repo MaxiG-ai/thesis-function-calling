@@ -72,8 +72,8 @@ def setup_directories(experiment_name: str, run_timestamp: str, model: str, memo
     return log_dir
 
 
-def create_runner(log_dir: str) -> SAPGPTRunner:
-    """Create a CFB runner instance."""
+def create_runner(log_dir: str, orchestrator: LLMOrchestrator) -> SAPGPTRunner:
+    """Create a CFB runner instance with orchestrator integration."""
     class RunnerArgs:
         def __init__(self, log_dir):
             self.log_dir = log_dir
@@ -84,7 +84,15 @@ def create_runner(log_dir: str) -> SAPGPTRunner:
         level=logging.DEBUG
     )
     
-    return SAPGPTRunner(model_name="gpt-5", args=RunnerArgs(log_dir), logger=runner_logger)
+    # This routes all benchmark LLM calls through orchestrator with memory processing
+    runner = SAPGPTRunner(
+        model_name="gpt-5", 
+        args=RunnerArgs(log_dir), 
+        logger=runner_logger,
+        orchestrator=orchestrator
+    )
+    
+    return runner
 
 
 def extract_ground_truth_metrics(case: Dict) -> Dict[str, int]:
@@ -185,8 +193,8 @@ def evaluate_single_case(
     """
     case_id = case.get('id', 'unknown')
     
-    # Create runner for this case
-    runner = create_runner(log_dir=orchestrator.cfg.results_dir)
+    # Create runner for this case with orchestrator injection
+    runner = create_runner(log_dir=orchestrator.cfg.results_dir, orchestrator=orchestrator)
     
     # Extract ground truth metrics
     ground_truth = extract_ground_truth_metrics(case)

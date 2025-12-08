@@ -7,10 +7,19 @@ from benchmarks.complex_func_bench.runner.base_runner import ModelRunner
 
 
 class SAPGPTRunner(ModelRunner):
-    def __init__(self, model_name, args, logger):
+    def __init__(self, model_name, args, logger, orchestrator=None):
+        """
+        Initialize SAP GPT Runner.
+        
+        Args:
+            model_name: Model identifier
+            args: Runner arguments
+            logger: Logger instance
+            orchestrator: Optional LLMOrchestrator for memory processing
+        """
         super().__init__(args, logger)
         self.model_name = model_name
-        self.model = FunctionCallSAPGPT(self.model_name)
+        self.model = FunctionCallSAPGPT(self.model_name, orchestrator=orchestrator)
 
     def replace_invalid_chars(self, s):
         valid_pattern = re.compile(r'[a-zA-Z0-9_-]')
