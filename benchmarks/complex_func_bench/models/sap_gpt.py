@@ -1,20 +1,17 @@
 from typing import Any
-import os
-from openai import OpenAI
 import json
-import sys
 import copy
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from prompts.prompts import SimpleTemplatePrompt
-from utils.utils import retry
+from benchmarks.complex_func_bench.prompts.prompts import SimpleTemplatePrompt
+from benchmarks.complex_func_bench.utils.utils import retry
+from src.utils.client_factory import ClientFactory
 
 
 class SAPGPTModel:
     def __init__(self, model_name):
         super().__init__()
         self.model_name = model_name
-        self.client = OpenAI(api_key="placeholder_api_key", base_url="http://localhost:4000/v1")
+        # Use centralized client factory instead of hardcoded connection
+        self.client = ClientFactory.create_client()
         
 
     def __call__(self, prefix, prompt: SimpleTemplatePrompt, **kwargs: Any):

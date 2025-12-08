@@ -1,13 +1,14 @@
 import json
 import gc
 import torch
+import weave
 from FlagEmbedding import FlagModel
 from scipy.optimize import linear_sum_assignment
 
-from utils.utils import load_json, decode_json
-from utils.rapidapi import RapidAPICall
-from models.sap_gpt import SAPGPTModel
-from prompts.compare import system_prompt, user_prompt
+from benchmarks.complex_func_bench.utils.utils import load_json, decode_json
+from benchmarks.complex_func_bench.utils.rapidapi import RapidAPICall
+from benchmarks.complex_func_bench.models.sap_gpt import SAPGPTModel
+from benchmarks.complex_func_bench.prompts.compare import system_prompt, user_prompt
 
 class CompareFCBase:
     def __init__(self, args, logger) -> None:
@@ -77,6 +78,7 @@ class CompareFCBase:
                             "obs": convs[i+1]['content'][j]
                         }
 
+    @weave.op()
     def rule_based(self, predict, golden):
         """
         Rule-based Match.
@@ -96,6 +98,7 @@ class CompareFCBase:
         
         return True
 
+    @weave.op()
     def response_based(self, predict, golden):
         try:
             resp_1 = self.api_call._call(predict)
@@ -103,18 +106,20 @@ class CompareFCBase:
                 self.error_message = f"API call failed for {predict}."
                 return False
             if isinstance(resp_1, dict):
-                if "status" in resp_1 and resp_1["status"] == False:
+                if "status" in resp_1 and not resp_1["status"]:
                     self.error_response = resp_1
             else:
                 self.error_response = resp_1
             resp_2 = self.api_call._call(golden)
-        except:
+        except Exception as e:
+            self.logger.error(f"API call exception: {e}")
             return False
         if resp_1 is None or resp_2 is None:
             return False
         
         return resp_1 == resp_2
 
+    @weave.op()
     def similarity_based(self, predict, golden):
         embedding_1 = self.embedding.encode([json.dumps(predict, ensure_ascii=False)])
         embedding_2 = self.embedding.encode([json.dumps(golden, ensure_ascii=False)])
@@ -125,6 +130,7 @@ class CompareFCBase:
         self.logger.debug(f"Similarity-based comparison output: {similarity[0][0]}")
         return similarity[0][0] > 0.98
 
+    @weave.op()
     def llm_based(self, functions, history, predict, golden):
         kwargs = {
             "functions": json.dumps(functions, ensure_ascii=False),
@@ -168,7 +174,7 @@ class CompareFC(CompareFCBase):
     def remove_called_fc(self, golden, golden_obs):
         pop_index = []
         for singel_golden in golden:
-            if json.dumps(singel_golden) in self.free_functions and self.free_functions[json.dumps(singel_golden)]['called'] == True:
+            if json.dumps(singel_golden) in self.free_functions and self.free_functions[json.dumps(singel_golden)]['called']:
                 pop_index.append(golden.index(singel_golden))
         
         for index in sorted(pop_index, reverse=True):
@@ -189,6 +195,7 @@ class CompareFC(CompareFCBase):
             if k not in golden_call['arguments']:
                 return {'error_type': "param_hallucination", "content": f"Parameter {k} is hallucinated."}
             
+    @weave.op()
     def mapping_call(self, predict, golden, golden_obs):
         def sort_arguments(call_list):
             for value in call_list:
@@ -266,11 +273,12 @@ class CompareFC(CompareFCBase):
 
         return matching
 
+    @weave.op()
     def compare_single_call(self, functions, history, pred_call, golden_call):
         self.logger.info(f"Start compare_single_call: \n{pred_call}\n{golden_call}")
         # rule-based
         if self.rule_based(pred_call, golden_call):
-            self.logger.info(f"Rule-based compare success.")
+            self.logger.info("Rule-based compare success.")
             return True, None
         
         is_valid, error_message = self.value_checker(pred_call, golden_call)
@@ -280,17 +288,18 @@ class CompareFC(CompareFCBase):
         
         # Response-based
         if self.response_based(pred_call, golden_call):
-            self.logger.info(f"Response-based compare success.")
+            self.logger.info("Response-based compare success.")
             return True, None
         
         # LLM-based
         if self.llm_based(functions, history, pred_call, golden_call):
-            self.logger.info(f"LLM-based compare success.")
+            self.logger.info("LLM-based compare success.")
             return True, None
         
-        self.logger.info(f"All compare method failed.")
+        self.logger.info("All compare method failed.")
         return False, None
 
+    @weave.op()
     def compare_turn_prediction(self, functions, history, predict, golden, golden_obs):
         self.error_message = []
         golden, golden_obs = self.remove_called_fc(golden, golden_obs)
@@ -305,7 +314,7 @@ class CompareFC(CompareFCBase):
         for match_item in match_list:
             # format error check
             message = self.format_check(match_item['pred_call'], functions)
-            if message == True:
+            if message:
                 is_match, single_message = self.compare_single_call(functions, history, match_item['pred_call'], match_item['golden_call'])
                 if is_match:
                     success_map[match_item['idx']] = match_item['golden_obs']

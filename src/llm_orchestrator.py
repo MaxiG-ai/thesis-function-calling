@@ -4,6 +4,7 @@ from openai.types.chat import ChatCompletion
 from src.utils.config import load_configs, ExperimentConfig, ModelDef, MemoryDef
 from src.memory_processing import MemoryProcessor
 from src.utils.logger import get_logger
+from src.utils.client_factory import ClientFactory
 
 logger = get_logger("Orchestrator")
 
@@ -18,12 +19,9 @@ class LLMOrchestrator:
         self.active_model_key: str = self.cfg.enabled_models[0]
         self.active_memory_key: str = self.cfg.enabled_memory_methods[0]
 
-        # 3. Initialize OpenAI Client pointing to Apantli
-        # Apantli is the "Gateway" now.
-        self.client = OpenAI(
-            base_url="http://localhost:4000/v1",
-            api_key="just-a-placeholder-key" # Arbitrary key, Apantli ignores it but SDK requires it
-        )
+        # 3. Initialize OpenAI Client using centralized factory
+        # Client configuration now comes from model_config.toml via ClientFactory
+        self.client = ClientFactory.create_client()
         
         # Set initial model for memory processor
         self.memory_processor.set_current_model(self.active_model_key)

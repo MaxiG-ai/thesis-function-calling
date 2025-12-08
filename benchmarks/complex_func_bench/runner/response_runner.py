@@ -1,4 +1,5 @@
 import json
+import weave
 from benchmarks.complex_func_bench.utils.utils import retry, decode_json
 from benchmarks.complex_func_bench.models.sap_gpt import SAPGPTModel
 
@@ -14,6 +15,7 @@ class RespEvalRunner:
         self.logger = logger
         self.model = SAPGPTModel("gpt-5")
 
+    @weave.op()
     @retry(max_attempts=10)
     def completeness_eval(self, **kwargs):
         complete_result = self.model(complete_system_prompt, complete_user_prompt, **kwargs)
@@ -27,6 +29,7 @@ class RespEvalRunner:
             return None
         return decoded_complete_result
 
+    @weave.op()
     @retry(max_attempts=10)
     def correctness_eval(self, **kwargs):
         correct_result = self.model(correct_system_prompt, correct_user_prompt, **kwargs)
@@ -38,6 +41,7 @@ class RespEvalRunner:
             return None
         return decoded_correct_result
 
+    @weave.op()
     def run(self, data, gen_response):
         if gen_response == "":
             return {

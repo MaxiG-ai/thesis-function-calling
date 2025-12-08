@@ -1,6 +1,7 @@
 import re
 import copy
 import json
+import weave
 from benchmarks.complex_func_bench.models.sap_gpt import FunctionCallSAPGPT
 from benchmarks.complex_func_bench.runner.base_runner import ModelRunner
 
@@ -40,6 +41,7 @@ class SAPGPTRunner(ModelRunner):
 
         return function_call
     
+    @weave.op()
     def run(self, data):
         convs, functions = data['conversations'], data['functions']
         self.CompareClass.add_free_function(convs)
@@ -115,6 +117,3 @@ class SAPGPTRunner(ModelRunner):
 
             else:
                 return self.return_result(messages, {"error_type": "unknown_error", "content": "llm_response is None"})
-
-
-    
