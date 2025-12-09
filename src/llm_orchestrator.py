@@ -1,7 +1,7 @@
 from typing import List, Dict, Optional, Any, Union, Iterable
 import weave
 from openai import OpenAI
-from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolChoiceOptionParam, ChatCompletionToolUnionParam
+from openai.types.chat import ChatCompletionMessageParam
 from openai.types.chat import ChatCompletion
 from src.utils.config import load_configs, ExperimentConfig, ModelDef
 from src.memory_processing import MemoryProcessor
