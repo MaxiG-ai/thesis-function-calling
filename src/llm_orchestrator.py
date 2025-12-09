@@ -291,8 +291,9 @@ class LLMOrchestrator:
                 tools = kwargs.get("tools", None)
                 tool_choice = kwargs.get("tool_choice", None)
                 create_kwargs = {
-                    "model": "gpt-5",
+                    "model": "gpt-4-1",
                     "messages": input_messages,
+                    "temperature": kwargs.get("temperature", 0),
                 }
                 if tools is not None:
                     create_kwargs["tools"] = tools
@@ -301,8 +302,9 @@ class LLMOrchestrator:
                 response = self.client.chat.completions.create(**create_kwargs)
             else:
                 response = self.client.chat.completions.create(
-                    model="gpt-5",
+                    model="gpt-4-1",
                     messages=input_messages,
+                    temperature=0,
                 )
             
             return response
