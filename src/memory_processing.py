@@ -58,8 +58,8 @@ class MemoryProcessor:
         # 3. Log the "Delta" metrics clearly
         cc = weave.require_current_call()
         
-        if cc.attributes is not None:
-            cc.attributes.update({
+        if cc.summary is not None:
+            cc.summary.update({
                 "context_limit": limit,
                 "pre_compression_tokens": pre_count,
                 "post_compression_tokens": post_count,
