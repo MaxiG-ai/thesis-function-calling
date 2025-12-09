@@ -11,9 +11,9 @@ benchmark_sample_size = 5
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [
-    # "gpt-5",
-    # "gpt-4-1",
-    "gpt-4-1-mini", 
+    "gpt-5",
+    "gpt-4-1",
+    # "gpt-4-1-mini", 
     # "gpt-5-mini",
 ]
 

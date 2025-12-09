@@ -1,4 +1,5 @@
 import weave
+import tiktoken
 from typing import List, Dict, Optional
 from src.utils.config import ExperimentConfig
 from src.strategies.memory_bank.memory_bank import MemoryBank
@@ -6,6 +7,11 @@ from src.utils.logger import get_logger
 
 logger = get_logger("MemoryProcessor")
 
+def get_token_count(messages: list[dict], model: str) -> int:
+    """Utility to count tokens."""
+    enc = tiktoken.encoding_for_model(model)
+    text = "".join(str(m) for m in messages) # Simplified for demo
+    return len(enc.encode(text))
 
 class MemoryProcessor:
     def __init__(self, config: ExperimentConfig):
@@ -30,6 +36,12 @@ class MemoryProcessor:
         settings = self.config.memory_strategies[strategy_key]
         logger.info(f"🧠 Applying Memory Strategy: {settings.type}")
 
+        model="gpt-4-1-mini"
+        limit = 128000
+        # 1. Measure Pre-State
+        pre_count = get_token_count(messages, model=model)
+        pre_fill_pct = (pre_count / limit) * 100
+
         # Route to specific implementation       
         if settings.type == "truncation":
             processed_messages = self._apply_truncation(messages, settings.max_tokens or 2000)
@@ -38,6 +50,23 @@ class MemoryProcessor:
         else:
             logger.error(f"Unknown memory strategy type: {settings.type}. Returning original messages.")
             processed_messages = self._apply_no_strategy(messages)
+
+        post_count = get_token_count(processed_messages, model=model)
+        post_fill_pct = (post_count / limit) * 100
+        reduction_pct = 100 - ((post_count / pre_count) * 100)
+
+        # 3. Log the "Delta" metrics clearly
+        cc = weave.require_current_call()
+        
+        if cc.attributes is not None:
+            cc.attributes.update({
+                "context_limit": limit,
+                "pre_compression_tokens": pre_count,
+                "post_compression_tokens": post_count,
+                "context_filled_pre_pct": round(pre_fill_pct, 2),
+                "context_filled_post_pct": round(post_fill_pct, 2),
+                "compression_reduction_pct": round(reduction_pct, 2)
+            })
 
         return processed_messages
     
