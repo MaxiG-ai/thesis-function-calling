@@ -70,7 +70,6 @@ def create_runner(log_dir: str, orchestrator: LLMOrchestrator) -> SAPGPTRunner:
         model_name=orchestrator.active_model_key, 
         args=RunnerArgs(log_dir), 
         logger=runner_logger,
-        orchestrator=orchestrator
     )
     
     return runner

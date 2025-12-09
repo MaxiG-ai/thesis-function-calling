@@ -3,7 +3,6 @@ import weave
 from benchmarks.complex_func_bench.utils.utils import retry, decode_json
 from benchmarks.complex_func_bench.models.legacy_sap_gpt import SAPGPTModel
 
-from src.llm_orchestrator import LLMOrchestrator
 
 from benchmarks.complex_func_bench.prompts.response import (
     complete_system_prompt, 
@@ -15,7 +14,7 @@ from benchmarks.complex_func_bench.prompts.response import (
 class RespEvalRunner:
     def __init__(self, args, logger):
         self.logger = logger
-        self.model = SAPGPTModel(LLMOrchestrator())
+        self.model = SAPGPTModel("gpt-5")
 
     @retry(max_attempts=10)
     def completeness_eval(self, **kwargs):

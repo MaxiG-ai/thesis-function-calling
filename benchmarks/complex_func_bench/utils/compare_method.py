@@ -8,9 +8,8 @@ from scipy.optimize import linear_sum_assignment
 
 from benchmarks.complex_func_bench.utils.utils import load_json, decode_json
 from benchmarks.complex_func_bench.utils.rapidapi import RapidAPICall
-from benchmarks.complex_func_bench.models.sap_gpt import SAPGPTModel
+from benchmarks.complex_func_bench.models.legacy_sap_gpt import SAPGPTModel
 from benchmarks.complex_func_bench.prompts.compare import system_prompt, user_prompt
-from src.llm_orchestrator import LLMOrchestrator
 
 os.environ['TRANSFORMERS_NO_ADVISORY_WARNINGS'] = 'true'
 
@@ -24,7 +23,7 @@ class CompareFCBase:
             tool_info = json.load(f)
         tool_info = tool_info['booking-com15']
         self.api_call = RapidAPICall(tool="booking-com15", tool_info=tool_info)
-        self.model = SAPGPTModel(LLMOrchestrator())
+        self.model = SAPGPTModel("gpt-5")
         self.logger = logger
         self.error_message = []
         self.exact_match_dict = load_json("benchmarks/complex_func_bench/utils/exact_match_values.json")
