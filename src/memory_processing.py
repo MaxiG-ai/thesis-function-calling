@@ -26,15 +26,11 @@ class MemoryProcessor:
         The core thesis function.
         Transforms Input Messages -> Optimized Messages based on active strategy.
         """
-        # 1. Get the active strategy settings
-        if strategy_key not in self.config.memory_strategies:
-            logger.warning(f"Strategy {strategy_key} not found. returning raw context.")
-            return messages
 
         settings = self.config.memory_strategies[strategy_key]
         logger.info(f"🧠 Applying Memory Strategy: {settings.type}")
 
-        # 2. Route to specific implementation       
+        # Route to specific implementation       
         if settings.type == "truncation":
             processed_messages = self._apply_truncation(messages, settings.max_tokens or 2000)
         elif settings.type == "memory_bank":

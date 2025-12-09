@@ -206,8 +206,8 @@ class LLMOrchestrator:
             )
             
             # Post-call metrics
-            message = response.choices[0].message
-            tool_call_count = len(message.tool_calls) if message.tool_calls else 0
+            response_message = response.choices[0].message
+            tool_call_count = len(response_message.tool_calls) if response_message.tool_calls else 0
             
             logger.debug(
                 "✅ LLM call completed."

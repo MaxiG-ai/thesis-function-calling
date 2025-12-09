@@ -23,7 +23,7 @@ except ImportError as e:
 
 # Import CFB components
 try:
-    from benchmarks.complex_func_bench.runner.legacy_sap_gpt_runner import SAPGPTRunner
+    from benchmarks.complex_func_bench.runner.sap_gpt_runner import SAPGPTRunner
     from benchmarks.complex_func_bench.utils.logger import Logger as FileLogger
     from benchmarks.complex_func_bench.runner.response_runner import RespEvalRunner
     from benchmarks.complex_func_bench.utils.utils import load_json
@@ -70,6 +70,7 @@ def create_runner(log_dir: str, orchestrator: LLMOrchestrator) -> SAPGPTRunner:
         model_name=orchestrator.active_model_key, 
         args=RunnerArgs(log_dir), 
         logger=runner_logger,
+        orchestrator=orchestrator
     )
     
     return runner
