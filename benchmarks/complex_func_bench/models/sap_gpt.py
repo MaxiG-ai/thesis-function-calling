@@ -1,18 +1,18 @@
-from typing import Any, Optional
+from typing import Any
 import json
 import copy
 import weave
 from benchmarks.complex_func_bench.prompts.prompts import SimpleTemplatePrompt
 from benchmarks.complex_func_bench.utils.utils import retry
-from src.llm_orchestrator import ClientFactory
+from src.llm_orchestrator import LLMOrchestrator
 
 
 class SAPGPTModel:
-    def __init__(self, model_name):
+    def __init__(self, orchestrator:LLMOrchestrator):
         super().__init__()
-        self.model_name = model_name
+        self.model_name = orchestrator.active_model_key
         # Use centralized client factory instead of hardcoded connection
-        self.client = ClientFactory.create_client()
+        self.orchestrator = orchestrator
         
 
     def __call__(self, prefix, prompt: SimpleTemplatePrompt, **kwargs: Any):
@@ -24,9 +24,9 @@ class SAPGPTModel:
     @retry(max_attempts=10)
     def _predict(self, prefix, text, **kwargs):
         try:
-            completion = self.client.chat.completions.create(
+            completion = self.orchestrator.generate_plain(
                 model=self.model_name,
-                messages=[
+                input_messages=[
                     {"role": "system", "content": prefix},
                     {"role": "user", "content": text}
                 ],
@@ -45,7 +45,7 @@ class FunctionCallSAPGPT(SAPGPTModel):
     When orchestrator is None, falls back to direct client calls (for evaluation/comparison).
     """
     
-    def __init__(self, model_name, orchestrator=None):
+    def __init__(self, model_name, orchestrator:LLMOrchestrator):
         """
         Initialize function calling model.
         
@@ -53,14 +53,14 @@ class FunctionCallSAPGPT(SAPGPTModel):
             model_name: Model identifier
             orchestrator: Optional LLMOrchestrator instance for memory processing
         """
-        super().__init__(None)
-        self.model_name = model_name
+        super().__init__(orchestrator=orchestrator)
+        self.model_name = orchestrator.active_model_key
         self.messages = []
         self.orchestrator = orchestrator
 
     @weave.op()
     @retry(max_attempts=5, delay=10)
-    def __call__(self, messages, tools=None, **kwargs: Any):
+    def generate_response(self, messages, tools=None, **kwargs: Any):
         # The runner manages self.messages directly by appending assistant/tool messages
         # We should NOT overwrite it here - just use what the runner has built up
         # Only initialize on first call (when self.messages is empty)
@@ -69,32 +69,21 @@ class FunctionCallSAPGPT(SAPGPTModel):
         
         try:
             # Route through orchestrator if available (applies memory processing)
-            if self.orchestrator is not None:
-                response = self.orchestrator.generate(
-                    input_messages=self.messages,
-                    tools=tools,
-                    tool_choice=kwargs.get("tool_choice", "auto"),
-                    max_tokens=kwargs.get("max_tokens", 2048)
-                )
-                return response.choices[0].message
+            response = self.orchestrator.generate_with_memory_applied(
+                input_messages=self.messages,
+                tools=tools,
+                tool_choice=kwargs.get("tool_choice", "auto"),
+                max_tokens=kwargs.get("max_tokens", 2048)
+            )
+            return response.choices[0].message
             
-            # Fallback to direct client call (for evaluation/comparison)
-            else:
-                completion = self.client.chat.completions.create(
-                    model=self.model_name,
-                    messages=self.messages,
-                    tools=tools,
-                    tool_choice="auto",
-                    max_tokens=2048
-                )
-                return completion.choices[0].message
-                
         except Exception as e:
             print(f"Exception: {e}")
             return None
 
 
 if __name__ == "__main__":
-    model = SAPGPTModel("gpt-5-mini")
+    llmo = LLMOrchestrator()
+    model = SAPGPTModel(llmo)
     response = model("You are a helpful assistant.", SimpleTemplatePrompt(template=("What is the capital of France?"), args_order=[]))
     print(response)

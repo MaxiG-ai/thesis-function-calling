@@ -1,6 +1,7 @@
-from typing import List, Dict, Optional, Any, Union
+from typing import List, Dict, Optional, Any, Union, Iterable
 import weave
 from openai import OpenAI
+from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolChoiceOptionParam, ChatCompletionToolUnionParam
 from openai.types.chat import ChatCompletion
 from src.utils.config import load_configs, ExperimentConfig, ModelDef
 from src.memory_processing import MemoryProcessor
@@ -143,7 +144,7 @@ class LLMOrchestrator:
         logger.info("🔄 Context Switched")
     
     @weave.op()
-    def generate(
+    def generate_with_memory_applied(
         self,
         input_messages: List[Dict[str, str]],
         tools: Optional[List[Dict]] = None,
@@ -213,6 +214,53 @@ class LLMOrchestrator:
                 f"(finish: {response.choices[0].finish_reason}, "
                 f"tool_calls: {tool_call_count})"
             )
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"💥 Generation Failed: {str(e)}")
+            raise e
+        
+
+    @weave.op()
+    def generate_plain(
+        self,
+        input_messages: Iterable[ChatCompletionMessageParam],
+        **kwargs,
+    ) -> Union[ChatCompletion, Any]:
+        """
+        Execute LLM request for evaluation. No memory processing applied. Model defaults to GPT-5 
+
+        Args:
+            input_messages: Conversation messages (will be processed by memory strategy)
+            tools: Available function definitions
+            tool_choice: Tool selection strategy ("auto", "required", "none")
+            **kwargs: Additional parameters (max_tokens, temperature, etc.)
+            
+        Returns:
+            ChatCompletion response from OpenAI API
+            
+        Raises:
+            Exception: Any errors from OpenAI API (logged to wandb)
+        """
+        # Sanitize kwargs (remove model if passed by benchmark)
+        kwargs.pop("model", None)
+        
+        try:
+            if "tools" in kwargs:
+                tools = kwargs.get("tools", None)
+                tool_choice = kwargs.get("tool_choice", None)
+                response = self.client.chat.completions.create(
+                    model="gpt-5",
+                    messages=input_messages,
+                    tools=tools,
+                    tool_choice=tool_choice,
+                )
+            else:
+                response = self.client.chat.completions.create(
+                    model="gpt-5",
+                    messages=input_messages,
+                )
             
             return response
             

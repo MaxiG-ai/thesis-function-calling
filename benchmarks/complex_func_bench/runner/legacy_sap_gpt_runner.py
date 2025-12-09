@@ -1,27 +1,15 @@
 import re
 import copy
 import json
-import weave
-from benchmarks.complex_func_bench.models.sap_gpt import FunctionCallSAPGPT
+from benchmarks.complex_func_bench.models.legacy_sap_gpt import FunctionCallSAPGPT
 from benchmarks.complex_func_bench.runner.base_runner import ModelRunner
-from src.llm_orchestrator import LLMOrchestrator
-
 
 
 class SAPGPTRunner(ModelRunner):
-    def __init__(self, model_name, args, logger, orchestrator:LLMOrchestrator):
-        """
-        Initialize SAP GPT Runner.
-        
-        Args:
-            model_name: Model identifier
-            args: Runner arguments
-            logger: Logger instance
-            orchestrator: Optional LLMOrchestrator for memory processing
-        """
+    def __init__(self, model_name, args, logger):
         super().__init__(args, logger)
-        self.model_name = orchestrator.active_model_key
-        self.model = FunctionCallSAPGPT(self.model_name, orchestrator=orchestrator)
+        self.model_name = model_name
+        self.model = FunctionCallSAPGPT(self.model_name)
 
     def replace_invalid_chars(self, s):
         valid_pattern = re.compile(r'[a-zA-Z0-9_-]')
@@ -52,7 +40,6 @@ class SAPGPTRunner(ModelRunner):
 
         return function_call
     
-    @weave.op()
     def run(self, data):
         convs, functions = data['conversations'], data['functions']
         self.CompareClass.add_free_function(convs)
@@ -65,7 +52,7 @@ class SAPGPTRunner(ModelRunner):
         self.init_golden(convs)
 
         while True:
-            llm_response = self.model.generate_response(messages, tools=gpt_functions)
+            llm_response = self.model(messages, tools=gpt_functions)
             if llm_response is None:
                 return self.return_result(messages, {"error_type": "unknown_error", "content": "llm_response is None"})
 
@@ -119,7 +106,6 @@ class SAPGPTRunner(ModelRunner):
                 self.logger.info(f"Observations:\n{json.dumps(real_time_obs, ensure_ascii=False, indent=4)}\n")
                 messages.append({"role": "observation", "content": real_time_obs})
 
-            # TODO: Log the final answer to weave
             elif llm_response.content is not None:
                 final_response = llm_response.content
                 self.logger.info(f"Final Response: {final_response}\n")

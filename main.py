@@ -100,7 +100,7 @@ async def chat_completions(request: Request):
 
 async def _handle_synchronous(messages, api_args, start_time):
     """Handles standard Request-Response"""
-    response = orchestrator.generate(input_messages=messages, **api_args)
+    response = orchestrator.generate_with_memory_applied(input_messages=messages, **api_args)
 
     # Add Thesis Metrics header (Latency)
     duration = time.time() - start_time
@@ -114,7 +114,7 @@ async def _handle_streaming(messages, api_args):
     """Handles Streaming (Server-Sent Events)"""
 
     # Get the generator from LiteLLM
-    response_stream = orchestrator.generate(input_messages=messages, **api_args)
+    response_stream = orchestrator.generate_with_memory_applied(input_messages=messages, **api_args)
 
     async def stream_generator():
         # Iterate through the sync generator from LiteLLM
