@@ -1,12 +1,4 @@
-"""
-ComplexFuncBench Evaluation Script
 
-This script runs the ComplexFuncBench benchmark on various model/memory configurations.
-It uses:
-- Custom logger (src.utils.logger) for progress reporting and errors
-- Wandb/Weave for metrics tracking and LLM call tracing
-- Backwards-compatible result format for existing evaluation tools
-"""
 import json
 import os
 import sys
@@ -14,7 +6,6 @@ import copy
 import random
 import logging
 import weave
-import wandb
 from datetime import datetime
 from typing import Dict, List, Optional
 from collections import defaultdict
@@ -32,7 +23,7 @@ except ImportError as e:
 
 # Import CFB components
 try:
-    from benchmarks.complex_func_bench.runner.sap_gpt_runner import SAPGPTRunner
+    from benchmarks.complex_func_bench.runner.legacy_sap_gpt_runner import SAPGPTRunner
     from benchmarks.complex_func_bench.utils.logger import Logger as FileLogger
     from benchmarks.complex_func_bench.runner.response_runner import RespEvalRunner
     from benchmarks.complex_func_bench.utils.utils import load_json
@@ -44,17 +35,6 @@ except ImportError as e:
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
-
-def initialize_orchestrator() -> LLMOrchestrator:
-    """Initialize the LLM Orchestrator."""
-    try:
-        orchestrator = LLMOrchestrator()
-        logger.info(f"✅ Orchestrator and wandb initialized: {orchestrator.cfg.experiment_name}")
-        return orchestrator
-    except Exception as e:
-        logger.error(f"❌ Failed to initialize Orchestrator: {e}")
-        raise
-
 
 def initialize_response_evaluator(log_dir: str) -> RespEvalRunner:
     """Initialize the response quality evaluator."""
@@ -78,6 +58,7 @@ def create_runner(log_dir: str, orchestrator: LLMOrchestrator) -> SAPGPTRunner:
         def __init__(self, log_dir):
             self.log_dir = log_dir
     
+    # TODO: Can this be replace by the default logger?
     runner_logger = FileLogger(
         f"runner_{datetime.now().strftime('%Y%m%d_%H%M%S')}", 
         os.path.join(log_dir, "cfb_runner.log"), 
@@ -86,7 +67,7 @@ def create_runner(log_dir: str, orchestrator: LLMOrchestrator) -> SAPGPTRunner:
     
     # This routes all benchmark LLM calls through orchestrator with memory processing
     runner = SAPGPTRunner(
-        model_name="gpt-5", 
+        model_name=orchestrator.active_model_key, 
         args=RunnerArgs(log_dir), 
         logger=runner_logger,
         orchestrator=orchestrator
@@ -406,9 +387,11 @@ def run_single_configuration(
     
     # Initialize weave evaluation logger for this configuration
     eval_logger = weave.EvaluationLogger(
-        name=f"{model}_{memory}",
+        name=f"{orchestrator.cfg.experiment_name}_{model}_{memory}",
         model=model,
-        dataset="ComplexFuncBench"
+        dataset="ComplexFuncBench",
+        eval_attributes={"memory_method": memory, "model": model},
+        scorers=["success", "turn_accuracy", "call_accuracy", "response_complete", "response_correct"],
     )
     
     # Process all cases
@@ -420,43 +403,36 @@ def run_single_configuration(
         logger.info(f"Processing case {i+1}/{len(dataset)}: {case_id}")
         
         try:
-            # Evaluate the case
-            with wandb.init(
-                project=orchestrator.cfg.experiment_name,
-                name=f"{model}_{memory}_{case_id}",
-                reinit=True
-            ) as run:
-                result = evaluate_single_case(
-                    case=case,
-                    orchestrator=orchestrator,
-                    resp_eval_runner=resp_eval_runner,
-                    log_dir=log_dir
-                )
-                run.log({"result": result})
+            result = evaluate_single_case(
+                case=case,
+                orchestrator=orchestrator,
+                resp_eval_runner=resp_eval_runner,
+                log_dir=log_dir
+            )
             
-                # Track success
-                if result['message'] == "Success.":
-                    success_count += 1
+            # Track success
+            if result['message'] == "Success.":
+                success_count += 1
+            
+            # Add metadata
+            result['memory_method'] = memory
+            results.append(result)
+            
+            # Log case prediction to wandb
+            wandb_data = format_result_for_wandb(result)
+            with eval_logger.log_prediction(
+                inputs={"case_id": case_id, "domain": wandb_data['domain']},
+                output={"status": wandb_data['status'], "message": wandb_data['message']}
+            ) as pred:
+                # Log scores for this prediction
+                pred.log_score("success", 1.0 if wandb_data['success'] else 0.0)
+                pred.log_score("turn_accuracy", wandb_data.get('turn_accuracy', 0.0))
+                pred.log_score("call_accuracy", wandb_data.get('call_accuracy', 0.0))
                 
-                # Add metadata
-                result['memory_method'] = memory
-                results.append(result)
-                
-                # Log case prediction to wandb
-                wandb_data = format_result_for_wandb(result)
-                with eval_logger.log_prediction(
-                    inputs={"case_id": case_id, "domain": wandb_data['domain']},
-                    output={"status": wandb_data['status'], "message": wandb_data['message']}
-                ) as pred:
-                    # Log scores for this prediction
-                    pred.log_score("success", 1.0 if wandb_data['success'] else 0.0)
-                    pred.log_score("turn_accuracy", wandb_data.get('turn_accuracy', 0.0))
-                    pred.log_score("call_accuracy", wandb_data.get('call_accuracy', 0.0))
-                    
-                    if wandb_data.get('response_complete_score') is not None:
-                        pred.log_score("response_complete", wandb_data['response_complete_score'])
-                    if wandb_data.get('response_correct_score') is not None:
-                        pred.log_score("response_correct", wandb_data['response_correct_score'])
+                if wandb_data.get('response_complete_score') is not None:
+                    pred.log_score("response_complete", wandb_data['response_complete_score'])
+                if wandb_data.get('response_correct_score') is not None:
+                    pred.log_score("response_correct", wandb_data['response_correct_score'])
             
         except Exception as e:
             logger.error(f"❌ Failed on case {case_id}: {e}")
@@ -466,10 +442,6 @@ def run_single_configuration(
     # Calculate aggregate metrics
     logger.info("🧮 Calculating aggregate metrics...")
     metrics = calculate_metrics(results)
-    
-    # Log high-level metrics
-    logger.info(f"📊 Overall Success Rate: {metrics.get('overall_success', 0):.1f}%")
-    logger.info(f"📊 Overall Call Accuracy: {metrics.get('overall_call_acc', 0):.1f}%")
     
     # Save results to disk
     save_results(results, metrics, model, memory, log_dir, run_timestamp)
@@ -506,12 +478,13 @@ def main():
     3. Iterates through all model/memory configurations
     4. Aggregates and reports final results
     """
+
     logger.info("=" * 80)
     logger.info("ComplexFuncBench Evaluation")
     logger.info("=" * 80)
     
     # Initialize orchestrator
-    orchestrator = initialize_orchestrator()
+    orchestrator = LLMOrchestrator()
     
     # Initialize wandb for the entire experiment
     weave.init(orchestrator.cfg.experiment_name)
@@ -537,7 +510,7 @@ def main():
             random.seed(42)
             dataset = random.sample(dataset, sample_size)
             logger.info(f"📊 Sampled {sample_size} cases from dataset")
-    
+            
     # Initialize response evaluator (shared across all configurations)
     run_timestamp = datetime.now().strftime('%Y%m%d_%H%M')
     temp_log_dir = os.path.join("results", orchestrator.cfg.experiment_name, run_timestamp, "temp")
@@ -547,17 +520,10 @@ def main():
     # Track all run statistics
     all_summaries = []
     
-    # Iterate over all configurations
-    total_configs = len(orchestrator.cfg.enabled_models) * len(orchestrator.cfg.enabled_memory_methods)
-    current_config = 0
-    
     for model in orchestrator.cfg.enabled_models:
         for memory in orchestrator.cfg.enabled_memory_methods:
-            current_config += 1
-            logger.info(f"\n{'=' * 80}")
-            logger.info(f"Configuration {current_config}/{total_configs}: {model}/{memory}")
-            logger.info(f"{'=' * 80}\n")
-            
+
+            # Run one of the cross product results memory - model            
             summary = run_single_configuration(
                 orchestrator=orchestrator,
                 dataset=dataset,
@@ -582,8 +548,6 @@ def main():
             f"({summary['pass_rate']:.1f}%) - "
             f"Overall Success: {summary.get('overall_success', 0):.1f}%"
         )
-    
-    logger.info("=" * 80)
 
 
 if __name__ == "__main__":
