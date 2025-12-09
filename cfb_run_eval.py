@@ -468,7 +468,7 @@ def run_single_configuration(
 # MAIN ORCHESTRATION
 # ============================================================================
 
-def main():
+def main(experiment_name=None):
     """
     Main orchestration function for ComplexFuncBench evaluation.
     
@@ -487,7 +487,10 @@ def main():
     orchestrator = LLMOrchestrator()
     
     # Initialize wandb for the entire experiment
-    weave.init(orchestrator.cfg.experiment_name)
+    if experiment_name:
+        weave.init(experiment_name)
+    else:
+        weave.init(orchestrator.cfg.experiment_name)
     logger.info(f"📊 Weave initialized: {orchestrator.cfg.experiment_name}")
     
     # Load dataset

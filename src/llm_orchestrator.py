@@ -1,7 +1,7 @@
 from typing import List, Dict, Optional, Any, Union, Iterable
 import weave
 from openai import OpenAI
-from openai.types.chat import ChatCompletionMessageParam
+from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam
 from openai.types.chat import ChatCompletion
 from src.utils.config import load_configs, ExperimentConfig, ModelDef
 from src.memory_processing import MemoryProcessor
@@ -142,12 +142,44 @@ class LLMOrchestrator:
         self.active_memory_key = memory_key
         
         logger.info("🔄 Context Switched")
+
+    def get_model_kwargs_from_config(self) -> Dict[str, Any]:
+        """
+        Retrieve model-specific kwargs from configuration.
+        
+        Returns:
+            Dictionary of model parameters (e.g., temperature) from extra fields
+        """
+        model_def = self.cfg.model_registry.get(self.active_model_key)
+        if not model_def:
+            raise ValueError(f"Model '{self.active_model_key}' not found in registry.")
+        
+        # Get all fields from the model
+        all_fields = model_def.model_dump()
+        
+        # Define the base/required fields that should not be passed as kwargs
+        base_fields = {
+            "litellm_name", 
+            "context_window", 
+            "provider", 
+            "api_base", 
+            "api_key"
+        }
+        
+        # Extract only the extra fields (kwargs)
+        model_kwargs = {
+            key: value 
+            for key, value in all_fields.items() 
+            if key not in base_fields and value is not None
+        }
+        
+        return model_kwargs
     
     @weave.op()
     def generate_with_memory_applied(
         self,
         input_messages: List[Dict[str, str]],
-        tools: Optional[List[Dict]] = None,
+        tools: Optional[List[ChatCompletionToolParam]] = None,
         tool_choice: Optional[str] = "auto",
         **kwargs,
     ) -> Union[ChatCompletion, Any]:
@@ -198,12 +230,20 @@ class LLMOrchestrator:
         kwargs.pop("model", None)
         
         try:
-            response = self.client.chat.completions.create(
-                model=self.active_model_key,
-                messages=messages,
-                tools=tools,
-                tool_choice=tool_choice,
-            )
+            # Build request parameters
+            request_params = {
+                "model": self.active_model_key,
+                "messages": messages,
+                **self.get_model_kwargs_from_config(),
+            }
+            
+            # Only add tools and tool_choice if provided
+            if tools is not None:
+                request_params["tools"] = tools
+            if tool_choice is not None:
+                request_params["tool_choice"] = tool_choice
+            
+            response = self.client.chat.completions.create(**request_params)
             
             # Post-call metrics
             response_message = response.choices[0].message
@@ -250,12 +290,15 @@ class LLMOrchestrator:
             if "tools" in kwargs:
                 tools = kwargs.get("tools", None)
                 tool_choice = kwargs.get("tool_choice", None)
-                response = self.client.chat.completions.create(
-                    model="gpt-5",
-                    messages=input_messages,
-                    tools=tools,
-                    tool_choice=tool_choice,
-                )
+                create_kwargs = {
+                    "model": "gpt-5",
+                    "messages": input_messages,
+                }
+                if tools is not None:
+                    create_kwargs["tools"] = tools
+                if tool_choice is not None:
+                    create_kwargs["tool_choice"] = tool_choice
+                response = self.client.chat.completions.create(**create_kwargs)
             else:
                 response = self.client.chat.completions.create(
                     model="gpt-5",
