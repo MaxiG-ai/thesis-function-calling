@@ -4,6 +4,8 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel, Field, ValidationError
 
 class ModelDef(BaseModel):
+    model_config = {"extra": "allow"}
+    
     litellm_name: str
     context_window: int
     provider: str
