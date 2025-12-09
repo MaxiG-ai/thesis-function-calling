@@ -120,7 +120,9 @@ class MemoryProcessor:
         if len(messages) <= 3:
             return messages
 
-        system_msg = [m for m in messages if m["role"] == "system"]
+        # get the user messages and system messages
+        system_msgs = [m for m in messages if m["role"] == "system"]
+        user_msgs = [m for m in messages if m["role"] == "user"]
         
         # Start with last 4 messages, but expand to include complete tool call sequences
         recent_count = 4
@@ -136,11 +138,10 @@ class MemoryProcessor:
                     # Keep going back to find the assistant with tool_calls
                     recent_start_idx -= 1
         
-        recent_history = messages[recent_start_idx:]
+        recent_history = system_msgs + user_msgs + messages[recent_start_idx:]
         
         # Validate and repair any remaining issues
-        result = system_msg + recent_history
-        # result = self._validate_and_repair_tool_pairs(result, messages)
+        result = recent_history
 
         logger.info(
             f"✂️  Truncated context from {len(messages)} to {len(result)} msgs"
