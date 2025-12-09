@@ -20,6 +20,7 @@ class SAPGPTModel:
         prediction = self._predict(prefix, filled_prompt, **kwargs)
         return prediction
     
+    @weave.op()
     @retry(max_attempts=10)
     def _predict(self, prefix, text, **kwargs):
         try:
@@ -60,6 +61,9 @@ class FunctionCallSAPGPT(SAPGPTModel):
     @weave.op()
     @retry(max_attempts=5, delay=10)
     def __call__(self, messages, tools=None, **kwargs: Any):
+        # The runner manages self.messages directly by appending assistant/tool messages
+        # We should NOT overwrite it here - just use what the runner has built up
+        # Only initialize on first call (when self.messages is empty)
         if "function_call" not in json.dumps(messages, ensure_ascii=False):
             self.messages = copy.deepcopy(messages)
         
@@ -67,7 +71,7 @@ class FunctionCallSAPGPT(SAPGPTModel):
             # Route through orchestrator if available (applies memory processing)
             if self.orchestrator is not None:
                 response = self.orchestrator.generate(
-                    messages=self.messages,
+                    input_messages=self.messages,
                     tools=tools,
                     tool_choice=kwargs.get("tool_choice", "auto"),
                     max_tokens=kwargs.get("max_tokens", 2048)

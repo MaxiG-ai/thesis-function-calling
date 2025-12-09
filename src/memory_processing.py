@@ -1,4 +1,3 @@
-import wandb
 import weave
 from typing import List, Dict, Optional
 from src.utils.config import ExperimentConfig
@@ -36,7 +35,6 @@ class MemoryProcessor:
         The core thesis function.
         Transforms Input Messages -> Optimized Messages based on active strategy.
         """
-        original_count = sum(len((m.get("content") or "")) for m in messages)
         # 1. Get the active strategy settings
         if strategy_key not in self.config.memory_strategies:
             logger.warning(f"Strategy {strategy_key} not found. returning raw context.")
@@ -54,16 +52,6 @@ class MemoryProcessor:
             logger.error(f"Unknown memory strategy type: {settings.type}. Returning original messages.")
             processed_messages = self._apply_no_strategy(messages)
 
-        final_count = sum(len((m.get("content") or "")) for m in processed_messages)
-        reduction_ratio = 1 - (final_count / original_count) if original_count > 0 else 0
-        
-        wandb.log({
-            "memory/strategy": strategy_key,
-            "memory/original_chars": original_count,
-            "memory/final_chars": final_count,
-            "memory/reduction_ratio": reduction_ratio
-        })
-
         return processed_messages
     
     def _apply_no_strategy(self, messages: List[Dict]) -> List[Dict]:
@@ -73,6 +61,7 @@ class MemoryProcessor:
         logger.info("🧠 No memory strategy applied; returning original messages.")
         return messages
 
+    # TODO: This function is currently not used, but kept for future reference if needed. However it would be better to just design memory techniques so that they follow the tool loop correctly.
     def _validate_and_repair_tool_pairs(self, processed_messages: List[Dict], original_messages: List[Dict]) -> List[Dict]:
         """
         Ensures that tool messages always have their corresponding assistant message with tool_calls.
@@ -112,14 +101,14 @@ class MemoryProcessor:
                             'tool_calls' in orig_msg):
                             # Check if this assistant message has the matching tool_call_id
                             for tc in orig_msg.get('tool_calls', []):
-                                if tc.get('id') == tool_call_id:
+                                if tc.id == tool_call_id: #change from tc.get('id') to tc.id
                                     assistant_msg = orig_msg
                                     break
                             if assistant_msg:
                                 break
                     
                     if assistant_msg:
-                        logger.debug(f"🔧 Injecting missing assistant message before tool response")
+                        logger.debug("🔧 Injecting missing assistant message before tool response")
                         validated.append(assistant_msg)
                     else:
                         logger.warning(f"⚠️ Could not find assistant message for tool call {tool_call_id}, skipping tool message")
@@ -134,6 +123,7 @@ class MemoryProcessor:
         
         return validated
 
+    @weave.op()
     def _apply_truncation(self, messages: List[Dict], max_tokens: int) -> List[Dict]:
         """
         Naive Baseline: Keeps only the system prompt + last N messages.
@@ -162,13 +152,14 @@ class MemoryProcessor:
         
         # Validate and repair any remaining issues
         result = system_msg + recent_history
-        result = self._validate_and_repair_tool_pairs(result, messages)
+        # result = self._validate_and_repair_tool_pairs(result, messages)
 
         logger.info(
             f"✂️  Truncated context from {len(messages)} to {len(result)} msgs"
         )
         return result
 
+    @weave.op()
     def _apply_memory_bank(self, messages: List[Dict], settings) -> List[Dict]:
         """
         Implements Memory Bank Retrieval logic.
@@ -237,7 +228,7 @@ class MemoryProcessor:
 
         # Validate and repair any remaining issues
         result = system_msgs + memory_msg + recent_msgs
-        result = self._validate_and_repair_tool_pairs(result, messages)
+        # result = self._validate_and_repair_tool_pairs(result, messages)
 
         logger.debug(
             f"""🧠 Memory Bank Context:
