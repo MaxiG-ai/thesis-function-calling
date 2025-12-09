@@ -1,10 +1,8 @@
 from typing import List, Dict, Optional, Any, Union
-import time
 import weave
-import wandb
 from openai import OpenAI
 from openai.types.chat import ChatCompletion
-from src.utils.config import load_configs, ExperimentConfig, ModelDef, MemoryDef
+from src.utils.config import load_configs, ExperimentConfig, ModelDef
 from src.memory_processing import MemoryProcessor
 from src.utils.logger import get_logger
 
@@ -113,11 +111,7 @@ class LLMOrchestrator:
         # 4. Create OpenAI client
         self.client = ClientFactory.create_client()
         
-        # 5. Set initial model for memory processor
-        self.memory_processor.set_current_model(self.active_model_key)
-        
         logger.info(f"🚀 Orchestrator initialized for: {self.cfg.experiment_name}")
-        self._log_active_state()
     
     def reset_session(self):
         """
@@ -146,30 +140,7 @@ class LLMOrchestrator:
         self.active_model_key = model_key
         self.active_memory_key = memory_key
         
-        # Notify memory processor of the active model for context window calculations
-        self.memory_processor.set_current_model(model_key)
-        
         logger.info("🔄 Context Switched")
-        self._log_active_state()
-    
-    def _get_active_model_def(self) -> ModelDef:
-        """Get model definition for currently active model."""
-        return self.cfg.model_registry[self.active_model_key]
-    
-    def get_active_memory_config(self) -> MemoryDef:
-        """
-        Get memory configuration for currently active strategy.
-        Used by middleware to understand how to compress context.
-        """
-        return self.cfg.memory_strategies[self.active_memory_key]
-    
-    def _log_active_state(self):
-        """Log current active configuration."""
-        m = self._get_active_model_def()
-        logger.info(
-            f"👉 Active: [Model: {self.active_model_key}] [Memory: {self.active_memory_key}]"
-        )
-        logger.info(f"   Target: {m.litellm_name}")
     
     @weave.op()
     def generate(
@@ -201,20 +172,8 @@ class LLMOrchestrator:
         Raises:
             Exception: Any errors from OpenAI API (logged to wandb)
         """
-        model_def = self._get_active_model_def()
-        
         # Pre-processing metrics
         input_char_count = sum(len(str(m.get("content", ""))) for m in input_messages)
-        
-        wandb.log({
-            "llm/call_timestamp": time.time(),
-            "llm/model": self.active_model_key,
-            "llm/memory_strategy": self.active_memory_key,
-            "llm/input_messages": len(input_messages),
-            "llm/input_chars": input_char_count,
-            "llm/has_tools": tools is not None,
-            "llm/tool_count": len(tools) if tools else 0,
-        })
         
         logger.debug(
             f"🔄 Processing {len(input_messages)} messages "
@@ -229,12 +188,6 @@ class LLMOrchestrator:
         processed_char_count = sum(len(str(m.get("content", ""))) for m in messages)
         compression_ratio = processed_char_count / input_char_count if input_char_count > 0 else 1.0
         
-        wandb.log({
-            "llm/processed_messages": len(messages),
-            "llm/processed_chars": processed_char_count,
-            "llm/compression_ratio": compression_ratio,
-        })
-        
         logger.debug(
             f"📊 Memory processed: {len(messages)} messages "
             f"({processed_char_count} chars, {compression_ratio:.2%} of original)"
@@ -242,9 +195,6 @@ class LLMOrchestrator:
         
         # Sanitize kwargs (remove model if passed by benchmark)
         kwargs.pop("model", None)
-        
-        # Execute with timing
-        start_time = time.time()
         
         try:
             response = self.client.chat.completions.create(
@@ -254,22 +204,12 @@ class LLMOrchestrator:
                 tool_choice=tool_choice,
             )
             
-            duration = time.time() - start_time
-            
             # Post-call metrics
             message = response.choices[0].message
             tool_call_count = len(message.tool_calls) if message.tool_calls else 0
             
-            wandb.log({
-                "llm/duration_seconds": duration,
-                "llm/finish_reason": response.choices[0].finish_reason,
-                "llm/has_tool_calls": message.tool_calls is not None,
-                "llm/tool_call_count": tool_call_count,
-                "llm/has_content": message.content is not None,
-            })
-            
             logger.debug(
-                f"✅ LLM call completed in {duration:.2f}s "
+                "✅ LLM call completed."
                 f"(finish: {response.choices[0].finish_reason}, "
                 f"tool_calls: {tool_call_count})"
             )
@@ -277,13 +217,5 @@ class LLMOrchestrator:
             return response
             
         except Exception as e:
-            duration = time.time() - start_time
-            logger.error(f"💥 Generation Failed after {duration:.2f}s: {str(e)}")
-            
-            wandb.log({
-                "llm/error": str(e),
-                "llm/error_type": type(e).__name__,
-                "llm/duration_seconds": duration,
-            })
-            
+            logger.error(f"💥 Generation Failed: {str(e)}")
             raise e

@@ -12,15 +12,6 @@ class MemoryProcessor:
         self.config = config
         self.active_bank: Optional[MemoryBank] = None
         self.processed_message_ids: set = set()
-        self.current_model_key: Optional[str] = None
-
-    def set_current_model(self, model_key: str):
-        """
-        Set the active model for context window calculations.
-        Called by orchestrator before applying strategies.
-        """
-        self.current_model_key = model_key
-        logger.debug(f"Set current model to: {model_key}")
 
     def reset_state(self):
         "Called by Orchestrator to reset memory between runs."
@@ -61,7 +52,8 @@ class MemoryProcessor:
         logger.info("🧠 No memory strategy applied; returning original messages.")
         return messages
 
-    # TODO: This function is currently not used, but kept for future reference if needed. However it would be better to just design memory techniques so that they follow the tool loop correctly.
+    # TODO: This function is currently not used, but kept for future reference if needed. 
+    # It would be better to just design memory techniques so that they follow the tool loop correctly.
     def _validate_and_repair_tool_pairs(self, processed_messages: List[Dict], original_messages: List[Dict]) -> List[Dict]:
         """
         Ensures that tool messages always have their corresponding assistant message with tool_calls.
@@ -129,13 +121,13 @@ class MemoryProcessor:
         Naive Baseline: Keeps only the system prompt + last N messages.
         Ensures assistant+tool message pairs are kept together.
         """
-        if len(messages) <= 2:
+        if len(messages) <= 3:
             return messages
 
         system_msg = [m for m in messages if m["role"] == "system"]
         
-        # Start with last 3 messages, but expand to include complete tool call sequences
-        recent_count = 3
+        # Start with last 4 messages, but expand to include complete tool call sequences
+        recent_count = 4
         recent_start_idx = max(0, len(messages) - recent_count)
         
         # Check if we're cutting off in the middle of a tool call sequence
