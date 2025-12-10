@@ -1,26 +1,31 @@
+import os
 import json
 import gc
 import torch
+import weave
 from FlagEmbedding import FlagModel
 from scipy.optimize import linear_sum_assignment
 
 from benchmarks.complex_func_bench.utils.utils import load_json, decode_json
-
 from benchmarks.complex_func_bench.utils.rapidapi import RapidAPICall
-from models.gpt import GPTModel
-from prompts.compare import system_prompt, user_prompt
+from benchmarks.complex_func_bench.models.sap_gpt import SAPGPTModel
+from benchmarks.complex_func_bench.prompts.compare import system_prompt, user_prompt
+
+from src.llm_orchestrator import LLMOrchestrator
+
+os.environ['TRANSFORMERS_NO_ADVISORY_WARNINGS'] = 'true'
 
 class CompareFCBase:
     def __init__(self, args, logger) -> None:
         self.embedding = FlagModel('BAAI/bge-large-en-v1.5', 
                         query_instruction_for_retrieval="Represent this sentence for searching relevant passages:",
-                        use_fp16=False)
+                        use_fp16=True)
 
         with open("benchmarks/complex_func_bench/utils/tool_info.json", 'r') as f:
             tool_info = json.load(f)
         tool_info = tool_info['booking-com15']
         self.api_call = RapidAPICall(tool="booking-com15", tool_info=tool_info)
-        self.model = GPTModel("gpt-5-mini")
+        self.model = SAPGPTModel(LLMOrchestrator())
         self.logger = logger
         self.error_message = []
         self.exact_match_dict = load_json("benchmarks/complex_func_bench/utils/exact_match_values.json")
@@ -78,6 +83,7 @@ class CompareFCBase:
                             "obs": convs[i+1]['content'][j]
                         }
 
+    @weave.op()
     def rule_based(self, predict, golden):
         """
         Rule-based Match.
@@ -97,6 +103,7 @@ class CompareFCBase:
         
         return True
 
+    @weave.op()
     def response_based(self, predict, golden):
         try:
             resp_1 = self.api_call._call(predict)
@@ -109,13 +116,15 @@ class CompareFCBase:
             else:
                 self.error_response = resp_1
             resp_2 = self.api_call._call(golden)
-        except Exception:
+        except Exception as e:
+            self.logger.error(f"API call exception: {e}")
             return False
         if resp_1 is None or resp_2 is None:
             return False
         
         return resp_1 == resp_2
 
+    @weave.op()
     def similarity_based(self, predict, golden):
         embedding_1 = self.embedding.encode([json.dumps(predict, ensure_ascii=False)])
         embedding_2 = self.embedding.encode([json.dumps(golden, ensure_ascii=False)])
@@ -126,6 +135,7 @@ class CompareFCBase:
         self.logger.debug(f"Similarity-based comparison output: {similarity[0][0]}")
         return similarity[0][0] > 0.98
 
+    @weave.op()
     def llm_based(self, functions, history, predict, golden):
         kwargs = {
             "functions": json.dumps(functions, ensure_ascii=False),
@@ -190,6 +200,7 @@ class CompareFC(CompareFCBase):
             if k not in golden_call['arguments']:
                 return {'error_type': "param_hallucination", "content": f"Parameter {k} is hallucinated."}
             
+    @weave.op()
     def mapping_call(self, predict, golden, golden_obs):
         def sort_arguments(call_list):
             for value in call_list:
@@ -267,6 +278,7 @@ class CompareFC(CompareFCBase):
 
         return matching
 
+    @weave.op()
     def compare_single_call(self, functions, history, pred_call, golden_call):
         self.logger.info(f"Start compare_single_call: \n{pred_call}\n{golden_call}")
         # rule-based
@@ -292,6 +304,7 @@ class CompareFC(CompareFCBase):
         self.logger.info("All compare method failed.")
         return False, None
 
+    @weave.op()
     def compare_turn_prediction(self, functions, history, predict, golden, golden_obs):
         self.error_message = []
         golden, golden_obs = self.remove_called_fc(golden, golden_obs)

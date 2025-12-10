@@ -2,6 +2,7 @@ import json
 import requests
 import copy
 import os
+import weave
 from benchmarks.complex_func_bench.utils.utils import retry
 
 
@@ -16,6 +17,7 @@ class RapidAPICall():
         self.path_params = tool_info['path_params']
         self.tool = tool
         
+    @weave.op()
     @retry(max_attempts=3)
     def _call(self, func_call):
         self.url = self.name_to_url[func_call["name"]]
@@ -32,7 +34,8 @@ class RapidAPICall():
                 params_copy[k] = json.dumps(value, ensure_ascii=False)
         try:
             response = requests.get(self.url, headers=self.headers, params=params_copy)
-        except:
+        except Exception as e:
+            print(f"Request failed: {e}")
             return None
 
         if response.status_code == 200:
@@ -94,4 +97,3 @@ if __name__ == "__main__":
             }
     response = api_call._call(func_call)
     print(response)
-    

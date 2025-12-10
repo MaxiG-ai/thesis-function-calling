@@ -4,6 +4,8 @@ from typing import Dict, List, Optional
 from pydantic import BaseModel, Field, ValidationError
 
 class ModelDef(BaseModel):
+    model_config = {"extra": "allow"}
+    
     litellm_name: str
     context_window: int
     provider: str
@@ -25,7 +27,11 @@ class MemoryDef(BaseModel):
 class ExperimentConfig(BaseModel):
     experiment_name: str
     results_dir: str
+    log_dir: str
     logging_level: str
+    debug: bool = False
+    input_file: str
+    proc_num: int = 1
     benchmark_sample_size: Optional[int]=None
     enabled_models: List[str]
     enabled_memory_methods: List[str]
@@ -61,7 +67,7 @@ def load_configs(
         config = ExperimentConfig(**exp_data)
         
         # Set global logging level from config
-        from .utils.logger import set_global_log_level
+        from .logger import set_global_log_level
         set_global_log_level(config.logging_level)
         
         return config

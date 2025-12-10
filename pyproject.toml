@@ -20,5 +20,7 @@ dependencies = [
     "tiktoken>=0.5.0",
     "torch>=2.9.1",
     "transformers>=4.57.1",
+    "wandb>=0.23.1",
+    "weave>=0.52.22",
     "zhipuai>=2.1.5.20250825",
 ]

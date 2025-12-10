@@ -35,7 +35,8 @@ def get_logger(name: str, level: Optional[str] = None) -> logging.Logger:
         
         # Set level
         if level:
-            logger.setLevel(getattr(logging, level.upper()))
+            log_level = level if isinstance(level, int) else getattr(logging, level.upper())
+            logger.setLevel(log_level)
         else:
             logger.setLevel(logging.INFO)
         
