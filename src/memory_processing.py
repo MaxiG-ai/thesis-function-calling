@@ -1,3 +1,4 @@
+import json
 import weave
 import tiktoken
 from typing import List, Dict, Optional
@@ -10,8 +11,81 @@ logger = get_logger("MemoryProcessor")
 def get_token_count(messages: list[dict], model: str) -> int:
     """Utility to count tokens."""
     enc = tiktoken.encoding_for_model(model)
-    text = "".join(str(m) for m in messages) # Simplified for demo
-    return len(enc.encode(text))
+    count = 0
+    for m in messages:
+        # Reducing the memory usage on large strings:
+        # Only tokenize the actual content, ignoring overhead
+        content = m.get("content") or "" 
+        if isinstance(content, str):
+            count += len(enc.encode(content))
+    return count
+
+# Prevent infitnite loops in data
+def detect_tail_loop(messages: list[dict], threshold: int = 4, max_pattern_len: int = 10) -> bool:
+    """
+    Detects if the end of the conversation consists of a repeating pattern.
+    
+    Args:
+        messages: The history of messages.
+        threshold: How many times the pattern must repeat to trigger detection (default 3).
+        max_pattern_len: The maximum length of the repeating sub-sequence to check. 
+                         (e.g., 10 means we check for loops of size 1 to 10).
+    
+    Returns:
+        True if a loop is detected, False otherwise.
+    """
+    n = len(messages)
+    # Optimization: Don't check if history is too short to contain a loop
+    if n < threshold:
+        return False
+
+    # 1. Normalize messages for comparison
+    # We must exclude fields that change every turn even in a loop (like tool_call_id)
+    normalized = []
+    for m in messages[-(max_pattern_len * threshold):]: # Only look at the relevant tail
+        # Create a signature tuple: (Role, Content, Sorted Tool Calls)
+        tool_sig = None
+        if "tool_calls" in m:
+            # We ignore 'id' because retry loops often generate new random IDs for the same action
+            tool_sig = sorted([
+                (tc.type, tc.function.name, tc.function.arguments) 
+                for tc in m["tool_calls"]
+            ])
+            # If objects, convert to tuple for hashing
+            tool_sig = tuple(tool_sig)
+            
+        normalized.append((m.get("role"), m.get("content"), tool_sig))
+
+    # Re-calculate length based on the slice we actually took
+    n_slice = len(normalized)
+
+    # 2. Check for patterns of length L
+    # We iterate L from 1 (repeating single message) up to max_pattern_len
+    for L in range(1, max_pattern_len + 1):
+        # We need at least L * threshold messages to verify this pattern
+        if n_slice < L * threshold:
+            break
+            
+        # The "candidate" pattern is the very last L messages
+        pattern = normalized[-L:]
+        
+        # Check if this pattern appears 'threshold' times backwards
+        is_loop = True
+        for k in range(1, threshold):
+            # Compare the block before the current one
+            # e.g., if L=2, threshold=3:
+            # Check [-2:] vs [-4:-2]
+            # Check [-2:] vs [-6:-4]
+            prev_block = normalized[-(k + 1) * L : -k * L]
+            
+            if prev_block != pattern:
+                is_loop = False
+                break
+        
+        if is_loop:
+            return True
+
+    return False
 
 class MemoryProcessor:
     def __init__(self, config: ExperimentConfig):
@@ -35,6 +109,14 @@ class MemoryProcessor:
 
         settings = self.config.memory_strategies[strategy_key]
         logger.info(f"🧠 Applying Memory Strategy: {settings.type}")
+
+        # 1. LOOP GUARD: Check before processing
+        # Only check if history is getting long enough to matter
+        if len(messages) > 20: 
+            if detect_tail_loop(messages, threshold=4, max_pattern_len=5):
+                logger.error(f"🚨 Infinite loop detected in last {len(messages)} messages. Aborting.")
+                # Returning fake messages to stop benchmark
+                return [{"role": "system", "content": "Infinite loop detected; aborting."}]
 
         model="gpt-4-1-mini"
         limit = 128000
