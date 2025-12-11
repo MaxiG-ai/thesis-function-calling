@@ -151,13 +151,6 @@ class MemoryProcessor:
             })
 
         return processed_messages
-    
-    def _apply_no_strategy(self, messages: List[Dict]) -> List[Dict]:
-        """
-        No memory processing; return messages as-is.
-        """
-        logger.info("🧠 No memory strategy applied; returning original messages.")
-        return messages
 
     # TODO: This function is currently not used, but kept for future reference if needed. 
     # It would be better to just design memory techniques so that they follow the tool loop correctly.
@@ -221,8 +214,14 @@ class MemoryProcessor:
             i += 1
         
         return validated
+    
+    def _apply_no_strategy(self, messages: List[Dict]) -> List[Dict]:
+        """
+        No memory processing; return messages as-is.
+        """
+        logger.info("🧠 No memory strategy applied; returning original messages.")
+        return messages
 
-    @weave.op()
     def _apply_truncation(self, messages: List[Dict], max_tokens: int) -> List[Dict]:
         """
         Naive Baseline: Keeps only the system prompt + last N messages.
@@ -259,7 +258,6 @@ class MemoryProcessor:
         )
         return result
 
-    @weave.op()
     def _apply_memory_bank(self, messages: List[Dict], settings) -> List[Dict]:
         """
         Implements Memory Bank Retrieval logic.
