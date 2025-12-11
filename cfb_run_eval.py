@@ -149,15 +149,40 @@ def format_result_for_wandb(result: Dict) -> Dict:
     return wandb_result
 
 
+def scrub_eval_args(inputs: Dict) -> Dict:
+    """
+    Filter out technical objects and redundant data from Weave logs.
+    Used in postprocess_inputs for evaluate_single_case.
+    """
+    scrubbed = inputs.copy()
+    
+    # Remove technical objects that clutter logs
+    keys_to_remove = ["orchestrator", "resp_eval_runner", "log_dir"]
+    for key in keys_to_remove:
+        if key in scrubbed:
+            del scrubbed[key]
+            
+    # Simplify the 'case' object to avoid logging full conversation history at the root level
+    if "case" in scrubbed and isinstance(scrubbed["case"], dict):
+        # Only keep the ID and domain, remove the heavy 'conversations' list
+        # This forces you to look at the child 'generate' trace for the actual messages
+        scrubbed["case"] = {
+            "id": scrubbed["case"].get("id"),
+            "domain": scrubbed["case"].get("id", "").split("-")[0]
+        }
+        
+    return scrubbed
+
 # ============================================================================
 # CORE EVALUATION FUNCTIONS
 # ============================================================================
-@weave.op
+@weave.op(
+        postprocess_inputs=scrub_eval_args
+)
 def evaluate_single_case(
     case: Dict,
     orchestrator: LLMOrchestrator,
     resp_eval_runner: RespEvalRunner,
-    log_dir: str
 ) -> Dict:
     """
     Evaluate a single test case.
@@ -387,10 +412,10 @@ def run_single_configuration(
     
     # Initialize weave evaluation logger for this configuration
     eval_logger = weave.EvaluationLogger(
-        name=f"{orchestrator.cfg.experiment_name}_{model}_{memory}",
+        name=f"{model}_{memory}",
         model=model,
         dataset="ComplexFuncBench",
-        eval_attributes={"memory_method": memory, "model": model},
+        eval_attributes={"memory_method": memory},
         scorers=["success", "turn_accuracy", "call_accuracy", "response_complete", "response_correct"],
     )
     
@@ -403,12 +428,14 @@ def run_single_configuration(
         logger.info(f"Processing case {i+1}/{len(dataset)}: {case_id}")
         
         try:
-            result = evaluate_single_case(
-                case=case,
-                orchestrator=orchestrator,
-                resp_eval_runner=resp_eval_runner,
-                log_dir=log_dir
-            )
+
+            with weave.attributes({"case_id": case_id, "memory_method": memory, "model": model}):
+                result = evaluate_single_case(
+                    case=case,
+                    orchestrator=orchestrator,
+                    resp_eval_runner=resp_eval_runner,
+                    log_dir=log_dir
+                )
             
             # Track success
             if result['message'] == "Success.":
