@@ -6,6 +6,7 @@ import copy
 import random
 import logging
 import weave
+import tomllib
 from datetime import datetime
 from typing import Dict, List, Optional
 from collections import defaultdict
@@ -402,20 +403,12 @@ def run_single_configuration(
         logger.error(f"❌ Failed to switch context: {e}")
         return None
     
-    # Setup directories
-    log_dir = setup_directories(
-        orchestrator.cfg.experiment_name,
-        run_timestamp,
-        model,
-        memory
-    )
-    
     # Initialize weave evaluation logger for this configuration
     eval_logger = weave.EvaluationLogger(
         name=f"{model}_{memory}",
         model=model,
         dataset="ComplexFuncBench",
-        eval_attributes={"memory_method": memory},
+        eval_attributes={"memory_method": memory, "config": orchestrator.cfg},
         scorers=["success", "turn_accuracy", "call_accuracy", "response_complete", "response_correct"],
     )
     
@@ -429,12 +422,11 @@ def run_single_configuration(
         
         try:
 
-            with weave.attributes({"case_id": case_id, "memory_method": memory, "model": model}):
+            with weave.attributes({"name": f"eval_case_{case_id}", "case_id": case_id, "memory_method": memory, "model": model}):
                 result = evaluate_single_case(
                     case=case,
                     orchestrator=orchestrator,
                     resp_eval_runner=resp_eval_runner,
-                    log_dir=log_dir
                 )
             
             # Track success
@@ -469,6 +461,14 @@ def run_single_configuration(
     # Calculate aggregate metrics
     logger.info("🧮 Calculating aggregate metrics...")
     metrics = calculate_metrics(results)
+
+    # Setup directories
+    log_dir = setup_directories(
+        orchestrator.cfg.experiment_name,
+        run_timestamp,
+        model,
+        memory
+    )
     
     # Save results to disk
     save_results(results, metrics, model, memory, log_dir, run_timestamp)
@@ -581,4 +581,9 @@ def main(experiment_name=None):
 
 
 if __name__ == "__main__":
-    main()
+    # import experiment name from toml config if available
+    experiment_name = tomllib.load(open("config.toml", "rb")).get("experiment_name")
+    if experiment_name:
+        main(experiment_name=experiment_name)
+    else:
+        main(experiment_name="No_Experiment_Name")

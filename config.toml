@@ -7,13 +7,13 @@ log_dir = "results/logs"
 logging_level = "INFO"
 debug = false
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
-benchmark_sample_size = 50
+benchmark_sample_size = 3
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [
-    "gpt-5",
-    "gpt-4-1",
-    "gpt-4-1-mini", 
+    # "gpt-5",
+    # "gpt-4-1",
+    # "gpt-4-1-mini", 
     "gpt-5-mini",
 ]
 
@@ -21,7 +21,7 @@ enabled_models = [
 enabled_memory_methods = [
     "no_strategy",
     "truncation",
-    "memory_bank",
+    # "memory_bank",
 ]
 
 # --- Memory Strategy Definitions ---
