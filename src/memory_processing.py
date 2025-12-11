@@ -130,8 +130,8 @@ class MemoryProcessor:
         elif settings.type == "memory_bank":
             processed_messages = self._apply_memory_bank(messages, settings)
         else:
-            logger.error(f"Unknown memory strategy type: {settings.type}. Returning original messages.")
-            processed_messages = self._apply_no_strategy(messages)
+            logger.info(f"🧠 Unknown memory strategy type: {settings.type}. No memory strategy applied; returning original messages.")
+            return messages
 
         post_count = get_token_count(processed_messages, model=model)
         post_fill_pct = (post_count / limit) * 100
@@ -215,12 +215,6 @@ class MemoryProcessor:
         
         return validated
     
-    def _apply_no_strategy(self, messages: List[Dict]) -> List[Dict]:
-        """
-        No memory processing; return messages as-is.
-        """
-        logger.info("🧠 No memory strategy applied; returning original messages.")
-        return messages
 
     def _apply_truncation(self, messages: List[Dict], max_tokens: int) -> List[Dict]:
         """

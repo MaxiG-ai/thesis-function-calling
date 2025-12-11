@@ -200,6 +200,7 @@ def evaluate_single_case(
     """
     case_id = case.get('id', 'unknown')
     
+    
     # Create runner for this case with orchestrator injection
     runner = create_runner(log_dir=orchestrator.cfg.results_dir, orchestrator=orchestrator)
     
@@ -422,7 +423,7 @@ def run_single_configuration(
         
         try:
 
-            with weave.attributes({"name": f"eval_case_{case_id}", "case_id": case_id, "memory_method": memory, "model": model}):
+            with weave.attributes({"case_id": case_id, "memory_method": memory, "model": model}):
                 result = evaluate_single_case(
                     case=case,
                     orchestrator=orchestrator,
