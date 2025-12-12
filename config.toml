@@ -7,20 +7,22 @@ log_dir = "results/logs"
 logging_level = "INFO"
 debug = false
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
-benchmark_sample_size = 3
+# benchmark_sample_size = None
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [
     # "gpt-5",
     # "gpt-4-1",
     # "gpt-4-1-mini", 
-    "gpt-5-mini",
+    # "gpt-5-mini",
+    "glm-4-9b",
+    # "llama-31-7b",
 ]
 
 # 2. Define Memory Architectures to test
 enabled_memory_methods = [
     "no_strategy",
-    "truncation",
+    # "truncation",
     # "memory_bank",
 ]
 
