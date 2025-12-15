@@ -30,7 +30,7 @@
 
 ## Logging Style
 
-- ``src/utils/logger.py`` implements a logging module which is used for all logging. 
+- `src/utils/logger.py` implements a logging module which is used for all logging. 
 - The levels are set in `config.toml`.
 
 ## Your Developer Agent Behaviour
