@@ -197,6 +197,7 @@ class LLMOrchestrator:
             input_messages: Conversation messages (will be processed by memory strategy)
             tools: Available function definitions
             tool_choice: Tool selection strategy ("auto", "required", "none")
+            model: Optional override for the model used in this plain request.
             **kwargs: Additional parameters (max_tokens, temperature, etc.)
             
         Returns:
@@ -214,15 +215,24 @@ class LLMOrchestrator:
         )
         
         # Apply memory processing
-        messages = self.memory_processor.apply_strategy(
-            input_messages, self.active_memory_key
+        compressed_view = self.memory_processor.apply_strategy(
+            input_messages,
+            self.active_memory_key,
+            llm_client=self,
         )
+
+        cc = weave.require_current_call()
+        if cc.summary is not None:
+            cc.summary.update({
+                "input_trace_length": len(input_messages),
+                "compressed_view_length": len(compressed_view),
+            })
         
-        processed_char_count = sum(len(str(m.get("content", ""))) for m in messages)
+        processed_char_count = sum(len(str(m.get("content", ""))) for m in compressed_view)
         compression_ratio = processed_char_count / input_char_count if input_char_count > 0 else 1.0
         
         logger.debug(
-            f"📊 Memory processed: {len(messages)} messages "
+            f"📊 Memory processed: {len(compressed_view)} messages "
             f"({processed_char_count} chars, {compression_ratio:.2%} of original)"
         )
         
@@ -233,7 +243,7 @@ class LLMOrchestrator:
             # Build request parameters
             request_params = {
                 "model": self.active_model_key,
-                "messages": messages,
+                "messages": compressed_view,
                 **self.get_model_kwargs_from_config(),
             }
             
@@ -283,32 +293,26 @@ class LLMOrchestrator:
         Raises:
             Exception: Any errors from OpenAI API (logged to wandb)
         """
-        # Sanitize kwargs (remove model if passed by benchmark)
-        kwargs.pop("model", None)
-        
+        model_name = kwargs.pop("model", "gpt-4-1")
+        tools = kwargs.pop("tools", None)
+        tool_choice = kwargs.pop("tool_choice", None)
+        temperature = kwargs.pop("temperature", 0)
+
+        create_kwargs = {
+            "model": model_name,
+            "messages": input_messages,
+            "temperature": temperature,
+            **kwargs,
+        }
+
+        if tools is not None:
+            create_kwargs["tools"] = tools
+        if tool_choice is not None:
+            create_kwargs["tool_choice"] = tool_choice
+
         try:
-            if "tools" in kwargs:
-                tools = kwargs.get("tools", None)
-                tool_choice = kwargs.get("tool_choice", None)
-                create_kwargs = {
-                    "model": "gpt-4-1",
-                    "messages": input_messages,
-                    "temperature": kwargs.get("temperature", 0),
-                }
-                if tools is not None:
-                    create_kwargs["tools"] = tools
-                if tool_choice is not None:
-                    create_kwargs["tool_choice"] = tool_choice
-                response = self.client.chat.completions.create(**create_kwargs)
-            else:
-                response = self.client.chat.completions.create(
-                    model="gpt-4-1",
-                    messages=input_messages,
-                    temperature=0,
-                )
-            
+            response = self.client.chat.completions.create(**create_kwargs)
             return response
-            
         except Exception as e:
             logger.error(f"💥 Generation Failed: {str(e)}")
             raise e
