@@ -113,6 +113,15 @@ class LLMOrchestrator:
         self.client = ClientFactory.create_client()
         
         logger.info(f"🚀 Orchestrator initialized for: {self.cfg.experiment_name}")
+
+    def get_exp_config(self) -> Dict[str, Any]:
+        """
+        Return only experiment configs (no model registry). Used for logging with weave.
+        """
+        exp_dict = self.cfg.model_dump()
+        exp_dict.pop("model_registry", None)
+        return exp_dict
+
     
     def reset_session(self):
         """
@@ -198,7 +207,7 @@ class LLMOrchestrator:
             tools: Available function definitions
             tool_choice: Tool selection strategy ("auto", "required", "none")
             model: Optional override for the model used in this plain request.
-            **kwargs: Additional parameters (max_tokens, temperature, etc.)
+            **kwargs: Additional parameters (max_tokens, etc.)
             
         Returns:
             ChatCompletion response from OpenAI API
@@ -296,19 +305,21 @@ class LLMOrchestrator:
         model_name = kwargs.pop("model", "gpt-4-1")
         tools = kwargs.pop("tools", None)
         tool_choice = kwargs.pop("tool_choice", None)
-        temperature = kwargs.pop("temperature", 0)
+
+        temperature = kwargs.get("temperature", None)
 
         create_kwargs = {
             "model": model_name,
             "messages": input_messages,
-            "temperature": temperature,
-            **kwargs,
+                **kwargs,
         }
 
         if tools is not None:
             create_kwargs["tools"] = tools
         if tool_choice is not None:
             create_kwargs["tool_choice"] = tool_choice
+        if temperature is not None:
+            create_kwargs["temperature"] = temperature
 
         try:
             response = self.client.chat.completions.create(**create_kwargs)
