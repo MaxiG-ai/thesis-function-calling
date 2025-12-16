@@ -172,54 +172,6 @@ class MemoryProcessor:
 
         return processed_messages
 
-    # TODO: This function is currently not used, but kept for future reference if needed.
-    def _validate_and_repair_tool_pairs(
-        self, processed_messages: List[Dict], original_messages: List[Dict]
-    ) -> List[Dict]:
-        validated = []
-        i = 0
-
-        while i < len(processed_messages):
-            msg = processed_messages[i]
-            if msg.get("role") == "tool":
-                has_valid_preceding = (
-                    len(validated) > 0
-                    and validated[-1].get("role") == "assistant"
-                    and "tool_calls" in validated[-1]
-                )
-
-                if not has_valid_preceding:
-                    tool_call_id = msg.get("tool_call_id")
-                    assistant_msg = None
-
-                    for orig_idx in range(len(original_messages) - 1, -1, -1):
-                        orig_msg = original_messages[orig_idx]
-                        if orig_msg.get("role") == "assistant" and "tool_calls" in orig_msg:
-                            for tc in orig_msg.get("tool_calls", []):
-                                if tc.id == tool_call_id:
-                                    assistant_msg = orig_msg
-                                    break
-                            if assistant_msg:
-                                break
-
-                    if assistant_msg:
-                        logger.debug("🔧 Injecting missing assistant message before tool response")
-                        validated.append(assistant_msg)
-                    else:
-                        logger.warning(
-                            f"⚠️ Could not find assistant message for tool call {tool_call_id}, skipping tool message"
-                        )
-                        i += 1
-                        continue
-
-                validated.append(msg)
-            else:
-                validated.append(msg)
-
-            i += 1
-
-        return validated
-
     def _apply_truncation(self, messages: List[Dict], max_tokens: int) -> List[Dict]:
         """
         Naive Baseline: Keeps only the system prompt + last N messages.
