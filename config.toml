@@ -1,13 +1,13 @@
 # --- Experiment Matrix ---
 # The suite will iterate through the Cartesian product of these lists.
 
-experiment_name = "gpt41mini_memory_test"
+experiment_name = "initial_tests"
 results_dir = "results"
 log_dir = "results/logs"
 logging_level = "INFO"
 debug = false
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
-benchmark_sample_size = 20
+benchmark_sample_size = 1
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [
@@ -21,10 +21,10 @@ enabled_models = [
 
 # 2. Define Memory Architectures to test
 enabled_memory_methods = [
-    "no_strategy",
+    # "no_strategy",
     "truncation",
     "progressive_summarization",
-    "memory_bank",
+    # "memory_bank",
 ]
 
 # --- Memory Strategy Definitions ---

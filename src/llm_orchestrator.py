@@ -1,8 +1,8 @@
 from typing import List, Dict, Optional, Any, Union, Iterable
 import weave
-from openai import OpenAI
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam
 from openai.types.chat import ChatCompletion
+import litellm
 from src.utils.config import load_configs, ExperimentConfig, ModelDef
 from src.memory_processing import MemoryProcessor
 from src.utils.logger import get_logger
@@ -10,59 +10,7 @@ from src.utils.logger import get_logger
 logger = get_logger("Orchestrator")
 
 
-class ClientFactory:
-    """
-    Factory for creating configured OpenAI clients.
-    Integrated into orchestrator for centralized management.
-    Kept as separate class for backward compatibility with benchmark code.
-    """
-    _client_cache = {}
-    
-    @classmethod
-    def create_client(
-        cls, 
-        model_def: Optional[ModelDef] = None,
-        api_base: Optional[str] = None,
-        api_key: Optional[str] = None
-    ) -> OpenAI:
-        """
-        Create or retrieve cached OpenAI client.
-        
-        Args:
-            model_def: Model definition from config (preferred method)
-            api_base: Override base URL (fallback if no model_def)
-            api_key: Override API key (fallback if no model_def)
-            
-        Returns:
-            Configured OpenAI client instance
-        """
-        # Use model_def if provided, else fallback to direct params
-        if model_def:
-            base_url = model_def.api_base or "http://localhost:4000/v1"
-            key = model_def.api_key or "placeholder-key"
-        else:
-            base_url = api_base or "http://localhost:4000/v1"
-            key = api_key or "placeholder-key"
-        
-        # Cache key for client reuse
-        cache_key = f"{base_url}:{key}"
-        
-        if cache_key not in cls._client_cache:
-            logger.debug(f"Creating new OpenAI client for {base_url}")
-            cls._client_cache[cache_key] = OpenAI(
-                base_url=base_url,
-                api_key=key
-            )
-        else:
-            logger.debug(f"Reusing cached OpenAI client for {base_url}")
-        
-        return cls._client_cache[cache_key]
-    
-    @classmethod
-    def clear_cache(cls):
-        """Clear client cache. Useful for testing or when connection parameters change."""
-        logger.debug("Clearing client cache")
-        cls._client_cache.clear()
+
 
 
 class LLMOrchestrator:
@@ -70,7 +18,7 @@ class LLMOrchestrator:
     Centralized LLM interaction manager.
     
     Integrates:
-    - Client factory for OpenAI connections
+    - LiteLLM for model interactions
     - Memory processing for context optimization
     - Comprehensive tracking with weave/wandb
     
@@ -109,8 +57,8 @@ class LLMOrchestrator:
         self.active_model_key: str = self.cfg.enabled_models[0]
         self.active_memory_key: str = self.cfg.enabled_memory_methods[0]
         
-        # 4. Create OpenAI client
-        self.client = ClientFactory.create_client()
+        # 4. Configure LiteLLM
+        litellm.success_callback = ["weave"]
         
         logger.info(f"🚀 Orchestrator initialized for: {self.cfg.experiment_name}")
 
@@ -152,6 +100,13 @@ class LLMOrchestrator:
         
         logger.info("🔄 Context Switched")
 
+    def get_model_config(self) -> ModelDef:
+        """Helper to get current model config"""
+        model_def = self.cfg.model_registry.get(self.active_model_key)
+        if not model_def:
+            raise ValueError(f"Model '{self.active_model_key}' not found in registry.")
+        return model_def
+
     def get_model_kwargs_from_config(self) -> Dict[str, Any]:
         """
         Retrieve model-specific kwargs from configuration.
@@ -159,9 +114,7 @@ class LLMOrchestrator:
         Returns:
             Dictionary of model parameters (e.g., temperature) from extra fields
         """
-        model_def = self.cfg.model_registry.get(self.active_model_key)
-        if not model_def:
-            raise ValueError(f"Model '{self.active_model_key}' not found in registry.")
+        model_def = self.get_model_config()
         
         # Get all fields from the model
         all_fields = model_def.model_dump()
@@ -249,12 +202,22 @@ class LLMOrchestrator:
         kwargs.pop("model", None)
         
         try:
+            model_def = self.get_model_config()
+            
             # Build request parameters
             request_params = {
-                "model": self.active_model_key,
+                "model": model_def.litellm_name,
                 "messages": compressed_view,
-                **self.get_model_kwargs_from_config(),
+                "api_base": model_def.api_base,
+                "api_key": model_def.api_key,
+                "drop_params": True,
             }
+            
+            # Merge config kwargs
+            request_params.update(self.get_model_kwargs_from_config())
+            
+            # Merge runtime kwargs (overrides config)
+            request_params.update(kwargs)
             
             # Only add tools and tool_choice if provided
             if tools is not None:
@@ -262,17 +225,7 @@ class LLMOrchestrator:
             if tool_choice is not None:
                 request_params["tool_choice"] = tool_choice
             
-            response = self.client.chat.completions.create(**request_params)
-            
-            # Post-call metrics
-            response_message = response.choices[0].message
-            tool_call_count = len(response_message.tool_calls) if response_message.tool_calls else 0
-            
-            logger.debug(
-                "✅ LLM call completed."
-                f"(finish: {response.choices[0].finish_reason}, "
-                f"tool_calls: {tool_call_count})"
-            )
+            response = litellm.completion(**request_params)
             
             return response
             
@@ -302,27 +255,32 @@ class LLMOrchestrator:
         Raises:
             Exception: Any errors from OpenAI API (logged to wandb)
         """
-        model_name = kwargs.pop("model", "gpt-4-1")
-        tools = kwargs.pop("tools", None)
-        tool_choice = kwargs.pop("tool_choice", None)
-
-        temperature = kwargs.get("temperature", None)
+        model_key = kwargs.pop("model", "gpt-4-1")
+        
+        # Try to find in registry
+        model_def = self.cfg.model_registry.get(model_key)
+        
+        if model_def:
+            model_name = model_def.litellm_name
+            api_base = model_def.api_base
+            api_key = model_def.api_key
+        else:
+            # Fallback: assume model_key is the model name, use default proxy
+            model_name = model_key
+            api_base = "http://localhost:3030/v1"
+            api_key = "THINKTANK"
 
         create_kwargs = {
             "model": model_name,
             "messages": input_messages,
-                **kwargs,
+            "api_base": api_base,
+            "api_key": api_key,
+            "drop_params": True,
+            **kwargs,
         }
 
-        if tools is not None:
-            create_kwargs["tools"] = tools
-        if tool_choice is not None:
-            create_kwargs["tool_choice"] = tool_choice
-        if temperature is not None:
-            create_kwargs["temperature"] = temperature
-
         try:
-            response = self.client.chat.completions.create(**create_kwargs)
+            response = litellm.completion(**create_kwargs)
             return response
         except Exception as e:
             logger.error(f"💥 Generation Failed: {str(e)}")
