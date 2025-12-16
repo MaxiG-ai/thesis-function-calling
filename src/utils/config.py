@@ -33,6 +33,7 @@ class ExperimentConfig(BaseModel):
     input_file: str
     proc_num: int = 1
     benchmark_sample_size: Optional[int]=None
+    selected_test_cases: Optional[List[str]] = None
     enabled_models: List[str]
     enabled_memory_methods: List[str]
 

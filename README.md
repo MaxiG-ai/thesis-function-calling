@@ -65,6 +65,24 @@ The benchmarks manage the execution loop and state. They send the accumulating h
 
 A central `config.toml` defines the active Memory Strategy and the target Model Provider.
 
+#### Running Specific Test Cases
+
+You can run the benchmark on specific test cases by setting the `selected_test_cases` option in `config.toml`:
+
+```toml
+# Run only specific test cases by their IDs
+selected_test_cases = ["Car-Rental-0", "Car-Rental-1", "Travel-5"]
+```
+
+When `selected_test_cases` is set:
+- Only the specified test cases will be executed
+- The `benchmark_sample_size` option is ignored
+- This provides minimal overhead as only the selected cases are loaded and processed
+
+To run all test cases or use random sampling, comment out or remove the `selected_test_cases` line.
+
+See `config_example_selected_tests.toml` for a complete example.
+
 ### Middleware Logic
 
 The proxy implementation handles the **Stateless Transformation**:

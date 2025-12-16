@@ -1,34 +1,27 @@
-# --- Experiment Matrix ---
-# The suite will iterate through the Cartesian product of these lists.
+# Example configuration demonstrating the selected_test_cases feature
+# This config runs only specific test cases by their IDs
 
-experiment_name = "initial_tests"
+experiment_name = "selected_test_cases_example"
 results_dir = "results"
 log_dir = "results/logs"
 logging_level = "WARNING"
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
-benchmark_sample_size = 1
 
-# Optional: Run specific test cases by ID. When set, only these cases will be run.
-# Examples: ["Car-Rental-0", "Car-Rental-1"] or ["Travel-5", "Cross-10"]
-# Leave commented out or set to null to run all cases (or use benchmark_sample_size for random sampling)
-# selected_test_cases = ["Car-Rental-0", "Car-Rental-1"]
+# When selected_test_cases is set, only these specific test cases will be run
+# This takes priority over benchmark_sample_size
+selected_test_cases = ["Car-Rental-0", "Car-Rental-1", "Car-Rental-2"]
+
+# benchmark_sample_size is ignored when selected_test_cases is set
+benchmark_sample_size = 1
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [
-    # "gpt-5",
-    # "gpt-4-1",
     "gpt-4-1-mini", 
-    # "gpt-5-mini",
-    # "glm-4-9b",
-    # "llama-31-7b",
 ]
 
 # 2. Define Memory Architectures to test
 enabled_memory_methods = [
-    # "no_strategy",
     "truncation",
-    "progressive_summarization",
-    # "memory_bank",
 ]
 
 # --- Memory Strategy Definitions ---
