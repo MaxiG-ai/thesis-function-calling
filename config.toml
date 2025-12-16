@@ -4,7 +4,7 @@
 experiment_name = "initial_tests"
 results_dir = "results"
 log_dir = "results/logs"
-logging_level = "WARNING"
+logging_level = "INFO"
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
 # Optional: Run specific test cases by ID. When set, only these cases will be run.
 # Examples: ["Car-Rental-0", "Car-Rental-1"] or ["Travel-5", "Cross-10"]

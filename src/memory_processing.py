@@ -113,15 +113,11 @@ class MemoryProcessor:
             logger.error(
                 f"🚨 Infinite loop detected in last {len(messages)} messages. Aborting."
             )
-            return [{"role": "system", "content": "Infinite loop detected; aborting."}]
+            return [{"role": "system", "content": "Infinite loop detected; aborting."}], {}
 
-        model = "gpt-4-1-mini"
-        limit = 128000
-        
         # 1. Measure state before context processing
         # Use trace_raw_token_count if available for accurate baseline
-        pre_count = llm_client.get_raw_history_token_count() if llm_client else get_token_count(messages, model=model)
-        pre_fill_pct = input_token_info.get("pre_fill_pct", (pre_count / limit) * 100)
+        pre_count = input_token_info.get("raw_token_count") or get_token_count(messages)
 
         # 2. Apply selected memory strategy
         if settings.type == "truncation":
@@ -136,16 +132,13 @@ class MemoryProcessor:
             logger.info(
                 f"🧠 Unknown memory strategy type: {settings.type}. No memory strategy applied; returning original messages."
             )
-            return messages
+            return messages, {}
 
-        post_count = get_token_count(processed_messages, model=model)
-        post_fill_pct = (post_count / limit) * 100
+        post_count = get_token_count(processed_messages)
         reduction_pct = 100 - ((post_count / pre_count) * 100) if pre_count > 0 else 0
 
         output_token_info = {
             "post_token_count": post_count,
-            "pre_fill_pct": round(pre_fill_pct, 2),
-            "post_fill_pct": round(post_fill_pct, 2),
             "reduction_pct": round(reduction_pct, 2),
         }
 
@@ -244,8 +237,8 @@ FinalMessages:{len(result)}
         )
 
         threshold = settings.auto_compact_threshold
-        summarizer_model = settings.summarizer_model or "gpt-5-mini"
-        token_count = get_token_count(messages, model=summarizer_model)
+        summarizer_model = settings.summarizer_model or "gpt-4-1-mini"
+        token_count = get_token_count(messages)
 
         if token_count <= threshold:
             return self._build_progressive_view(system_messages, working_memory)

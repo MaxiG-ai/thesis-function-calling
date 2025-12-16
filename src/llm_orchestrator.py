@@ -79,7 +79,7 @@ class LLMOrchestrator:
         Returns:
             Token count of raw history
         """
-        return get_token_count(self.raw_history, model="gpt-4-1-mini")
+        return get_token_count(self.raw_history)
     
     def reset_session(self):
         """
@@ -195,11 +195,8 @@ class LLMOrchestrator:
         
         #TODO: Needs to be filled correctly
         input_token_count = {
-            "conversation_history_token_count": get_token_count(
-                input_messages, model="gpt-4-1-mini"
-            ),
-
-        }
+            "conversation_history_token_count": get_token_count(input_messages),
+}
 
         # Apply memory processing
         compressed_view, _ = self.memory_processor.apply_strategy(
