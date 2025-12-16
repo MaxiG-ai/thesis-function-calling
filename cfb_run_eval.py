@@ -535,7 +535,7 @@ def main(experiment_name=None):
     
     # Filter by specific test case IDs if configured
     selected_test_cases = orchestrator.cfg.selected_test_cases
-    if selected_test_cases is not None and len(selected_test_cases) > 0:
+    if selected_test_cases:
         dataset = [case for case in dataset if case.get('id') in selected_test_cases]
         if not dataset:
             logger.error(f"❌ No test cases found matching the selected IDs: {selected_test_cases}")

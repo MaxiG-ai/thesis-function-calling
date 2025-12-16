@@ -1,7 +1,5 @@
 import pytest
-import os
-import tomllib
-from src.utils.config import ExperimentConfig, load_configs
+from src.utils.config import ExperimentConfig
 
 
 def test_config_accepts_selected_test_cases():

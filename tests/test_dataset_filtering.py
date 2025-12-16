@@ -51,8 +51,8 @@ def test_filter_dataset_with_none_selected():
     
     selected_test_cases = None
     
-    # This simulates the logic: only filter if selected_test_cases is not None and has items
-    if selected_test_cases is not None and len(selected_test_cases) > 0:
+    # This simulates the logic: only filter if selected_test_cases is truthy
+    if selected_test_cases:
         filtered_dataset = [case for case in mock_dataset if case.get('id') in selected_test_cases]
     else:
         filtered_dataset = mock_dataset
@@ -70,8 +70,8 @@ def test_filter_dataset_with_empty_list():
     
     selected_test_cases = []
     
-    # This simulates the logic: only filter if selected_test_cases has items
-    if selected_test_cases is not None and len(selected_test_cases) > 0:
+    # This simulates the logic: only filter if selected_test_cases is truthy
+    if selected_test_cases:
         filtered_dataset = [case for case in mock_dataset if case.get('id') in selected_test_cases]
     else:
         filtered_dataset = mock_dataset
