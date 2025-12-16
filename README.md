@@ -81,8 +81,6 @@ When `selected_test_cases` is set:
 
 To run all test cases or use random sampling, comment out or remove the `selected_test_cases` line.
 
-See `config_example_selected_tests.toml` for a complete example.
-
 ### Middleware Logic
 
 The proxy implementation handles the **Stateless Transformation**:
