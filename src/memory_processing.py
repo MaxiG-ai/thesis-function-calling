@@ -119,7 +119,7 @@ class MemoryProcessor:
     ) -> List[Dict]:
         """Apply the configured memory strategy to the incoming messages."""
         settings = self.config.memory_strategies[strategy_key]
-        logger.info(f"🧠 Applying Memory Strategy: {settings.type}")
+        logger.debug(f"🧠 Applying Memory Strategy: {settings.type}")
 
         # Loop detection to prevent infinite context growth
         if len(messages) > 20 and detect_tail_loop(messages, threshold=4, max_pattern_len=5):
@@ -231,7 +231,7 @@ class MemoryProcessor:
         segments = segment_message_history(messages)
         result = segments["system_message"] + segments["working_memory"]
 
-        logger.info(
+        logger.debug(
             f"✂️  Truncated context from {len(messages)} to {len(result)} msgs using max_tokens={max_tokens}"
         )
         return result
@@ -281,7 +281,7 @@ class MemoryProcessor:
             )
             memory_msg = [{"role": "system", "content": memory_block}]
             len_retrieved_context = len(retrieved_context) if retrieved_context else 0
-            logger.info(f"🧠 Injected {len_retrieved_context} memories into context.")
+            logger.debug(f"🧠 Injected {len_retrieved_context} memories into context.")
 
         result = system_msgs + memory_msg + recent_msgs
         logger.debug(

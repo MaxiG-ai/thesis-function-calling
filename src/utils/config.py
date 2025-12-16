@@ -30,7 +30,6 @@ class ExperimentConfig(BaseModel):
     results_dir: str
     log_dir: str
     logging_level: str
-    debug: bool = False
     input_file: str
     proc_num: int = 1
     benchmark_sample_size: Optional[int]=None

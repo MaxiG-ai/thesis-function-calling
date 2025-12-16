@@ -1,5 +1,6 @@
 from typing import List, Dict, Optional, Any, Union, Iterable
 import weave
+import os
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam
 from openai.types.chat import ChatCompletion
 import litellm
@@ -47,6 +48,7 @@ class LLMOrchestrator:
             exp_path: Path to experiment config file
             model_path: Path to model registry config file
         """
+        os.environ["LITELLM_LOG"] = "ERROR"
         # 1. Load static config
         self.cfg: ExperimentConfig = load_configs(exp_path, model_path)
         
@@ -58,6 +60,8 @@ class LLMOrchestrator:
         self.active_memory_key: str = self.cfg.enabled_memory_methods[0]
         
         # 4. Configure LiteLLM
+        os.environ["LITELLM_LOG"] = "ERROR"
+        litellm.suppress_debug_info = True
         litellm.success_callback = ["weave"]
         
         logger.info(f"🚀 Orchestrator initialized for: {self.cfg.experiment_name}")

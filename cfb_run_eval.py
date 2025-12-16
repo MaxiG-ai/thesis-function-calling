@@ -63,8 +63,10 @@ def create_runner(log_dir: str, orchestrator: LLMOrchestrator) -> SAPGPTRunner:
     runner_logger = FileLogger(
         f"runner_{datetime.now().strftime('%Y%m%d_%H%M%S')}", 
         os.path.join(log_dir, "cfb_runner.log"), 
-        level=logging.DEBUG
+        level=logging.ERROR
     )
+    for handler in runner_logger.logger.handlers:
+        handler.setLevel(logging.ERROR)
     
     # This routes all benchmark LLM calls through orchestrator with memory processing
     runner = SAPGPTRunner(

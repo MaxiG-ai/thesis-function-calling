@@ -4,8 +4,7 @@
 experiment_name = "initial_tests"
 results_dir = "results"
 log_dir = "results/logs"
-logging_level = "INFO"
-debug = false
+logging_level = "WARNING"
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
 benchmark_sample_size = 1
 
