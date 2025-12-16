@@ -529,18 +529,27 @@ def main(experiment_name=None):
         logger.error("❌ No data loaded. Exiting.")
         return
     
-    # Sample subset if configured
-    sample_size = orchestrator.cfg.benchmark_sample_size
-    if sample_size is not None and sample_size > 0:
-        if sample_size > len(dataset):
-            logger.warning(
-                f"⚠️ Sample size {sample_size} exceeds dataset size {len(dataset)}, "
-                "using full dataset"
-            )
-        else:
-            random.seed(42)
-            dataset = random.sample(dataset, sample_size)
-            logger.info(f"📊 Sampled {sample_size} cases from dataset")
+    # Filter by specific test case IDs if configured
+    selected_test_cases = orchestrator.cfg.selected_test_cases
+    if selected_test_cases:
+        dataset = [case for case in dataset if case.get('id') in selected_test_cases]
+        if not dataset:
+            logger.error(f"❌ No test cases found matching the selected IDs: {selected_test_cases}")
+            return
+        logger.info(f"🎯 Filtered to {len(dataset)} specific test case(s): {selected_test_cases}")
+    else:
+        # Sample subset if configured (only when not using specific test cases)
+        sample_size = orchestrator.cfg.benchmark_sample_size
+        if sample_size is not None and sample_size > 0:
+            if sample_size > len(dataset):
+                logger.warning(
+                    f"⚠️ Sample size {sample_size} exceeds dataset size {len(dataset)}, "
+                    "using full dataset"
+                )
+            else:
+                random.seed(42)
+                dataset = random.sample(dataset, sample_size)
+                logger.info(f"📊 Sampled {sample_size} cases from dataset")
             
     # Initialize response evaluator (shared across all configurations)
     run_timestamp = datetime.now().strftime('%Y%m%d_%H%M')
