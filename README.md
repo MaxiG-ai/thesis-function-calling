@@ -34,6 +34,19 @@ The core thesis work involves implementing `Context Transformation` functions. T
 LLM logic is abstracted using [Apantli](https://github.com/pborenstein/apantli).
 The Middleware acts as a standard OpenAI-compatible API. The Benchmarks point to this proxy, unaware that their requests are being intercepted and optimized.
 
+#### Local Proxy Architecture
+
+All LLM requests flow through a **local proxy at `localhost:3030`** that serves as the routing layer:
+
+1. **LiteLLM Integration:** The `LLMOrchestrator` uses LiteLLM to send requests to `localhost:3030/v1` (configured in `model_config.toml`)
+2. **Apantli Router:** The proxy at port 3030 is powered by [Apantli](https://github.com/pborenstein/apantli), which routes requests to actual LLM providers (OpenAI, Ollama, SAP AI Core, etc.)
+3. **Provider Flexibility:** This abstraction allows switching between providers without changing benchmark code
+
+**Configuration Flow:**
+* `model_config.toml` - Defines models with `api_base = "http://localhost:3030/v1"`
+* Apantli config (`/dev/apantli/config.yaml`) - Maps model names to actual provider endpoints
+* `config.toml` - Selects which models to test via `enabled_models` list
+
 To add/edit models the following files need to be changed:
 
 * `/dev/apantli/config.yaml` or wherever the apantli server is installed
@@ -48,6 +61,14 @@ The benchmarks manage the execution loop and state. They send the accumulating h
 
 * **Focus:** Complex and repeated function calls
 * **Source:** [GitHub](https://github.com/zai-org/ComplexFuncBench)
+* **Integration Status:** Fully integrated with custom middleware injection
+
+**Historic Changes to `benchmarks/complex_func_bench`:**
+The ComplexFuncBench benchmark was integrated into this repository with the following modifications:
+* **Added `SAPGPTRunner`:** A custom runner that injects the `LLMOrchestrator` into the benchmark execution flow
+* **Orchestrator Integration:** Modified `FunctionCallSAPGPT` model class to accept an optional `orchestrator` parameter, enabling memory processing while preserving original benchmark code
+* **Preserved Original Structure:** All original benchmark files remain intact; thesis-specific modifications are isolated in custom runner classes
+* **Legacy Support:** Original runners (e.g., `legacy_sap_gpt_runner.py`) are preserved for comparison
 
 #### NestFul (IBM)
 
@@ -61,23 +82,114 @@ The benchmarks manage the execution loop and state. They send the accumulating h
 
 ## Implementation Details
 
+### Core Components
+
+#### LLMOrchestrator
+
+**Purpose:** Central manager for all LLM interactions with integrated memory processing.
+
+**Key Responsibilities:**
+* **Configuration Management:** Loads and manages experiment config (`config.toml`) and model registry (`model_config.toml`)
+* **Memory Integration:** Instantiates and delegates to `MemoryProcessor` for context optimization
+* **LiteLLM Coordination:** Handles all LLM API calls through LiteLLM with proper error handling and retries
+* **Context Switching:** Provides `set_active_context(model, memory)` to dynamically switch configurations during benchmark runs
+* **Observability:** Integrates with Weave for comprehensive tracing of all LLM calls and memory operations
+
+**Usage Example:**
+```python
+orchestrator = LLMOrchestrator()
+orchestrator.set_active_context("gpt-4-1", "memory_bank")
+response = orchestrator.generate_with_memory_applied(messages, tools=tools)
+```
+
+#### MemoryProcessor
+
+**Purpose:** Applies memory strategies to optimize conversation context before LLM calls.
+
+**Key Responsibilities:**
+* **Strategy Application:** Executes the configured memory strategy (truncation, progressive summarization, memory bank)
+* **Context Segmentation:** Splits messages into system prompts, archived context, and working memory
+* **Stateful Summarization:** Maintains running summaries for progressive summarization strategy
+* **Loop Detection:** Identifies and prevents infinite conversation loops
+* **Metrics Tracking:** Reports compression ratios and token usage via Weave
+
+**Supported Strategies:**
+* **Truncation:** Naive baseline that keeps only system prompt + recent N messages
+* **Progressive Summarization:** Periodically condenses older turns into a running summary
+* **Memory Bank:** RAG-based retrieval of relevant past interactions using embeddings
+
 ### Config
 
 A central `config.toml` defines the active Memory Strategy and the target Model Provider.
 
 ### Middleware Logic
 
-The proxy implementation handles the **Stateless Transformation**:
+The implementation handles **Context Transformation** through direct orchestrator injection:
 
-1. **Intercept:** Receive `POST /chat/completions` with `messages=[]`.
-2. **Identify:** Isolate the `System`, `User`, and `History` (Assistant/Tool pairs).
-3. **Transform:** Apply the active Memory Technique (e.g., compress `ToolOutput` messages).
-4. **Forward:** Send the optimized payload to the real LLM via LiteLLM.
-5. **Return:** Stream the response back to the Benchmark.
+1. **Intercept:** Benchmark runner calls `orchestrator.generate_with_memory_applied(messages, tools)`
+2. **Identify:** `MemoryProcessor` segments messages into system prompt, archived context, and working memory
+3. **Transform:** Apply the active Memory Technique (e.g., compress via summarization or RAG selection)
+4. **Forward:** Send the optimized payload to the LLM provider via LiteLLM through `localhost:3030`
+5. **Return:** Return the LLM response to the benchmark runner
 
 > **Note:** All transformations strictly preserve `tool_call_id` integrity to ensure the Benchmark's execution loop remains valid.
 
 ## Getting Started
 
-1. Run local SAP AI Core Proxy `cd dev/sap` and run `sap`
-2. Run cost orchestration `cd dev/apantli`, activate env and run `apantli --port 4000`.
+### Prerequisites
+
+1. **Start the Local Proxy (Port 3030):** 
+   ```bash
+   cd dev/apantli
+   # Activate virtual environment
+   apantli --port 3030
+   ```
+   This runs the Apantli router that forwards requests to actual LLM providers.
+
+2. **(Optional) Run SAP AI Core Proxy:**
+   ```bash
+   cd dev/sap
+   sap
+   ```
+
+### Running Benchmark Evaluations
+
+#### ComplexFuncBench Evaluation
+
+Execute the full benchmark with memory strategies:
+
+```bash
+python cfb_run_eval.py
+```
+
+**What This Does:**
+1. Loads configuration from `config.toml` (models, memory strategies, sample size)
+2. Initializes the `LLMOrchestrator` with model registry from `model_config.toml`
+3. Iterates through the Cartesian product of `enabled_models` × `enabled_memory_methods`
+4. For each configuration:
+   - Creates a `SAPGPTRunner` with orchestrator injection
+   - Processes benchmark cases with memory transformation
+   - Evaluates function calling accuracy and response quality
+   - Saves results to `results/{experiment_name}/{timestamp}/{memory}/{model}/`
+5. Aggregates metrics and logs to Weave for tracking
+
+**Configuration:**
+
+Edit `config.toml` to control the experiment:
+```toml
+experiment_name = "initial_tests"
+benchmark_sample_size = 10  # Number of test cases (or full dataset)
+
+enabled_models = ["gpt-4-1-mini"]
+enabled_memory_methods = ["truncation", "progressive_summarization"]
+
+[memory_strategies.progressive_summarization]
+type = "progressive_summarization"
+auto_compact_threshold = 10000
+summarizer_model = "gpt-4-1-mini"
+```
+
+**Results:**
+* Raw results: `results/{experiment_name}/{timestamp}/{memory}/{model}/result.json`
+* Aggregated metrics: `results/{experiment_name}/{timestamp}/{memory}/{model}/metrics.json`
+* Weave traces: View in Weave UI for detailed call tracing
