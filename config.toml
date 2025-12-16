@@ -6,7 +6,7 @@ results_dir = "results"
 log_dir = "results/logs"
 logging_level = "WARNING"
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
-benchmark_sample_size = 1
+benchmark_sample_size = 3
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [
@@ -30,7 +30,7 @@ enabled_memory_methods = [
 
 [memory_strategies.truncation]
 type = "truncation"
-max_tokens = 10000
+max_tokens = 2000
 
 [memory_strategies.memory_bank]
 type = "memory_bank"
@@ -42,5 +42,5 @@ type = "no_strategy"
 
 [memory_strategies.progressive_summarization]
 type = "progressive_summarization"
-auto_compact_threshold = 10000
+auto_compact_threshold = 2000
 summarizer_model = "gpt-4-1-mini"

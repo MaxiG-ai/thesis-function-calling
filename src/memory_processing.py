@@ -1,28 +1,16 @@
 import weave
-import tiktoken
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
 from src.utils.config import ExperimentConfig
 from src.strategies.memory_bank.memory_bank import MemoryBank
 from src.utils.history import segment_message_history
 from src.utils.logger import get_logger
-from weave.trace.context.call_context import NoCurrentCallError
+from src.utils.token_count import get_token_count
 
 logger = get_logger("MemoryProcessor")
 PROMPT_PATH = Path(__file__).resolve().parents[0] / "prompts" / "progressive_summary.md"
 _SUMMARY_PROMPT_CACHE: Optional[str] = None
-
-
-def get_token_count(messages: list[dict], model: str) -> int:
-    """Utility to count tokens."""
-    enc = tiktoken.encoding_for_model(model)
-    count = 0
-    for m in messages:
-        content = m.get("content") or ""
-        if isinstance(content, str):
-            count += len(enc.encode(content))
-    return count
-
 
 def _load_summary_prompt() -> str:
     """Utility to load and cache the summary prompt."""
@@ -37,7 +25,6 @@ def _load_summary_prompt() -> str:
         _SUMMARY_PROMPT_CACHE = "Summarize the following updates without adding explanation or metadata."
 
     return _SUMMARY_PROMPT_CACHE
-
 
 def detect_tail_loop(messages: list[dict], threshold: int = 4, max_pattern_len: int = 10) -> bool:
     """Detects repeating patterns at the tail of a conversation."""
@@ -114,9 +101,9 @@ class MemoryProcessor:
         self,
         messages: List[Dict],
         strategy_key: str,
-        *,
+        input_token_info: Dict[str, Any],
         llm_client: Optional[Any] = None,
-    ) -> List[Dict]:
+    ) -> Tuple[List[Dict], Dict[str, Any]]:
         """Apply the configured memory strategy to the incoming messages."""
         settings = self.config.memory_strategies[strategy_key]
         logger.debug(f"🧠 Applying Memory Strategy: {settings.type}")
@@ -130,9 +117,11 @@ class MemoryProcessor:
 
         model = "gpt-4-1-mini"
         limit = 128000
+        
         # 1. Measure state before context processing
-        pre_count = get_token_count(messages, model=model)
-        pre_fill_pct = (pre_count / limit) * 100
+        # Use trace_raw_token_count if available for accurate baseline
+        pre_count = llm_client.get_raw_history_token_count() if llm_client else get_token_count(messages, model=model)
+        pre_fill_pct = input_token_info.get("pre_fill_pct", (pre_count / limit) * 100)
 
         # 2. Apply selected memory strategy
         if settings.type == "truncation":
@@ -151,26 +140,16 @@ class MemoryProcessor:
 
         post_count = get_token_count(processed_messages, model=model)
         post_fill_pct = (post_count / limit) * 100
-        reduction_pct = 100 - ((post_count / pre_count) * 100)
+        reduction_pct = 100 - ((post_count / pre_count) * 100) if pre_count > 0 else 0
 
-        try:
-            cc = weave.require_current_call()
-        # Weird CoPilot addition to make tests work 
-        except NoCurrentCallError:
-            cc = None
-        if cc is not None and cc.summary is not None:
-            cc.summary.update(
-                {
-                    "context_limit": limit,
-                    "pre_compression_tokens": pre_count,
-                    "post_compression_tokens": post_count,
-                    "context_filled_pre_pct": round(pre_fill_pct, 2),
-                    "context_filled_post_pct": round(post_fill_pct, 2),
-                    "compression_reduction_pct": round(reduction_pct, 2),
-                }
-            )
+        output_token_info = {
+            "post_token_count": post_count,
+            "pre_fill_pct": round(pre_fill_pct, 2),
+            "post_fill_pct": round(post_fill_pct, 2),
+            "reduction_pct": round(reduction_pct, 2),
+        }
 
-        return processed_messages
+        return processed_messages, output_token_info
 
     def _apply_truncation(self, messages: List[Dict], max_tokens: int) -> List[Dict]:
         """

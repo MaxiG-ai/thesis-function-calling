@@ -4,15 +4,12 @@ import os
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam
 from openai.types.chat import ChatCompletion
 import litellm
+from litellm.files.main import ModelResponse
 from src.utils.config import load_configs, ExperimentConfig, ModelDef
-from src.memory_processing import MemoryProcessor
+from src.memory_processing import MemoryProcessor, get_token_count
 from src.utils.logger import get_logger
 
 logger = get_logger("Orchestrator")
-
-
-
-
 
 class LLMOrchestrator:
     """
@@ -58,6 +55,7 @@ class LLMOrchestrator:
         # 3. State variables (mutable)
         self.active_model_key: str = self.cfg.enabled_models[0]
         self.active_memory_key: str = self.cfg.enabled_memory_methods[0]
+        self.raw_history: List[Dict] = []
         
         # 4. Configure LiteLLM
         os.environ["LITELLM_LOG"] = "ERROR"
@@ -74,12 +72,21 @@ class LLMOrchestrator:
         exp_dict.pop("model_registry", None)
         return exp_dict
 
+    def get_raw_history_token_count(self) -> int:
+        """
+        Calculate token count of the raw conversation history.
+        
+        Returns:
+            Token count of raw history
+        """
+        return get_token_count(self.raw_history, model="gpt-4-1-mini")
     
     def reset_session(self):
         """
         Clear memory state. Call this before starting a new benchmark conversation.
         """
         self.memory_processor.reset_state()
+        self.raw_history = []
         logger.info("🔄 Session Reset")
     
     def set_active_context(self, model_key: str, memory_key: str):
@@ -172,6 +179,12 @@ class LLMOrchestrator:
         Raises:
             Exception: Any errors from OpenAI API (logged to wandb)
         """
+        # Sync raw history (append only new messages)
+        if not self.raw_history:
+            self.raw_history = list(input_messages)
+        else:
+            self.raw_history.append(input_messages[-1])
+
         # Pre-processing metrics
         input_char_count = sum(len(str(m.get("content", ""))) for m in input_messages)
         
@@ -180,19 +193,21 @@ class LLMOrchestrator:
             f"({input_char_count} chars) with {self.active_memory_key}"
         )
         
+        #TODO: Needs to be filled correctly
+        input_token_count = {
+            "conversation_history_token_count": get_token_count(
+                input_messages, model="gpt-4-1-mini"
+            ),
+
+        }
+
         # Apply memory processing
-        compressed_view = self.memory_processor.apply_strategy(
+        compressed_view, _ = self.memory_processor.apply_strategy(
             input_messages,
             self.active_memory_key,
+            input_token_info=input_token_count,
             llm_client=self,
         )
-
-        cc = weave.require_current_call()
-        if cc.summary is not None:
-            cc.summary.update({
-                "input_trace_length": len(input_messages),
-                "compressed_view_length": len(compressed_view),
-            })
         
         processed_char_count = sum(len(str(m.get("content", ""))) for m in compressed_view)
         compression_ratio = processed_char_count / input_char_count if input_char_count > 0 else 1.0
@@ -231,13 +246,19 @@ class LLMOrchestrator:
             
             response = litellm.completion(**request_params)
             
+            # Append generated response to raw history
+            if type(response) is ModelResponse:
+                response_message = response.choices[0]
+                # Convert to dict to match input_messages format
+                self.raw_history.append(response_message.model_dump(exclude_none=True))
+            else:
+                logger.warning("⚠️ Response is not of type ChatCompletion; skipping raw history append.")
             return response
             
         except Exception as e:
             logger.error(f"💥 Generation Failed: {str(e)}")
             raise e
         
-
     @weave.op()
     def generate_plain(
         self,

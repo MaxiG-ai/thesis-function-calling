@@ -422,6 +422,7 @@ def run_single_configuration(
     success_count = 0
     
     for i, case in enumerate(dataset):
+        orchestrator.reset_session()
         case_id = case.get('id', i)
         logger.info(f"Processing case {i+1}/{len(dataset)}: {case_id}")
         
@@ -510,11 +511,6 @@ def main(experiment_name=None):
     3. Iterates through all model/memory configurations
     4. Aggregates and reports final results
     """
-
-    logger.info("=" * 80)
-    logger.info("ComplexFuncBench Evaluation")
-    logger.info("=" * 80)
-    
     # Initialize orchestrator
     orchestrator = LLMOrchestrator()
     
