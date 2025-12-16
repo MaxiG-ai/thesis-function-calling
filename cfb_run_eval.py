@@ -200,6 +200,8 @@ def evaluate_single_case(
     """
     case_id = case.get('id', 'unknown')
     
+    # Set the trace name
+    weave.require_current_call().display_name = f"{case_id}_{orchestrator.active_model_key}_{orchestrator.active_memory_key}"
     
     # Create runner for this case with orchestrator injection
     runner = create_runner(log_dir=orchestrator.cfg.results_dir, orchestrator=orchestrator)
@@ -406,7 +408,7 @@ def run_single_configuration(
     
     # Initialize weave evaluation logger for this configuration
     eval_logger = weave.EvaluationLogger(
-        name=f"{model}_{memory}",
+        name=f"Eval_{model}_{memory}",
         model=model,
         dataset="ComplexFuncBench",
         eval_attributes={"memory_method": memory, "config": orchestrator.get_exp_config()},
