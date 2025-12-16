@@ -1,39 +1,46 @@
-import json
 import weave
 import tiktoken
-from typing import List, Dict, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 from src.utils.config import ExperimentConfig
 from src.strategies.memory_bank.memory_bank import MemoryBank
+from src.utils.history import segment_message_history
 from src.utils.logger import get_logger
+from weave.trace.context.call_context import NoCurrentCallError
 
 logger = get_logger("MemoryProcessor")
+PROMPT_PATH = Path(__file__).resolve().parents[0] / "prompts" / "progressive_summary.md"
+_SUMMARY_PROMPT_CACHE: Optional[str] = None
+
 
 def get_token_count(messages: list[dict], model: str) -> int:
     """Utility to count tokens."""
     enc = tiktoken.encoding_for_model(model)
     count = 0
     for m in messages:
-        # Reducing the memory usage on large strings:
-        # Only tokenize the actual content, ignoring overhead
-        content = m.get("content") or "" 
+        content = m.get("content") or ""
         if isinstance(content, str):
             count += len(enc.encode(content))
     return count
 
-# Prevent infitnite loops in data
+
+def _load_summary_prompt() -> str:
+    """Utility to load and cache the summary prompt."""
+    global _SUMMARY_PROMPT_CACHE
+    if _SUMMARY_PROMPT_CACHE is not None:
+        return _SUMMARY_PROMPT_CACHE
+
+    try:
+        _SUMMARY_PROMPT_CACHE = PROMPT_PATH.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        logger.error("Missing progressive summary prompt file at %s", PROMPT_PATH)
+        _SUMMARY_PROMPT_CACHE = "Summarize the following updates without adding explanation or metadata."
+
+    return _SUMMARY_PROMPT_CACHE
+
+
 def detect_tail_loop(messages: list[dict], threshold: int = 4, max_pattern_len: int = 10) -> bool:
-    """
-    Detects if the end of the conversation consists of a repeating pattern.
-    
-    Args:
-        messages: The history of messages.
-        threshold: How many times the pattern must repeat to trigger detection (default 3).
-        max_pattern_len: The maximum length of the repeating sub-sequence to check. 
-                         (e.g., 10 means we check for loops of size 1 to 10).
-    
-    Returns:
-        True if a loop is detected, False otherwise.
-    """
+    """Detects repeating patterns at the tail of a conversation."""
     n = len(messages)
     # Optimization: Don't check if history is too short to contain a loop
     if n < threshold:
@@ -46,14 +53,11 @@ def detect_tail_loop(messages: list[dict], threshold: int = 4, max_pattern_len: 
         # Create a signature tuple: (Role, Content, Sorted Tool Calls)
         tool_sig = None
         if "tool_calls" in m:
-            # We ignore 'id' because retry loops often generate new random IDs for the same action
-            tool_sig = sorted([
-                (tc.type, tc.function.name, tc.function.arguments) 
-                for tc in m["tool_calls"]
-            ])
-            # If objects, convert to tuple for hashing
+            tool_sig = sorted(
+                [(tc.type, tc.function.name, tc.function.arguments) for tc in m["tool_calls"]]
+            )
             tool_sig = tuple(tool_sig)
-            
+
         normalized.append((m.get("role"), m.get("content"), tool_sig))
 
     # Re-calculate length based on the slice we actually took
@@ -71,150 +75,150 @@ def detect_tail_loop(messages: list[dict], threshold: int = 4, max_pattern_len: 
         
         # Check if this pattern appears 'threshold' times backwards
         is_loop = True
+
         for k in range(1, threshold):
             # Compare the block before the current one
             # e.g., if L=2, threshold=3:
             # Check [-2:] vs [-4:-2]
             # Check [-2:] vs [-6:-4]
             prev_block = normalized[-(k + 1) * L : -k * L]
-            
             if prev_block != pattern:
                 is_loop = False
                 break
-        
+
         if is_loop:
             return True
 
     return False
+
 
 class MemoryProcessor:
     def __init__(self, config: ExperimentConfig):
         self.config = config
         self.active_bank: Optional[MemoryBank] = None
         self.processed_message_ids: set = set()
+        self.current_summary: str = ""
+        self.summarized_message_count: int = 0
 
     def reset_state(self):
-        "Called by Orchestrator to reset memory between runs."
+        """Called by Orchestrator to reset memory between runs."""
         if self.active_bank:
             self.active_bank.reset()
         self.processed_message_ids.clear()
+        self.current_summary = ""
+        self.summarized_message_count = 0
         logger.info("🧠 Memory State Reset")
 
     @weave.op()
-    def apply_strategy(self, messages: List[Dict], strategy_key: str) -> List[Dict]:
-        """
-        The core thesis function.
-        Transforms Input Messages -> Optimized Messages based on active strategy.
-        """
-
+    def apply_strategy(
+        self,
+        messages: List[Dict],
+        strategy_key: str,
+        *,
+        llm_client: Optional[Any] = None,
+    ) -> List[Dict]:
+        """Apply the configured memory strategy to the incoming messages."""
         settings = self.config.memory_strategies[strategy_key]
         logger.info(f"🧠 Applying Memory Strategy: {settings.type}")
 
-        # 1. LOOP GUARD: Check before processing
-        # Only check if history is getting long enough to matter
-        if len(messages) > 20: 
-            if detect_tail_loop(messages, threshold=4, max_pattern_len=5):
-                logger.error(f"🚨 Infinite loop detected in last {len(messages)} messages. Aborting.")
-                # Returning fake messages to stop benchmark
-                return [{"role": "system", "content": "Infinite loop detected; aborting."}]
+        # Loop detection to prevent infinite context growth
+        if len(messages) > 20 and detect_tail_loop(messages, threshold=4, max_pattern_len=5):
+            logger.error(
+                f"🚨 Infinite loop detected in last {len(messages)} messages. Aborting."
+            )
+            return [{"role": "system", "content": "Infinite loop detected; aborting."}]
 
-        model="gpt-4-1-mini"
+        model = "gpt-4-1-mini"
         limit = 128000
-        # 1. Measure Pre-State
+        # 1. Measure state before context processing
         pre_count = get_token_count(messages, model=model)
         pre_fill_pct = (pre_count / limit) * 100
 
-        # Route to specific implementation       
+        # 2. Apply selected memory strategy
         if settings.type == "truncation":
             processed_messages = self._apply_truncation(messages, settings.max_tokens or 2000)
         elif settings.type == "memory_bank":
             processed_messages = self._apply_memory_bank(messages, settings)
+        elif settings.type == "progressive_summarization":
+            processed_messages = self._apply_progressive_summarization(
+                messages, settings, llm_client
+            )
         else:
-            logger.info(f"🧠 Unknown memory strategy type: {settings.type}. No memory strategy applied; returning original messages.")
+            logger.info(
+                f"🧠 Unknown memory strategy type: {settings.type}. No memory strategy applied; returning original messages."
+            )
             return messages
 
         post_count = get_token_count(processed_messages, model=model)
         post_fill_pct = (post_count / limit) * 100
         reduction_pct = 100 - ((post_count / pre_count) * 100)
 
-        # 3. Log the "Delta" metrics clearly
-        cc = weave.require_current_call()
-        
-        if cc.summary is not None:
-            cc.summary.update({
-                "context_limit": limit,
-                "pre_compression_tokens": pre_count,
-                "post_compression_tokens": post_count,
-                "context_filled_pre_pct": round(pre_fill_pct, 2),
-                "context_filled_post_pct": round(post_fill_pct, 2),
-                "compression_reduction_pct": round(reduction_pct, 2)
-            })
+        try:
+            cc = weave.require_current_call()
+        # Weird CoPilot addition to make tests work 
+        except NoCurrentCallError:
+            cc = None
+        if cc is not None and cc.summary is not None:
+            cc.summary.update(
+                {
+                    "context_limit": limit,
+                    "pre_compression_tokens": pre_count,
+                    "post_compression_tokens": post_count,
+                    "context_filled_pre_pct": round(pre_fill_pct, 2),
+                    "context_filled_post_pct": round(post_fill_pct, 2),
+                    "compression_reduction_pct": round(reduction_pct, 2),
+                }
+            )
 
         return processed_messages
 
-    # TODO: This function is currently not used, but kept for future reference if needed. 
-    # It would be better to just design memory techniques so that they follow the tool loop correctly.
-    def _validate_and_repair_tool_pairs(self, processed_messages: List[Dict], original_messages: List[Dict]) -> List[Dict]:
-        """
-        Ensures that tool messages always have their corresponding assistant message with tool_calls.
-        If a tool message is orphaned, this function finds and injects the missing assistant message.
-        
-        Args:
-            processed_messages: Messages after memory strategy has been applied
-            original_messages: Original unprocessed messages for lookup
-            
-        Returns:
-            Validated and repaired message list
-        """
+    # TODO: This function is currently not used, but kept for future reference if needed.
+    def _validate_and_repair_tool_pairs(
+        self, processed_messages: List[Dict], original_messages: List[Dict]
+    ) -> List[Dict]:
         validated = []
         i = 0
-        
+
         while i < len(processed_messages):
             msg = processed_messages[i]
-            
-            # If we encounter a tool message, ensure its assistant message with tool_calls is present
-            if msg.get('role') == 'tool':
-                # Check if the previous message is an assistant with tool_calls
+            if msg.get("role") == "tool":
                 has_valid_preceding = (
-                    len(validated) > 0 and 
-                    validated[-1].get('role') == 'assistant' and 
-                    'tool_calls' in validated[-1]
+                    len(validated) > 0
+                    and validated[-1].get("role") == "assistant"
+                    and "tool_calls" in validated[-1]
                 )
-                
+
                 if not has_valid_preceding:
-                    # Find the corresponding assistant message in original_messages
-                    tool_call_id = msg.get('tool_call_id')
+                    tool_call_id = msg.get("tool_call_id")
                     assistant_msg = None
-                    
-                    # Search backwards in original messages for the assistant message with this tool_call_id
+
                     for orig_idx in range(len(original_messages) - 1, -1, -1):
                         orig_msg = original_messages[orig_idx]
-                        if (orig_msg.get('role') == 'assistant' and 
-                            'tool_calls' in orig_msg):
-                            # Check if this assistant message has the matching tool_call_id
-                            for tc in orig_msg.get('tool_calls', []):
-                                if tc.id == tool_call_id: #change from tc.get('id') to tc.id
+                        if orig_msg.get("role") == "assistant" and "tool_calls" in orig_msg:
+                            for tc in orig_msg.get("tool_calls", []):
+                                if tc.id == tool_call_id:
                                     assistant_msg = orig_msg
                                     break
                             if assistant_msg:
                                 break
-                    
+
                     if assistant_msg:
                         logger.debug("🔧 Injecting missing assistant message before tool response")
                         validated.append(assistant_msg)
                     else:
-                        logger.warning(f"⚠️ Could not find assistant message for tool call {tool_call_id}, skipping tool message")
+                        logger.warning(
+                            f"⚠️ Could not find assistant message for tool call {tool_call_id}, skipping tool message"
+                        )
                         i += 1
                         continue
-                
+
                 validated.append(msg)
             else:
                 validated.append(msg)
-            
+
             i += 1
-        
+
         return validated
-    
 
     def _apply_truncation(self, messages: List[Dict], max_tokens: int) -> List[Dict]:
         """
@@ -224,44 +228,17 @@ class MemoryProcessor:
         if len(messages) <= 3:
             return messages
 
-        # get the user messages and system messages
-        system_msgs = [m for m in messages if m["role"] == "system"]
-        user_msgs = [m for m in messages if m["role"] == "user"]
-        
-        # Start with last 4 messages, but expand to include complete tool call sequences
-        recent_count = 4
-        recent_start_idx = max(0, len(messages) - recent_count)
-        
-        # Check if we're cutting off in the middle of a tool call sequence
-        # If the first message in our selection is a tool message, we need its assistant message
-        while recent_start_idx > 0 and messages[recent_start_idx].get('role') == 'tool':
-            recent_start_idx -= 1
-            # Also need to include the assistant message with tool_calls
-            if recent_start_idx > 0 and messages[recent_start_idx].get('role') == 'assistant':
-                if 'tool_calls' not in messages[recent_start_idx]:
-                    # Keep going back to find the assistant with tool_calls
-                    recent_start_idx -= 1
-        
-        recent_history = system_msgs + user_msgs + messages[recent_start_idx:]
-        
-        # Validate and repair any remaining issues
-        result = recent_history
+        segments = segment_message_history(messages)
+        result = segments["system_message"] + segments["working_memory"]
 
         logger.info(
-            f"✂️  Truncated context from {len(messages)} to {len(result)} msgs"
+            f"✂️  Truncated context from {len(messages)} to {len(result)} msgs using max_tokens={max_tokens}"
         )
         return result
 
     def _apply_memory_bank(self, messages: List[Dict], settings) -> List[Dict]:
-        """
-        Implements Memory Bank Retrieval logic.
-        Ensures assistant+tool message pairs are kept together in working memory.
-        """        
-        # Initialize Bank if needed
         if self.active_bank is None:
             self.active_bank = MemoryBank(settings.embedding_model)
-
-        # 1. Update Bank with new messages (Store Phase)
 
         for i, msg in enumerate(messages[:-1]):
             try:
@@ -274,39 +251,27 @@ class MemoryProcessor:
                     self.active_bank.add_memory(f"{msg['role']}: {msg['content']}")
                 self.processed_message_ids.add(msg_id)
 
-        # 2. Advance Time (Forgetting Phase)
         self.active_bank.update_time()
 
-        # 3. Retrieve Context for Current Query (Retrieval Phase)
         last_msg = messages[-1]
         retrieved_context = []
-        if last_msg['role'] == "user":
+        if last_msg["role"] == "user":
             retrieved_context = self.active_bank.retrieve(
-                query = last_msg['content'], 
-                top_k = settings.top_k or 3,
+                query=last_msg["content"], top_k=settings.top_k or 3
             )
-        
-        # 4. Construct Final Context (System + Active Memory Context + Recent History/Working Memory)
 
-        system_msgs = [m for m in messages if m['role'] == "system"]
+        system_msgs = [m for m in messages if m["role"] == "system"]
 
-        # Keep last N messages in working memory, but expand to include complete tool call sequences
         working_memory_limit = 3
         recent_start_idx = max(0, len(messages) - working_memory_limit)
-        
-        # Check if we're cutting off in the middle of a tool call sequence
-        # If the first message in our selection is a tool message, we need its assistant message
-        while recent_start_idx > 0 and messages[recent_start_idx].get('role') == 'tool':
+        while recent_start_idx > 0 and messages[recent_start_idx].get("role") == "tool":
             recent_start_idx -= 1
-            # Also need to include the assistant message with tool_calls
-            if recent_start_idx > 0 and messages[recent_start_idx].get('role') == 'assistant':
-                if 'tool_calls' not in messages[recent_start_idx]:
-                    # Keep going back to find the assistant with tool_calls
+            if recent_start_idx > 0 and messages[recent_start_idx].get("role") == "assistant":
+                if "tool_calls" not in messages[recent_start_idx]:
                     recent_start_idx -= 1
-        
+
         recent_msgs = messages[recent_start_idx:]
 
-        # create memory context message
         context_str = "\n".join(retrieved_context)
         memory_msg = []
         if context_str:
@@ -318,10 +283,7 @@ class MemoryProcessor:
             len_retrieved_context = len(retrieved_context) if retrieved_context else 0
             logger.info(f"🧠 Injected {len_retrieved_context} memories into context.")
 
-        # Validate and repair any remaining issues
         result = system_msgs + memory_msg + recent_msgs
-        # result = self._validate_and_repair_tool_pairs(result, messages)
-
         logger.debug(
             f"""🧠 Memory Bank Context:
 SystemMessages:{len(system_msgs)} 
@@ -331,3 +293,97 @@ FinalMessages:{len(result)}
 """
         )
         return result
+
+    def _apply_progressive_summarization(
+        self,
+        messages: List[Dict],
+        settings,
+        llm_client: Optional[Any],
+    ) -> List[Dict]:
+        if settings.auto_compact_threshold is None or llm_client is None:
+            return messages
+
+        segments = segment_message_history(messages)
+        system_messages = segments["system_message"]
+        archived_context = segments["archived_context"]
+        working_memory = segments["working_memory"]
+
+        self.summarized_message_count = min(
+            self.summarized_message_count, len(archived_context)
+        )
+
+        threshold = settings.auto_compact_threshold
+        summarizer_model = settings.summarizer_model or "gpt-5-mini"
+        token_count = get_token_count(messages, model=summarizer_model)
+
+        if token_count <= threshold:
+            return self._build_progressive_view(system_messages, working_memory)
+
+        pending_messages = archived_context[self.summarized_message_count :]
+        if not pending_messages:
+            return self._build_progressive_view(system_messages, working_memory)
+
+        try:
+            prompt_messages = self._build_summary_prompt(pending_messages)
+            response = llm_client.generate_plain(
+                input_messages=prompt_messages, model=summarizer_model
+            )
+        except Exception as exc:
+            logger.error("Failed to summarize context: %s", exc)
+            return messages
+
+        summary_text = self._extract_summary_text(response)
+        if summary_text:
+            self.current_summary = summary_text
+
+        self.summarized_message_count += len(pending_messages)
+
+        return self._build_progressive_view(system_messages, working_memory)
+
+    def _build_progressive_view(
+        self, system_messages: List[Dict], working_memory: List[Dict]
+    ) -> List[Dict]:
+        pinned = [dict(msg) for msg in system_messages]
+        summary_nodes = [msg for msg in pinned if msg.get("summary_marker")]
+
+        if summary_nodes:
+            summary_nodes[0]["content"] = self.current_summary
+        elif self.current_summary:
+            pinned.append(
+                {
+                    "role": "system",
+                    "content": self.current_summary,
+                    "summary_marker": True,
+                }
+            )
+
+        return pinned + working_memory
+
+    def _build_summary_prompt(self, new_messages: List[Dict]) -> List[Dict]:
+        prompt = _load_summary_prompt()
+        serialized = []
+        for msg in new_messages:
+            role = msg.get("role", "unknown").capitalize()
+            serialized.append(f"{role}: {msg.get('content', '').strip()}")
+        body = "\n".join(serialized)
+        user_content = (
+            f"Existing summary:\n{self.current_summary or 'None'}\n\n"
+            f"New information to compress:\n{body}"
+        )
+        return [
+            {"role": "system", "content": prompt},
+            {"role": "user", "content": user_content},
+        ]
+
+    @staticmethod
+    def _extract_summary_text(response: Any) -> str:
+        if not response or not getattr(response, "choices", None):
+            return ""
+
+        first_choice = response.choices[0]
+        message = getattr(first_choice, "message", None)
+
+        if isinstance(message, dict):
+            return (message.get("content") or "").strip()
+
+        return (getattr(message, "content", "") or "").strip()

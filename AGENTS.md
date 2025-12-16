@@ -30,12 +30,11 @@
 
 ## Logging Style
 
-- There are two main layers of logging, `logging.INFO` and `logging.DEBUG`
-- `INFO` is supposed to give highlevel information about the benchmark run and will always be displayed to the user.
-- `DEBUG` is for detecting errors or logical mistakes in code implementation
+- `src/utils/logger.py` implements a logging module which is used for all logging. 
 - The levels are set in `config.toml`.
 
 ## Your Developer Agent Behaviour
 
+- I will review all your changes by hand. Make sure they have excellent quality and do not change more than necessary. 
 - Never write simple test scripts, always refer to the testing approach & preferences above
 - Never summarize your finding to a .md unless i explicitly ask you.

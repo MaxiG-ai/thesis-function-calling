@@ -17,6 +17,7 @@ class MemoryDef(BaseModel):
     type: str
     max_tokens: Optional[int] = None
     target_summary_length: Optional[int] = None
+    auto_compact_threshold: Optional[int] = None
     summarizer_model: Optional[str] = None
 
     # New fields for MemoryBank

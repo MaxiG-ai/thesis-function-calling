@@ -409,7 +409,7 @@ def run_single_configuration(
         name=f"{model}_{memory}",
         model=model,
         dataset="ComplexFuncBench",
-        eval_attributes={"memory_method": memory, "config": orchestrator.cfg},
+        eval_attributes={"memory_method": memory, "config": orchestrator.get_exp_config()},
         scorers=["success", "turn_accuracy", "call_accuracy", "response_complete", "response_correct"],
     )
     
