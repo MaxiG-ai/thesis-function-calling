@@ -31,7 +31,6 @@ The core thesis work involves implementing `Context Transformation` functions. T
 
 ### Models & Providers
 
-LLM logic is abstracted using [Apantli](https://github.com/pborenstein/apantli).
 The Middleware acts as a standard OpenAI-compatible API. The Benchmarks point to this proxy, unaware that their requests are being intercepted and optimized.
 
 #### Local Proxy Architecture
@@ -39,19 +38,17 @@ The Middleware acts as a standard OpenAI-compatible API. The Benchmarks point to
 All LLM requests flow through a **local proxy at `localhost:3030`** that serves as the routing layer:
 
 1. **LiteLLM Integration:** The `LLMOrchestrator` uses LiteLLM to send requests to `localhost:3030/v1` (configured in `model_config.toml`)
-2. **Apantli Router:** The proxy at port 3030 is powered by [Apantli](https://github.com/pborenstein/apantli), which routes requests to actual LLM providers (OpenAI, Ollama, SAP AI Core, etc.)
+2. **Proxy Router:** The proxy at port 3030 routes requests to actual LLM providers (OpenAI, Ollama, SAP AI Core, etc.)
 3. **Provider Flexibility:** This abstraction allows switching between providers without changing benchmark code
 
 **Configuration Flow:**
 * `model_config.toml` - Defines models with `api_base = "http://localhost:3030/v1"`
-* Apantli config (`/dev/apantli/config.yaml`) - Maps model names to actual provider endpoints
 * `config.toml` - Selects which models to test via `enabled_models` list
 
 To add/edit models the following files need to be changed:
 
-* `/dev/apantli/config.yaml` or wherever the apantli server is installed
-* `model_config.toml` important to send to AICore Proxy
-* `config.toml` use model in enabled model list
+* `model_config.toml` - Define model configurations and provider endpoints
+* `config.toml` - Select models in enabled model list
 
 ### Benchmarks (Clients)
 
@@ -68,7 +65,7 @@ The ComplexFuncBench benchmark was integrated into this repository with the foll
 * **Added `SAPGPTRunner`:** A custom runner that injects the `LLMOrchestrator` into the benchmark execution flow
 * **Orchestrator Integration:** Modified `FunctionCallSAPGPT` model class to accept an optional `orchestrator` parameter, enabling memory processing while preserving original benchmark code
 * **Preserved Original Structure:** All original benchmark files remain intact; thesis-specific modifications are isolated in custom runner classes
-* **Legacy Support:** Original runners (e.g., `legacy_sap_gpt_runner.py`) are preserved for comparison
+* **Legacy Support:** Original runners (e.g., `gpt_runner.py`) are preserved for comparison
 
 #### NestFul (IBM)
 
@@ -139,12 +136,7 @@ The implementation handles **Context Transformation** through direct orchestrato
 ### Prerequisites
 
 1. **Start the Local Proxy (Port 3030):** 
-   ```bash
-   cd dev/apantli
-   # Activate virtual environment
-   apantli --port 3030
-   ```
-   This runs the Apantli router that forwards requests to actual LLM providers.
+   Ensure a local proxy is running at `localhost:3030` that routes LiteLLM requests to LLM providers.
 
 2. **(Optional) Run SAP AI Core Proxy:**
    ```bash
