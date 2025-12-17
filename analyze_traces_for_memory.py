@@ -62,7 +62,6 @@ latency = summary.get("weave", {}).get("latency_ms", 0)
 memory_key = inputs.get("strategy_key", "N/A") if isinstance(inputs, dict) else "N/A"
 time_str = call.started_at.strftime("%Y-%m-%d %H:%M:%S") if call.started_at else "N/A"
 
-st.sidebar.metric("Strategy", strategy)
 st.sidebar.metric("Memory Key", memory_key)
 st.sidebar.metric("Messages", f"{len(in_messages)} → {len(out_messages)}")
 st.sidebar.metric("Latency", f"{latency:.0f}ms")
