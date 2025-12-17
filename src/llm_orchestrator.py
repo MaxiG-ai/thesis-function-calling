@@ -249,7 +249,7 @@ class LLMOrchestrator:
                 # Convert to dict to match input_messages format
                 self.raw_history.append(response_message.model_dump(exclude_none=True))
             else:
-                logger.warning("⚠️ Response is not of type ChatCompletion; skipping raw history append.")
+                logger.warning("⚠️ Response is not of type ModelResponse; skipping raw history append.")
             return response
             
         except Exception as e:
