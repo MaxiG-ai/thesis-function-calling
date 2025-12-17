@@ -1,12 +1,15 @@
 # --- Experiment Matrix ---
 # The suite will iterate through the Cartesian product of these lists.
 
-experiment_name = "gpt41mini_memory_test"
+experiment_name = "initial_tests"
 results_dir = "results"
 log_dir = "results/logs"
 logging_level = "INFO"
-debug = false
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
+# Optional: Run specific test cases by ID. When set, only these cases will be run.
+# Examples: ["Car-Rental-0", "Car-Rental-1"] or ["Travel-5", "Cross-10"]
+# Leave commented out or set to null to run all cases (or use benchmark_sample_size for random sampling)
+# selected_test_cases = ["Car-Rental-142", "Cross-131"]
 benchmark_sample_size = 20
 
 # 1. Select keys from model_config.toml to test
