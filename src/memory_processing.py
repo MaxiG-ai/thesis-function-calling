@@ -119,20 +119,27 @@ class MemoryProcessor:
         # Use trace_raw_token_count if available for accurate baseline
         pre_count = input_token_info.get("raw_token_count") or get_token_count(messages)
 
-        # 2. Apply selected memory strategy
-        if settings.type == "truncation":
-            processed_messages = self._apply_truncation(messages, settings.max_tokens or 2000)
-        elif settings.type == "memory_bank":
-            processed_messages = self._apply_memory_bank(messages, settings)
-        elif settings.type == "progressive_summarization":
-            processed_messages = self._apply_progressive_summarization(
-                messages, settings, llm_client
-            )
-        else:
-            logger.info(
-                f"🧠 Unknown memory strategy type: {settings.type}. No memory strategy applied; returning original messages."
-            )
+        if pre_count < self.config.max_tokens:
             return messages, {}
+        
+        else:
+            logger.debug(
+                f"🧠 Pre-Processing Token Count: {pre_count}, exceeds max_tokens={self.config.max_tokens}"
+            )
+            # 2. Apply selected memory strategy
+            if settings.type == "truncation":
+                processed_messages = self._apply_truncation(messages, pre_count, self.config.max_tokens)
+            elif settings.type == "memory_bank":
+                processed_messages = self._apply_memory_bank(messages, pre_count, settings)
+            elif settings.type == "progressive_summarization":
+                processed_messages = self._apply_progressive_summarization(
+                    messages, pre_count, settings, llm_client
+                )
+            else:
+                logger.warning(
+                    f"🧠 Unknown memory strategy type: {settings.type}. No memory strategy applied; returning original messages."
+                )
+                return messages, {}
 
         post_count = get_token_count(processed_messages)
         reduction_pct = 100 - ((post_count / pre_count) * 100) if pre_count > 0 else 0
@@ -143,8 +150,9 @@ class MemoryProcessor:
         }
 
         return processed_messages, output_token_info
-
-    def _apply_truncation(self, messages: List[Dict], max_tokens: int) -> List[Dict]:
+    
+    @weave.op()
+    def _apply_truncation(self, messages: List[Dict], token_count: int, max_tokens: int) -> List[Dict]:
         """
         Naive Baseline: Keeps only the system prompt + last N messages.
         Ensures assistant+tool message pairs are kept together.
@@ -159,8 +167,9 @@ class MemoryProcessor:
             f"✂️  Truncated context from {len(messages)} to {len(result)} msgs using max_tokens={max_tokens}"
         )
         return result
-
-    def _apply_memory_bank(self, messages: List[Dict], settings) -> List[Dict]:
+    
+    @weave.op()
+    def _apply_memory_bank(self, messages: List[Dict], token_count: int, settings) -> List[Dict]:
         if self.active_bank is None:
             self.active_bank = MemoryBank(settings.embedding_model)
 
@@ -218,9 +227,11 @@ FinalMessages:{len(result)}
         )
         return result
 
+    @weave.op()
     def _apply_progressive_summarization(
         self,
         messages: List[Dict],
+        token_count: int,
         settings,
         llm_client: Optional[Any],
     ) -> List[Dict]:
@@ -240,7 +251,7 @@ FinalMessages:{len(result)}
         summarizer_model = settings.summarizer_model or "gpt-4-1-mini"
         token_count = get_token_count(messages)
 
-        if token_count <= threshold:
+        if token_count <= threshold: # TODO: Log this to weave for filtering
             return self._build_progressive_view(system_messages, working_memory)
 
         pending_messages = archived_context[self.summarized_message_count :]
