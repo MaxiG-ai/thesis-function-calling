@@ -45,7 +45,6 @@ class LLMOrchestrator:
             exp_path: Path to experiment config file
             model_path: Path to model registry config file
         """
-        os.environ["LITELLM_LOG"] = "ERROR"
         # 1. Load static config
         self.cfg: ExperimentConfig = load_configs(exp_path, model_path)
         
