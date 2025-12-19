@@ -243,7 +243,7 @@ class LLMOrchestrator:
             response = litellm.completion(**request_params)
             
             # Append generated response to raw history
-            if type(response) is ModelResponse:
+            if isinstance(response, ModelResponse):
                 response_message = response.choices[0]
                 # Convert to dict to match input_messages format
                 self.raw_history.append(response_message.model_dump(exclude_none=True))
