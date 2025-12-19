@@ -120,10 +120,8 @@ class MemoryProcessor:
         pre_count = input_token_info.get("raw_token_count") or get_token_count(messages)
 
         if pre_count < self.config.max_tokens:
-            return messages, {}
             # TODO: Context reading for memory bank and ACON should happen here nonetheless.
-            
-        
+            return messages, {}
         else:
             logger.debug(
                 f"🧠 Pre-Processing Token Count: {pre_count}, exceeds max_tokens={self.config.max_tokens}"
