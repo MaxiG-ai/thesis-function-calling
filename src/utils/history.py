@@ -1,17 +1,13 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 
 
-def segment_message_history(messages: List[Dict]) -> Dict[str, List[Dict]]:
+def segment_message_history(messages: List[Dict]) -> Tuple[List[Dict], List[Dict], List[Dict]]:
     """Split conversation into pinned nodes, archived context, and working memory."""
     prefix, start_idx = _extract_pinned_prefix(messages)
     conversation = messages[start_idx:]
     tail_start = _find_tail_start(conversation)
 
-    return {
-        "system_message": prefix,
-        "archived_context": conversation[:tail_start],
-        "working_memory": conversation[tail_start:],
-    }
+    return prefix, conversation[:tail_start], conversation[tail_start:]
 
 
 def _extract_pinned_prefix(messages: List[Dict]) -> tuple[List[Dict], int]:

@@ -9,22 +9,7 @@ from src.utils.logger import get_logger
 from src.utils.token_count import get_token_count
 
 logger = get_logger("MemoryProcessor")
-PROMPT_PATH = Path(__file__).resolve().parents[0] / "prompts" / "progressive_summary.md"
-_SUMMARY_PROMPT_CACHE: Optional[str] = None
 
-def _load_summary_prompt() -> str:
-    """Utility to load and cache the summary prompt."""
-    global _SUMMARY_PROMPT_CACHE
-    if _SUMMARY_PROMPT_CACHE is not None:
-        return _SUMMARY_PROMPT_CACHE
-
-    try:
-        _SUMMARY_PROMPT_CACHE = PROMPT_PATH.read_text(encoding="utf-8")
-    except FileNotFoundError:
-        logger.error("Missing progressive summary prompt file at %s", PROMPT_PATH)
-        _SUMMARY_PROMPT_CACHE = "Summarize the following updates without adding explanation or metadata."
-
-    return _SUMMARY_PROMPT_CACHE
 
 def detect_tail_loop(messages: list[dict], threshold: int = 4, max_pattern_len: int = 10) -> bool:
     """Detects repeating patterns at the tail of a conversation."""
@@ -85,7 +70,25 @@ class MemoryProcessor:
         self.active_bank: Optional[MemoryBank] = None
         self.processed_message_ids: set = set()
         self.current_summary: str = ""
-        self.summarized_message_count: int = 0
+        self._load_summary_prompt()
+
+
+    def _load_summary_prompt(self):
+        """Utility to load and cache the summary prompt."""
+        # Find the progressive_summarization strategy if configured
+        config_prompt_path = "prompts/progressive_summary.md"
+        for strategy in self.config.memory_strategies.values():
+            if strategy.type == "progressive_summarization" and strategy.summary_prompt:
+                config_prompt_path = strategy.summary_prompt
+                break
+        
+        # parse string to Path
+        prompt_path = Path(__file__).resolve().parents[0] / Path(config_prompt_path)
+        try:
+            self.summary_prompt = prompt_path.read_text(encoding="utf-8")   
+        except FileNotFoundError:
+            logger.error("Missing progressive summary prompt file at %s", prompt_path)
+            self.summary_prompt = "Compress the following conversation history into a concise summary."
 
     def reset_state(self):
         """Called by Orchestrator to reset memory between runs."""
@@ -93,7 +96,6 @@ class MemoryProcessor:
             self.active_bank.reset()
         self.processed_message_ids.clear()
         self.current_summary = ""
-        self.summarized_message_count = 0
         logger.info("🧠 Memory State Reset")
 
     @weave.op()
@@ -104,7 +106,9 @@ class MemoryProcessor:
         input_token_info: Dict[str, Any],
         llm_client: Optional[Any] = None,
     ) -> Tuple[List[Dict], Dict[str, Any]]:
-        """Apply the configured memory strategy to the incoming messages."""
+        """
+        Apply the configured memory strategy to the incoming messages.
+        """
         settings = self.config.memory_strategies[strategy_key]
         logger.debug(f"🧠 Applying Memory Strategy: {settings.type}")
 
@@ -121,7 +125,7 @@ class MemoryProcessor:
 
         if pre_count < self.config.max_tokens:
             # TODO: Context reading for memory bank and ACON should happen here nonetheless.
-            return messages, {}
+            return messages, input_token_info
         else:
             logger.debug(
                 f"🧠 Pre-Processing Token Count: {pre_count}, exceeds max_tokens={self.config.max_tokens}"
@@ -139,7 +143,7 @@ class MemoryProcessor:
                 logger.warning(
                     f"🧠 Unknown memory strategy type: {settings.type}. No memory strategy applied; returning original messages."
                 )
-                return messages, {}
+                return messages, input_token_info
 
         post_count = get_token_count(processed_messages)
         reduction_pct = 100 - ((post_count / pre_count) * 100) if pre_count > 0 else 0
@@ -160,8 +164,8 @@ class MemoryProcessor:
         if len(messages) <= 3:
             return messages
 
-        segments = segment_message_history(messages)
-        result = segments["system_message"] + segments["working_memory"]
+        system_messages, _, working_memory = segment_message_history(messages)
+        result = system_messages + working_memory
 
         logger.debug(
             f"✂️  Truncated context from {len(messages)} to {len(result)} msgs using max_tokens={max_tokens}"
@@ -235,91 +239,58 @@ FinalMessages:{len(result)}
         settings,
         llm_client: Optional[Any],
     ) -> List[Dict]:
-        if settings.auto_compact_threshold is None or llm_client is None:
-            return messages
+        """Summarizes archived context when token threshold is exceeded.
+        
+        Re-summarizes all archived context (middle of conversation) each time,
+        keeping system messages and working memory (recent turns) intact.
+        """
+        if settings.auto_compact_threshold is None:
+            raise ValueError("auto_compact_threshold must be configured for progressive summarization")
+        if llm_client is None:
+            raise ValueError("llm_client is required for progressive summarization")
 
-        segments = segment_message_history(messages)
-        system_messages = segments["system_message"]
-        archived_context = segments["archived_context"]
-        working_memory = segments["working_memory"]
-
-        self.summarized_message_count = min(
-            self.summarized_message_count, len(archived_context)
-        )
+        system_messages, archived_context, working_memory = segment_message_history(messages)
 
         threshold = settings.auto_compact_threshold
-        summarizer_model = settings.summarizer_model or "gpt-4-1-mini"
         token_count = get_token_count(messages)
 
-        # TODO: Log this condition to Weave for filtering
-        if token_count <= threshold:
-            return self._build_progressive_view(system_messages, working_memory)
+        # Don't summarize if below threshold or no archived content
+        if token_count <= threshold or not archived_context:
+            return system_messages + working_memory
 
-        pending_messages = archived_context[self.summarized_message_count :]
-        if not pending_messages:
-            return self._build_progressive_view(system_messages, working_memory)
-
-        try:
-            prompt_messages = self._build_summary_prompt(pending_messages)
-            response = llm_client.generate_plain(
-                input_messages=prompt_messages, model=summarizer_model
-            )
-        except Exception as exc:
-            logger.error("Failed to summarize context: %s", exc)
-            return messages
-
-        summary_text = self._extract_summary_text(response)
-        if summary_text:
-            self.current_summary = summary_text
-
-        self.summarized_message_count += len(pending_messages)
-
-        return self._build_progressive_view(system_messages, working_memory)
-
-    def _build_progressive_view(
-        self, system_messages: List[Dict], working_memory: List[Dict]
-    ) -> List[Dict]:
-        pinned = [dict(msg) for msg in system_messages]
-        summary_nodes = [msg for msg in pinned if msg.get("summary_marker")]
-
-        if summary_nodes:
-            summary_nodes[0]["content"] = self.current_summary
-        elif self.current_summary:
-            pinned.append(
-                {
-                    "role": "system",
-                    "content": self.current_summary,
-                    "summary_marker": True,
-                }
-            )
-
-        return pinned + working_memory
-
-    def _build_summary_prompt(self, new_messages: List[Dict]) -> List[Dict]:
-        prompt = _load_summary_prompt()
-        serialized = []
-        for msg in new_messages:
-            role = msg.get("role", "unknown").capitalize()
-            serialized.append(f"{role}: {msg.get('content', '').strip()}")
+        # Serialize all archived messages for summarization
+        serialized = [
+            f"{msg.get('role', 'unknown').capitalize()}: {msg.get('content', '').strip()}"
+            for msg in archived_context
+        ]
         body = "\n".join(serialized)
-        user_content = (
-            f"Existing summary:\n{self.current_summary or 'None'}\n\n"
-            f"New information to compress:\n{body}"
-        )
-        return [
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": user_content},
+        
+        # Build prompt for summarization
+        prompt_messages = [
+            {"role": "system", "content": self.summary_prompt},
+            {"role": "user", "content": f"Conversation history to compress:\n{body}"},
         ]
 
-    @staticmethod
-    def _extract_summary_text(response: Any) -> str:
-        if not response or not getattr(response, "choices", None):
-            return ""
+        # Call LLM to generate summary (let exceptions propagate)
+        summarizer_model = settings.summarizer_model or "gpt-4-1-mini"
+        response = llm_client.generate_plain(
+            input_messages=prompt_messages, model=summarizer_model
+        )
 
-        first_choice = response.choices[0]
-        message = getattr(first_choice, "message", None)
-
+        # Extract summary text from response
+        message = response.choices[0].message
         if isinstance(message, dict):
-            return (message.get("content") or "").strip()
+            summary_text = (message.get("content") or "").strip()
+        else:
+            summary_text = (getattr(message, "content", "") or "").strip()
 
-        return (getattr(message, "content", "") or "").strip()
+        if not summary_text:
+            raise ValueError("Summarization returned empty content")
+
+        # Build final message list: system + summary + working memory
+        summary_message = {"role": "system", "content": summary_text}
+        logger.debug(
+            f"📝 Summarized {len(archived_context)} messages into {len(summary_text)} chars"
+        )
+        
+        return system_messages + [summary_message] + working_memory

@@ -14,6 +14,7 @@ def _build_config(threshold: int) -> ExperimentConfig:
         input_file="input",
         enabled_models=[],
         enabled_memory_methods=["progressive"],
+        max_tokens=8000,
         memory_strategies={
             "progressive": MemoryDef(
                 type="progressive_summarization",
@@ -50,29 +51,45 @@ class FailingOrchestrator:
 
 
 def test_progressive_summarization_injects_summary_and_is_idempotent() -> None:
-    processor = MemoryProcessor(_build_config(threshold=1))
+    config = _build_config(threshold=1)
+    processor = MemoryProcessor(config)
     orchestrator = FakeOrchestrator("compacted summary")
     messages = _build_messages()
 
-    first_view = processor.apply_strategy(
-        messages, "progressive", llm_client=orchestrator
+    # Get settings and call directly since we're testing the method itself
+    settings = config.memory_strategies["progressive"]
+    first_view = processor._apply_progressive_summarization(
+        messages, token_count=1000, settings=settings, llm_client=orchestrator
     )
+    
+    # Check structure: system message + summary message + working memory
     assert first_view[0]["role"] == "system"
+    assert first_view[0]["content"] == "System"
+    assert first_view[1]["role"] == "system"
     assert first_view[1]["content"] == "compacted summary"
+    assert first_view[2]["content"] == "Second ask."
 
-    second_view = processor.apply_strategy(
-        messages, "progressive", llm_client=orchestrator
+    # Call again - should create new summary (no idempotency in full re-summarization)
+    second_view = processor._apply_progressive_summarization(
+        messages, token_count=1000, settings=settings, llm_client=orchestrator
     )
-    assert orchestrator.call_count == 1
-    assert second_view == first_view
+    # Called twice now (once per invocation)
+    assert orchestrator.call_count == 2
+    assert second_view[1]["content"] == "compacted summary"
 
 
 def test_progressive_summarization_fails_back_to_full_history() -> None:
-    processor = MemoryProcessor(_build_config(threshold=1))
+    config = _build_config(threshold=1)
+    processor = MemoryProcessor(config)
     failing_orchestrator = FailingOrchestrator()
     messages = _build_messages()
 
-    result = processor.apply_strategy(
-        messages, "progressive", llm_client=failing_orchestrator
-    )
-    assert result == messages
+    # Now exceptions propagate instead of silent fallback
+    settings = config.memory_strategies["progressive"]
+    try:
+        processor._apply_progressive_summarization(
+            messages, token_count=1000, settings=settings, llm_client=failing_orchestrator
+        )
+        assert False, "Expected RuntimeError to propagate"
+    except RuntimeError as e:
+        assert "model down" in str(e)
