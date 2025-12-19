@@ -251,7 +251,8 @@ FinalMessages:{len(result)}
         summarizer_model = settings.summarizer_model or "gpt-4-1-mini"
         token_count = get_token_count(messages)
 
-        if token_count <= threshold: # TODO: Log this to weave for filtering
+        # TODO: Log this condition to Weave for filtering
+        if token_count <= threshold:
             return self._build_progressive_view(system_messages, working_memory)
 
         pending_messages = archived_context[self.summarized_message_count :]
