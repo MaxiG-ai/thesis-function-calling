@@ -82,8 +82,8 @@ class SAPGPTRunner(ModelRunner):
                     if function_call is None:
                         return self.return_result(messages, {"error_type": "decode_error", "content": f"{tool_call.function} is not Valid."})
                     function_calls.append(function_call)
-                self.logger.info(f"Function Calls: \n{json.dumps(function_calls, ensure_ascii=False, indent=4)}\n")
-                self.logger.info(f"Golden Function Call: \n{json.dumps(self.golden_fcs, ensure_ascii=False, indent=4)}\n")
+                self.logger.debug(f"Function Calls: \n{json.dumps(function_calls, ensure_ascii=False, indent=4)}\n")
+                self.logger.debug(f"Golden Function Call: \n{json.dumps(self.golden_fcs, ensure_ascii=False, indent=4)}\n")
                 messages.append({"role": "assistant", "function_call": function_calls})
                 
                 self.error_message, success_map, success_matched, format_error = self.CompareClass.compare_turn_prediction(
@@ -116,13 +116,13 @@ class SAPGPTRunner(ModelRunner):
 
                 self.process_matches(success_matched)
                     
-                self.logger.info(f"Observations:\n{json.dumps(real_time_obs, ensure_ascii=False, indent=4)}\n")
+                self.logger.debug(f"Observations:\n{json.dumps(real_time_obs, ensure_ascii=False, indent=4)}\n")
                 messages.append({"role": "observation", "content": real_time_obs})
 
             # TODO: Log the final answer to weave
             elif llm_response.content is not None:
                 final_response = llm_response.content
-                self.logger.info(f"Final Response: {final_response}\n")
+                self.logger.debug(f"Final Response: {final_response}\n")
                 messages.append({"role": "assistant", "content": final_response})
 
                 return self.return_result(messages, self.error_message)

@@ -12,6 +12,9 @@ input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
 # selected_test_cases = ["Car-Rental-142", "Cross-131"]
 benchmark_sample_size = 20
 
+# setting for max. context before compression
+max_tokens = 2000
+
 # 1. Select keys from model_config.toml to test
 enabled_models = [
     # "gpt-5",
@@ -34,7 +37,6 @@ enabled_memory_methods = [
 
 [memory_strategies.truncation]
 type = "truncation"
-max_tokens = 10000
 
 [memory_strategies.memory_bank]
 type = "memory_bank"
@@ -46,5 +48,4 @@ type = "no_strategy"
 
 [memory_strategies.progressive_summarization]
 type = "progressive_summarization"
-auto_compact_threshold = 10000
 summarizer_model = "gpt-4-1-mini"

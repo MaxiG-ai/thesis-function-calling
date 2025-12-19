@@ -1,28 +1,16 @@
 import weave
-import tiktoken
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
+
 from src.utils.config import ExperimentConfig
 from src.strategies.memory_bank.memory_bank import MemoryBank
 from src.utils.history import segment_message_history
 from src.utils.logger import get_logger
-from weave.trace.context.call_context import NoCurrentCallError
+from src.utils.token_count import get_token_count
 
 logger = get_logger("MemoryProcessor")
 PROMPT_PATH = Path(__file__).resolve().parents[0] / "prompts" / "progressive_summary.md"
 _SUMMARY_PROMPT_CACHE: Optional[str] = None
-
-
-def get_token_count(messages: list[dict], model: str) -> int:
-    """Utility to count tokens."""
-    enc = tiktoken.encoding_for_model(model)
-    count = 0
-    for m in messages:
-        content = m.get("content") or ""
-        if isinstance(content, str):
-            count += len(enc.encode(content))
-    return count
-
 
 def _load_summary_prompt() -> str:
     """Utility to load and cache the summary prompt."""
@@ -37,7 +25,6 @@ def _load_summary_prompt() -> str:
         _SUMMARY_PROMPT_CACHE = "Summarize the following updates without adding explanation or metadata."
 
     return _SUMMARY_PROMPT_CACHE
-
 
 def detect_tail_loop(messages: list[dict], threshold: int = 4, max_pattern_len: int = 10) -> bool:
     """Detects repeating patterns at the tail of a conversation."""
@@ -114,113 +101,58 @@ class MemoryProcessor:
         self,
         messages: List[Dict],
         strategy_key: str,
-        *,
+        input_token_info: Dict[str, Any],
         llm_client: Optional[Any] = None,
-    ) -> List[Dict]:
+    ) -> Tuple[List[Dict], Dict[str, Any]]:
         """Apply the configured memory strategy to the incoming messages."""
         settings = self.config.memory_strategies[strategy_key]
-        logger.info(f"🧠 Applying Memory Strategy: {settings.type}")
+        logger.debug(f"🧠 Applying Memory Strategy: {settings.type}")
 
         # Loop detection to prevent infinite context growth
         if len(messages) > 20 and detect_tail_loop(messages, threshold=4, max_pattern_len=5):
             logger.error(
                 f"🚨 Infinite loop detected in last {len(messages)} messages. Aborting."
             )
-            return [{"role": "system", "content": "Infinite loop detected; aborting."}]
+            return [{"role": "system", "content": "Infinite loop detected; aborting."}], {}
 
-        model = "gpt-4-1-mini"
-        limit = 128000
         # 1. Measure state before context processing
-        pre_count = get_token_count(messages, model=model)
-        pre_fill_pct = (pre_count / limit) * 100
+        # Use trace_raw_token_count if available for accurate baseline
+        pre_count = input_token_info.get("raw_token_count") or get_token_count(messages)
 
-        # 2. Apply selected memory strategy
-        if settings.type == "truncation":
-            processed_messages = self._apply_truncation(messages, settings.max_tokens or 2000)
-        elif settings.type == "memory_bank":
-            processed_messages = self._apply_memory_bank(messages, settings)
-        elif settings.type == "progressive_summarization":
-            processed_messages = self._apply_progressive_summarization(
-                messages, settings, llm_client
-            )
+        if pre_count < self.config.max_tokens:
+            # TODO: Context reading for memory bank and ACON should happen here nonetheless.
+            return messages, {}
         else:
-            logger.info(
-                f"🧠 Unknown memory strategy type: {settings.type}. No memory strategy applied; returning original messages."
+            logger.debug(
+                f"🧠 Pre-Processing Token Count: {pre_count}, exceeds max_tokens={self.config.max_tokens}"
             )
-            return messages
-
-        post_count = get_token_count(processed_messages, model=model)
-        post_fill_pct = (post_count / limit) * 100
-        reduction_pct = 100 - ((post_count / pre_count) * 100)
-
-        try:
-            cc = weave.require_current_call()
-        # Weird CoPilot addition to make tests work 
-        except NoCurrentCallError:
-            cc = None
-        if cc is not None and cc.summary is not None:
-            cc.summary.update(
-                {
-                    "context_limit": limit,
-                    "pre_compression_tokens": pre_count,
-                    "post_compression_tokens": post_count,
-                    "context_filled_pre_pct": round(pre_fill_pct, 2),
-                    "context_filled_post_pct": round(post_fill_pct, 2),
-                    "compression_reduction_pct": round(reduction_pct, 2),
-                }
-            )
-
-        return processed_messages
-
-    # TODO: This function is currently not used, but kept for future reference if needed.
-    def _validate_and_repair_tool_pairs(
-        self, processed_messages: List[Dict], original_messages: List[Dict]
-    ) -> List[Dict]:
-        validated = []
-        i = 0
-
-        while i < len(processed_messages):
-            msg = processed_messages[i]
-            if msg.get("role") == "tool":
-                has_valid_preceding = (
-                    len(validated) > 0
-                    and validated[-1].get("role") == "assistant"
-                    and "tool_calls" in validated[-1]
+            # 2. Apply selected memory strategy
+            if settings.type == "truncation":
+                processed_messages = self._apply_truncation(messages, pre_count, self.config.max_tokens)
+            elif settings.type == "memory_bank":
+                processed_messages = self._apply_memory_bank(messages, pre_count, settings)
+            elif settings.type == "progressive_summarization":
+                processed_messages = self._apply_progressive_summarization(
+                    messages, pre_count, settings, llm_client
                 )
-
-                if not has_valid_preceding:
-                    tool_call_id = msg.get("tool_call_id")
-                    assistant_msg = None
-
-                    for orig_idx in range(len(original_messages) - 1, -1, -1):
-                        orig_msg = original_messages[orig_idx]
-                        if orig_msg.get("role") == "assistant" and "tool_calls" in orig_msg:
-                            for tc in orig_msg.get("tool_calls", []):
-                                if tc.id == tool_call_id:
-                                    assistant_msg = orig_msg
-                                    break
-                            if assistant_msg:
-                                break
-
-                    if assistant_msg:
-                        logger.debug("🔧 Injecting missing assistant message before tool response")
-                        validated.append(assistant_msg)
-                    else:
-                        logger.warning(
-                            f"⚠️ Could not find assistant message for tool call {tool_call_id}, skipping tool message"
-                        )
-                        i += 1
-                        continue
-
-                validated.append(msg)
             else:
-                validated.append(msg)
+                logger.warning(
+                    f"🧠 Unknown memory strategy type: {settings.type}. No memory strategy applied; returning original messages."
+                )
+                return messages, {}
 
-            i += 1
+        post_count = get_token_count(processed_messages)
+        reduction_pct = 100 - ((post_count / pre_count) * 100) if pre_count > 0 else 0
 
-        return validated
+        output_token_info = {
+            "post_token_count": post_count,
+            "reduction_pct": round(reduction_pct, 2),
+        }
 
-    def _apply_truncation(self, messages: List[Dict], max_tokens: int) -> List[Dict]:
+        return processed_messages, output_token_info
+    
+    @weave.op()
+    def _apply_truncation(self, messages: List[Dict], token_count: int, max_tokens: int) -> List[Dict]:
         """
         Naive Baseline: Keeps only the system prompt + last N messages.
         Ensures assistant+tool message pairs are kept together.
@@ -231,12 +163,13 @@ class MemoryProcessor:
         segments = segment_message_history(messages)
         result = segments["system_message"] + segments["working_memory"]
 
-        logger.info(
+        logger.debug(
             f"✂️  Truncated context from {len(messages)} to {len(result)} msgs using max_tokens={max_tokens}"
         )
         return result
-
-    def _apply_memory_bank(self, messages: List[Dict], settings) -> List[Dict]:
+    
+    @weave.op()
+    def _apply_memory_bank(self, messages: List[Dict], token_count: int, settings) -> List[Dict]:
         if self.active_bank is None:
             self.active_bank = MemoryBank(settings.embedding_model)
 
@@ -281,7 +214,7 @@ class MemoryProcessor:
             )
             memory_msg = [{"role": "system", "content": memory_block}]
             len_retrieved_context = len(retrieved_context) if retrieved_context else 0
-            logger.info(f"🧠 Injected {len_retrieved_context} memories into context.")
+            logger.debug(f"🧠 Injected {len_retrieved_context} memories into context.")
 
         result = system_msgs + memory_msg + recent_msgs
         logger.debug(
@@ -294,9 +227,11 @@ FinalMessages:{len(result)}
         )
         return result
 
+    @weave.op()
     def _apply_progressive_summarization(
         self,
         messages: List[Dict],
+        token_count: int,
         settings,
         llm_client: Optional[Any],
     ) -> List[Dict]:
@@ -313,9 +248,10 @@ FinalMessages:{len(result)}
         )
 
         threshold = settings.auto_compact_threshold
-        summarizer_model = settings.summarizer_model or "gpt-5-mini"
-        token_count = get_token_count(messages, model=summarizer_model)
+        summarizer_model = settings.summarizer_model or "gpt-4-1-mini"
+        token_count = get_token_count(messages)
 
+        # TODO: Log this condition to Weave for filtering
         if token_count <= threshold:
             return self._build_progressive_view(system_messages, working_memory)
 
