@@ -88,7 +88,6 @@ class MemoryProcessor:
             self.summary_prompt = prompt_path.read_text(encoding="utf-8")   
         except FileNotFoundError:
             logger.error("Missing progressive summary prompt file at %s", prompt_path)
-            self.summary_prompt = "Compress the following conversation history into a concise summary."
 
     def reset_state(self):
         """Called by Orchestrator to reset memory between runs."""
@@ -123,16 +122,16 @@ class MemoryProcessor:
         # Use trace_raw_token_count if available for accurate baseline
         pre_count = input_token_info.get("raw_token_count") or get_token_count(messages)
 
-        if pre_count < self.config.max_tokens:
+        if pre_count < self.config.compact_threshold:
             # TODO: Context reading for memory bank and ACON should happen here nonetheless.
             return messages, input_token_info
         else:
             logger.debug(
-                f"🧠 Pre-Processing Token Count: {pre_count}, exceeds max_tokens={self.config.max_tokens}"
+                f"🧠 Pre-Processing Token Count: {pre_count}, exceeds compact_threshold={self.config.compact_threshold}"
             )
             # 2. Apply selected memory strategy
             if settings.type == "truncation":
-                processed_messages = self._apply_truncation(messages, pre_count, self.config.max_tokens)
+                processed_messages = self._apply_truncation(messages, pre_count, self.config.compact_threshold)
             elif settings.type == "memory_bank":
                 processed_messages = self._apply_memory_bank(messages, pre_count, settings)
             elif settings.type == "progressive_summarization":
@@ -244,18 +243,15 @@ FinalMessages:{len(result)}
         Re-summarizes all archived context (middle of conversation) each time,
         keeping system messages and working memory (recent turns) intact.
         """
-        if settings.auto_compact_threshold is None:
-            raise ValueError("auto_compact_threshold must be configured for progressive summarization")
         if llm_client is None:
             raise ValueError("llm_client is required for progressive summarization")
 
         system_messages, archived_context, working_memory = segment_message_history(messages)
 
-        threshold = settings.auto_compact_threshold
         token_count = get_token_count(messages)
 
         # Don't summarize if below threshold or no archived content
-        if token_count <= threshold or not archived_context:
+        if token_count <= self.config.compact_threshold or not archived_context:
             return system_messages + working_memory
 
         # Serialize all archived messages for summarization

@@ -38,7 +38,7 @@ class ExperimentConfig(BaseModel):
     selected_test_cases: Optional[List[str]] = None
     enabled_models: List[str]
     enabled_memory_methods: List[str]
-    max_tokens: int
+    compact_threshold: int
 
     # Maps strategy name -> config
     memory_strategies: Dict[str, MemoryDef]
