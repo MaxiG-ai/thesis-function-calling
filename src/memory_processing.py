@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from src.utils.config import ExperimentConfig
 from src.strategies.memory_bank.memory_bank import MemoryBank
-from src.utils.history import segment_message_history
+from src.utils.history import split_llm_trace
 from src.utils.logger import get_logger
 from src.utils.token_count import get_token_count
 
@@ -163,7 +163,7 @@ class MemoryProcessor:
         if len(messages) <= 3:
             return messages
 
-        system_messages, _, working_memory = segment_message_history(messages)
+        system_messages, _, working_memory = split_llm_trace(messages)
         result = system_messages + working_memory
 
         logger.debug(
@@ -245,8 +245,8 @@ FinalMessages:{len(result)}
         """
         if llm_client is None:
             raise ValueError("llm_client is required for progressive summarization")
-
-        system_messages, archived_context, working_memory = segment_message_history(messages)
+        # TODO: Segement messages not working properly. Fix this.
+        system_messages, archived_context, working_memory = split_llm_trace(messages)
 
         token_count = get_token_count(messages)
 
@@ -255,16 +255,16 @@ FinalMessages:{len(result)}
             return system_messages + working_memory
 
         # Serialize all archived messages for summarization
-        serialized = [
-            f"{msg.get('role', 'unknown').capitalize()}: {msg.get('content', '').strip()}"
-            for msg in archived_context
-        ]
-        body = "\n".join(serialized)
+        # serialized = [
+        #     f"{msg.get('role', 'unknown').capitalize()}: {msg.get('content', '').strip()}"
+        #     for msg in archived_context
+        # ]
+        # body = "\n".join(serialized)
         
         # Build prompt for summarization
         prompt_messages = [
             {"role": "system", "content": self.summary_prompt},
-            {"role": "user", "content": f"Conversation history to compress:\n{body}"},
+            {"role": "user", "content": f"Conversation history to compress:\n{archived_context}"},
         ]
 
         # Call LLM to generate summary (let exceptions propagate)
