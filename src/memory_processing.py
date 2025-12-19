@@ -121,6 +121,8 @@ class MemoryProcessor:
 
         if pre_count < self.config.max_tokens:
             return messages, {}
+            # TODO: Context reading for memory bank and ACON should happen here nonetheless.
+            
         
         else:
             logger.debug(
