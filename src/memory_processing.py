@@ -289,4 +289,6 @@ FinalMessages:{len(result)}
             f"📝 Summarized {len(archived_context)} messages into {len(summary_text)} chars"
         )
         
+        # TODO: Currently only return summary as system message. Rest should be added.
+        # Likely the split function is not working as intended.
         return system_messages + [summary_message] + working_memory
