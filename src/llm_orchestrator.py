@@ -232,7 +232,7 @@ class LLMOrchestrator:
         Execute LLM request for evaluation. No memory processing applied. Model defaults to GPT-4.1 
         Exception: Any errors from OpenAI API (logged to wandb)
         """
-        kwargs.pop("model", "gpt-4-1")
+        kwargs.pop("model", None)
         try:
             
             # Try to find in registry
