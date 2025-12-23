@@ -17,11 +17,14 @@ class MemoryDef(BaseModel):
     type: str
     target_summary_length: Optional[int] = None
     auto_compact_threshold: Optional[int] = None
-    summarizer_model: Optional[str] = None
 
     # New fields for MemoryBank
     embedding_model: Optional[str] = "BAAI/bge-small-en-v1.5"
     top_k: Optional[int] = 3
+
+    # Fields for Progressive Summarization
+    summary_prompt: Optional[str] = None
+    summarizer_model: Optional[str] = None
 
 
 class ExperimentConfig(BaseModel):
@@ -35,7 +38,7 @@ class ExperimentConfig(BaseModel):
     selected_test_cases: Optional[List[str]] = None
     enabled_models: List[str]
     enabled_memory_methods: List[str]
-    max_tokens: int
+    compact_threshold: int
 
     # Maps strategy name -> config
     memory_strategies: Dict[str, MemoryDef]

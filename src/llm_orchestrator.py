@@ -54,7 +54,6 @@ class LLMOrchestrator:
         # 3. State variables (mutable)
         self.active_model_key: str = self.cfg.enabled_models[0]
         self.active_memory_key: str = self.cfg.enabled_memory_methods[0]
-        self.raw_history: List[Dict] = []
         
         # 4. Configure LiteLLM
         os.environ["LITELLM_LOG"] = "ERROR"
@@ -71,21 +70,11 @@ class LLMOrchestrator:
         exp_dict.pop("model_registry", None)
         return exp_dict
 
-    def get_raw_history_token_count(self) -> int:
-        """
-        Calculate token count of the raw conversation history.
-        
-        Returns:
-            Token count of raw history
-        """
-        return get_token_count(self.raw_history)
-    
     def reset_session(self):
         """
         Clear memory state. Call this before starting a new benchmark conversation.
         """
         self.memory_processor.reset_state()
-        self.raw_history = []
         logger.info("🔄 Session Reset")
     
     def set_active_context(self, model_key: str, memory_key: str):
@@ -179,23 +168,16 @@ class LLMOrchestrator:
             Exception: Any errors from OpenAI API (logged to wandb)
         """
         # Sync raw history (append only new messages)
-        if not self.raw_history:
-            self.raw_history = list(input_messages)
-        else:
-            self.raw_history.append(input_messages[-1])
+        # TODO: Feature: Keep complete trace before truncation.
 
-        # Pre-processing metrics
-        input_char_count = sum(len(str(m.get("content", ""))) for m in input_messages)
-        
         logger.debug(
-            f"🔄 Processing {len(input_messages)} messages "
-            f"({input_char_count} chars) with {self.active_memory_key}"
+            f"🔄 Processing {len(input_messages)} messages with {self.active_memory_key}"
         )
         
         #TODO: Needs to be filled correctly
         input_token_count = {
             "conversation_history_token_count": get_token_count(input_messages),
-}
+        }
 
         # Apply memory processing
         compressed_view, _ = self.memory_processor.apply_strategy(
@@ -203,14 +185,6 @@ class LLMOrchestrator:
             self.active_memory_key,
             input_token_info=input_token_count,
             llm_client=self,
-        )
-        
-        processed_char_count = sum(len(str(m.get("content", ""))) for m in compressed_view)
-        compression_ratio = processed_char_count / input_char_count if input_char_count > 0 else 1.0
-        
-        logger.debug(
-            f"📊 Memory processed: {len(compressed_view)} messages "
-            f"({processed_char_count} chars, {compression_ratio:.2%} of original)"
         )
         
         # Sanitize kwargs (remove model if passed by benchmark)
@@ -242,13 +216,6 @@ class LLMOrchestrator:
             
             response = litellm.completion(**request_params)
             
-            # Append generated response to raw history
-            if isinstance(response, ModelResponse):
-                response_message = response.choices[0]
-                # Convert to dict to match input_messages format
-                self.raw_history.append(response_message.model_dump(exclude_none=True))
-            else:
-                logger.warning("⚠️ Response is not of type ModelResponse; skipping raw history append.")
             return response
             
         except Exception as e:
@@ -262,47 +229,27 @@ class LLMOrchestrator:
         **kwargs,
     ) -> Union[ChatCompletion, Any]:
         """
-        Execute LLM request for evaluation. No memory processing applied. Model defaults to GPT-5 
-
-        Args:
-            input_messages: Conversation messages (will be processed by memory strategy)
-            tools: Available function definitions
-            tool_choice: Tool selection strategy ("auto", "required", "none")
-            **kwargs: Additional parameters (max_tokens, temperature, etc.)
-            
-        Returns:
-            ChatCompletion response from OpenAI API
-            
-        Raises:
-            Exception: Any errors from OpenAI API (logged to wandb)
+        Execute LLM request for evaluation. No memory processing applied. Model defaults to GPT-4.1 
+        Exception: Any errors from OpenAI API (logged to wandb)
         """
-        model_key = kwargs.pop("model", "gpt-4-1")
-        
-        # Try to find in registry
-        model_def = self.cfg.model_registry.get(model_key)
-        
-        if model_def:
-            model_name = model_def.litellm_name
-            api_base = model_def.api_base
-            api_key = model_def.api_key
-        else:
-            # Fallback: assume model_key is the model name, use default proxy
-            model_name = model_key
-            api_base = "http://localhost:3030/v1"
-            api_key = "THINKTANK"
-
-        create_kwargs = {
-            "model": model_name,
-            "messages": input_messages,
-            "api_base": api_base,
-            "api_key": api_key,
-            "drop_params": True,
-            **kwargs,
-        }
-
+        kwargs.pop("model", None)
         try:
-            response = litellm.completion(**create_kwargs)
+            
+            # Try to find in registry
+            model_def = self.get_model_config()
+            
+            request_params = {
+                "model": model_def.litellm_name,
+                "messages": input_messages,
+                "api_base": model_def.api_base,
+                "api_key": model_def.api_key,
+                "drop_params": True,
+                **kwargs,
+            }
+
+            response = litellm.completion(**request_params)
             return response
+        
         except Exception as e:
             logger.error(f"💥 Generation Failed: {str(e)}")
             raise e
