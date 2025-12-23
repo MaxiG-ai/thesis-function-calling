@@ -1,11 +1,38 @@
-import logging
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Dict, Tuple
 
 from src.utils.logger import get_logger
 
 logger = get_logger("HistoryUtils")
 
-def split_llm_trace(messages: List[Dict]) -> Tuple[Dict, List[Dict], List[Dict]]:
+def split_llm_trace(messages: List[Dict]) -> Tuple[List[Dict], List[Dict]]:
+    """
+    Splits LLM trace into two components:
+    1. Last User Query (List with single message)
+    2. Conversation History (List of messages before last user query)
+    """
+    if not messages:
+        return [], []
+    
+    # Identify user message index and store to variable
+    user_msg_idx = 0
+    for entry in messages:
+        if entry.get("role") == "user":
+            user_msg_idx = messages.index(entry)
+    
+    # ensure last_user_idx exists
+    if user_msg_idx is None:
+        logger.warning("No user message found in messages.")
+        # return the first message separated from all other messages
+        return [messages[-1]], messages[:-1]
+    
+    # store last user query to conversation history with one entry
+    last_user_query = messages[user_msg_idx]
+
+    # return user query separated from rest of conversation history
+    return [last_user_query], messages[user_msg_idx + 1 :]
+
+
+def split_llm_trace_with_tools(messages: List[Dict]) -> Tuple[Dict, List[Dict], List[Dict]]:
     """
     Splits trace into three components:
     1. Last User Query (Dict - single message or empty dict)
@@ -133,53 +160,3 @@ def split_llm_trace(messages: List[Dict]) -> Tuple[Dict, List[Dict], List[Dict]]
     conversation_history = messages[:last_user_idx]
 
     return last_user_query, conversation_history, last_tool_episode
-
-
-
-# def segment_message_history(messages: List[Dict]) -> Tuple[List[Dict], List[Dict], List[Dict]]:
-#     """Split conversation into pinned nodes, archived context, and working memory."""
-#     prefix, start_idx = _extract_pinned_prefix(messages)
-#     conversation = messages[start_idx:]
-#     tail_start = _find_tail_start(conversation)
-
-#     return prefix, conversation[:tail_start], conversation[tail_start:]
-
-
-# def _extract_pinned_prefix(messages: List[Dict]) -> tuple[List[Dict], int]:
-#     prefix: List[Dict] = []
-#     idx = 0
-
-#     while idx < len(messages):
-#         msg = messages[idx]
-#         if msg.get("role") == "system": 
-#             prefix.append(msg)
-#             idx += 1
-#             continue
-#         break
-
-#     return prefix, idx
-
-
-# def _find_tail_start(conversation: List[Dict]) -> int:
-#     if not conversation:
-#         return 0
-
-#     last_user_idx = _find_last_role_index(conversation, "user")
-#     if last_user_idx is not None:
-#         return last_user_idx
-
-#     fallback_idx = max(0, len(conversation) - 1)
-#     return _collapse_tool_sequence(conversation, fallback_idx)
-
-
-# def _find_last_role_index(conversation: List[Dict], role: str) -> Optional[int]:
-#     for idx in range(len(conversation) - 1, -1, -1):
-#         if conversation[idx].get("role") == role:
-#             return idx
-#     return None
-
-
-# def _collapse_tool_sequence(conversation: List[Dict], idx: int) -> int:
-#     while idx > 0 and conversation[idx].get("role") == "tool":
-#         idx -= 1
-#     return idx
