@@ -28,6 +28,9 @@ def split_llm_trace(messages: List[Dict]) -> Tuple[List[Dict], List[Dict]]:
     # store last user query to conversation history with one entry
     last_user_query = messages[user_msg_idx]
 
+    # TODO: Later this needs to handle the tool call split better
+    # Currently this behaviour leads to a task failure at all times, because tool calls history is deleted after summarization
+
     # return user query separated from rest of conversation history
     return [last_user_query], messages[user_msg_idx + 1 :]
 
