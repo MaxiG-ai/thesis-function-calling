@@ -71,6 +71,7 @@ class SAPGPTRunner(ModelRunner):
 
             if llm_response.tool_calls:
                 if self.golden_fcs == []:
+                    # gets called, when model should not call functions, but does so
                     self.logger.error(f"Output FC:\n{llm_response.tool_calls}")
                     return self.return_result(messages, {"error_type": "func_hallucination", "content": "`self.golden_fcs == []`. Expected to stop. But Model continue to output function call."})
                 self.model.messages.append({"role": "assistant", "content": None, "tool_calls": llm_response.tool_calls})

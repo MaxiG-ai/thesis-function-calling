@@ -9,8 +9,8 @@ input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
 # Optional: Run specific test cases by ID. When set, only these cases will be run.
 # Examples: ["Car-Rental-0", "Car-Rental-1"] or ["Travel-5", "Cross-10"]
 # Leave commented out or set to null to run all cases (or use benchmark_sample_size for random sampling)
-# selected_test_cases = ["Cross-239"]
-benchmark_sample_size = 20
+selected_test_cases = ["Cross-131"]
+# benchmark_sample_size = 20
 
 # setting for max. context before compression
 compact_threshold = 5000
