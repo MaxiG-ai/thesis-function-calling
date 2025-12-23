@@ -5,11 +5,11 @@ from src.utils.logger import get_logger
 
 logger = get_logger("HistoryUtils")
 
-def split_llm_trace(messages: List[Dict]) -> Tuple[List[Dict], List[Dict], List[Dict]]:
+def split_llm_trace(messages: List[Dict]) -> Tuple[Dict, List[Dict], List[Dict]]:
     """
-    Splits trace into three lists of message dicts:
-    1. System Prompt (List containing 0 or 1 message)
-    2. Conversation History (List of messages)
+    Splits trace into three components:
+    1. Last User Query (Dict - single message or empty dict)
+    2. Conversation History (List of messages before last user query)
     3. Last Tool Episode (List: 1 assistant message + N tool result messages)
     
     A tool episode is atomic: the assistant's tool_calls and all corresponding
@@ -20,58 +20,76 @@ def split_llm_trace(messages: List[Dict]) -> Tuple[List[Dict], List[Dict], List[
         messages: List of message dictionaries from an LLM trace
     
     Returns:
-        Tuple of (system_msgs, conversation_history, last_tool_episode)
+        Tuple of (last_user_query, conversation_history, last_tool_episode)
+        - last_user_query: Dict containing the most recent user message (or empty dict)
+        - conversation_history: List of all messages before the last user query
+        - last_tool_episode: List containing assistant message with tool_calls + tool responses
     """
     if not messages:
-        return [], [], []
+        return {}, [], []
 
-    # --- 1. Extract System Prompt ---
-    system_msgs: List[Dict] = []
-    start_idx = 0
-    
-    if messages[0].get("role") == "system":
-        system_msgs = [messages[0]]
-        start_idx = 1
-
-    # --- 2. Identify Last Tool Episode ---
+    # --- 1. Identify Last Tool Episode ---
     # Walk backwards to find all consecutive tool messages at the end.
     # A tool episode consists of: 1 assistant message with tool_calls + N tool result messages.
-    history_end_idx = len(messages)
-    last_tool_msgs: List[Dict] = []
     
     tool_end_idx = len(messages)
     tool_start_idx = len(messages)
     
-    # Find the start of consecutive tool messages
-    while tool_start_idx > start_idx and messages[tool_start_idx - 1].get("role") == "tool":
+    # Find the start of consecutive tool messages at the end
+    while tool_start_idx > 0 and messages[tool_start_idx - 1].get("role") == "tool":
         tool_start_idx -= 1
     
-    # No tool messages at end - nothing to extract
+    # No tool messages at end - check if there's still a user query
     if tool_start_idx == tool_end_idx:
-        conversation_history = messages[start_idx:history_end_idx]
-        return system_msgs, conversation_history, last_tool_msgs
+        # No tool episode, find last user message
+        last_user_idx = None
+        for i in range(len(messages) - 1, -1, -1):
+            if messages[i].get("role") == "user":
+                last_user_idx = i
+                break
+        
+        if last_user_idx is None:
+            # No user message found
+            return {}, messages, []
+        
+        last_user_query = messages[last_user_idx]
+        conversation_history = messages[:last_user_idx]
+        return last_user_query, conversation_history, []
     
-    # Check for preceding assistant message with tool_calls
-    if tool_start_idx <= start_idx:
-        logger.error("Tool messages found but no preceding assistant message.")
-        conversation_history = messages[start_idx:history_end_idx]
-        return system_msgs, conversation_history, last_tool_msgs
+    # Tool messages found at end - validate the tool episode
+    if tool_start_idx == 0:
+        logger.error("Tool messages found at start of conversation (no preceding messages).")
+        return {}, messages, []
     
-    assistant_idx = tool_start_idx - 1
+    assistant_idx = tool_start_idx
     potential_assistant = messages[assistant_idx]
     
     if potential_assistant.get("role") != "assistant":
         logger.error(f"Expected assistant before tool messages, found: {potential_assistant.get('role')}")
-        conversation_history = messages[start_idx:history_end_idx]
-        return system_msgs, conversation_history, last_tool_msgs
+        # Try to find last user message before this point
+        last_user_idx = None
+        for i in range(assistant_idx, -1, -1):
+            if messages[i].get("role") == "user":
+                last_user_idx = i
+                break
+        if last_user_idx is None:
+            return {}, messages, []
+        return messages[last_user_idx], messages[:last_user_idx], []
     
     tool_calls = potential_assistant.get("tool_calls", [])
     
     # Check for corrupted serialization (raw class dump)
     if tool_calls and isinstance(tool_calls[0], dict) and "_type" in tool_calls[0]:
         logger.error("Last tool episode invalid: 'tool_calls' contains raw class dump/corrupted data.")
-        conversation_history = messages[start_idx:history_end_idx]
-        return system_msgs, conversation_history, last_tool_msgs
+        # Find last user message
+        last_user_idx = None
+        for i in range(assistant_idx, -1, -1):
+            if messages[i].get("role") == "user":
+                last_user_idx = i
+                break
+        if last_user_idx is None:
+            return {}, messages, []
+        return messages[last_user_idx], messages[:last_user_idx], []
     
     # Validate tool result IDs match tool_call IDs from assistant
     tool_call_ids = {tc.get("id") for tc in tool_calls if isinstance(tc, dict)}
@@ -83,17 +101,38 @@ def split_llm_trace(messages: List[Dict]) -> Tuple[List[Dict], List[Dict], List[
     if not tool_result_ids.issubset(tool_call_ids):
         missing = tool_result_ids - tool_call_ids
         logger.error(f"Last tool episode invalid: Tool IDs {missing} not found in assistant tool_calls.")
-        conversation_history = messages[start_idx:history_end_idx]
-        return system_msgs, conversation_history, last_tool_msgs
+        # Find last user message
+        last_user_idx = None
+        for i in range(assistant_idx, -1, -1):
+            if messages[i].get("role") == "user":
+                last_user_idx = i
+                break
+        if last_user_idx is None:
+            return {}, messages, []
+        return messages[last_user_idx], messages[:last_user_idx], []
     
     # Success: extract the complete tool episode as an atomic unit
-    last_tool_msgs = messages[assistant_idx:tool_end_idx]
-    history_end_idx = assistant_idx
+    last_tool_episode = messages[assistant_idx:tool_end_idx]
+    
+    # --- 2. Find Last User Query ---
+    # The user query is the last user message before the assistant's tool call
+    last_user_idx = None
+    for i in range(assistant_idx - 1, -1, -1):
+        if messages[i].get("role") == "user":
+            last_user_idx = i
+            break
+    
+    if last_user_idx is None:
+        logger.warning("No user message found before tool episode.")
+        return {}, messages[:assistant_idx], last_tool_episode
+    
+    last_user_query = messages[last_user_idx]
+    
+    # --- 3. Extract Conversation History ---
+    # Everything before the last user query
+    conversation_history = messages[:last_user_idx]
 
-    # --- 3. Extract History ---
-    conversation_history = messages[start_idx:history_end_idx]
-
-    return system_msgs, conversation_history, last_tool_msgs
+    return last_user_query, conversation_history, last_tool_episode
 
 
 
