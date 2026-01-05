@@ -117,15 +117,19 @@ class MemoryProcessor:
             # `user_query` is already a list of message dicts; keep `result` flat
             result.extend(user_query)
 
-        # iterate from newest message to oldest, adding until max_tokens is reached
+        # iterate from newest message to oldest to select messages, but preserve chronological order in result
         current_token_count = get_token_count(result)
+        selected_messages: List[Dict] = []
         for msg in reversed(conversation_history):
             msg_token_count = get_token_count([msg])
             if current_token_count + msg_token_count > max_tokens:
                 break
-            result.append(msg)
-            current_token_count += msg_token_count  
+            selected_messages.append(msg)
+            current_token_count += msg_token_count
 
+        # selected_messages currently has newest-to-oldest; reverse to restore chronological order
+        selected_messages.reverse()
+        result.extend(selected_messages)
         logger.debug(
             f"✂️  Truncated context from {token_count} to {current_token_count} tokens using max_tokens={max_tokens}"
         )
