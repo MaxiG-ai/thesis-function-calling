@@ -4,65 +4,12 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from src.utils.config import ExperimentConfig
 from src.strategies.memory_bank.memory_bank import MemoryBank
-from src.utils.history import split_llm_trace
+from src.strategies.progressive_summarization.prog_sum import split_llm_trace
 from src.utils.logger import get_logger
 from src.utils.token_count import get_token_count
+from src.utils.trace_processing import detect_tail_loop
 
 logger = get_logger("MemoryProcessor")
-
-
-def detect_tail_loop(messages: list[dict], threshold: int = 4, max_pattern_len: int = 10) -> bool:
-    """Detects repeating patterns at the tail of a conversation."""
-    n = len(messages)
-    # Optimization: Don't check if history is too short to contain a loop
-    if n < threshold:
-        return False
-
-    # 1. Normalize messages for comparison
-    # We must exclude fields that change every turn even in a loop (like tool_call_id)
-    normalized = []
-    for m in messages[-(max_pattern_len * threshold):]: # Only look at the relevant tail
-        # Create a signature tuple: (Role, Content, Sorted Tool Calls)
-        tool_sig = None
-        if "tool_calls" in m:
-            tool_sig = sorted(
-                [(tc.type, tc.function.name, tc.function.arguments) for tc in m["tool_calls"]]
-            )
-            tool_sig = tuple(tool_sig)
-
-        normalized.append((m.get("role"), m.get("content"), tool_sig))
-
-    # Re-calculate length based on the slice we actually took
-    n_slice = len(normalized)
-
-    # 2. Check for patterns of length L
-    # We iterate L from 1 (repeating single message) up to max_pattern_len
-    for L in range(1, max_pattern_len + 1):
-        # We need at least L * threshold messages to verify this pattern
-        if n_slice < L * threshold:
-            break
-            
-        # The "candidate" pattern is the very last L messages
-        pattern = normalized[-L:]
-        
-        # Check if this pattern appears 'threshold' times backwards
-        is_loop = True
-
-        for k in range(1, threshold):
-            # Compare the block before the current one
-            # e.g., if L=2, threshold=3:
-            # Check [-2:] vs [-4:-2]
-            # Check [-2:] vs [-6:-4]
-            prev_block = normalized[-(k + 1) * L : -k * L]
-            if prev_block != pattern:
-                is_loop = False
-                break
-
-        if is_loop:
-            return True
-
-    return False
-
 
 class MemoryProcessor:
     def __init__(self, config: ExperimentConfig):
@@ -131,7 +78,7 @@ class MemoryProcessor:
             )
             # 2. Apply selected memory strategy
             if settings.type == "truncation":
-                processed_messages = self._apply_truncation(messages, pre_count, self.config.compact_threshold)
+                processed_messages, _ = self._apply_truncation(messages, pre_count, self.config.compact_threshold)
             elif settings.type == "memory_bank":
                 processed_messages = self._apply_memory_bank(messages, pre_count, settings)
             elif settings.type == "progressive_summarization":
@@ -144,6 +91,7 @@ class MemoryProcessor:
                 )
                 return messages, input_token_info
 
+        # get token count from the list of processed messages
         post_count = get_token_count(processed_messages)
 
         output_token_info = {
@@ -153,26 +101,39 @@ class MemoryProcessor:
         return processed_messages, output_token_info
     
     @weave.op()
-    def _apply_truncation(self, messages: List[Dict], token_count: int, max_tokens: int) -> List[Dict]:
+    def _apply_truncation(self, messages: List[Dict], token_count: int, max_tokens: int) -> Tuple[List[Dict], int]:
         """
         Naive Baseline: Keeps only the last user query + tool episode.
         Ensures assistant+tool message pairs are kept together.
         """
         if len(messages) <= 3:
-            return messages
+            return messages, token_count
 
-        last_user_query, _, last_tool_episode = split_llm_trace(messages)
+        user_query, conversation_history = split_llm_trace(messages)
         
         # Build result: user query + tool episode (if present)
         result = []
-        if last_user_query:
-            result.append(last_user_query)
-        result.extend(last_tool_episode)
+        if user_query:
+            # `user_query` is already a list of message dicts; keep `result` flat
+            result.extend(user_query)
 
+        # iterate from newest message to oldest to select messages, but preserve chronological order in result
+        current_token_count = get_token_count(result)
+        selected_messages: List[Dict] = []
+        for msg in reversed(conversation_history):
+            msg_token_count = get_token_count([msg])
+            if current_token_count + msg_token_count > max_tokens:
+                break
+            selected_messages.append(msg)
+            current_token_count += msg_token_count
+
+        # selected_messages currently has newest-to-oldest; reverse to restore chronological order
+        selected_messages.reverse()
+        result.extend(selected_messages)
         logger.debug(
-            f"✂️  Truncated context from {len(messages)} to {len(result)} msgs using max_tokens={max_tokens}"
+            f"✂️  Truncated context from {token_count} to {current_token_count} tokens using max_tokens={max_tokens}"
         )
-        return result
+        return result, current_token_count
     
     @weave.op()
     def _apply_memory_bank(self, messages: List[Dict], token_count: int, settings) -> List[Dict]:
@@ -184,10 +145,10 @@ class MemoryProcessor:
             self.active_bank = MemoryBank(settings.embedding_model)
 
         # Split messages into components
-        last_user_query, archived_context, last_tool_episode = split_llm_trace(messages)
+        user_query, conversation_history = split_llm_trace(messages)
 
         # Store archived messages in memory bank
-        for i, msg in enumerate(archived_context):
+        for i, msg in enumerate(conversation_history):
             try:
                 msg_id = f"{i}_{len(str(msg.get('content', '')))}"
             except Exception as e:
@@ -205,9 +166,9 @@ class MemoryProcessor:
 
         # Retrieve relevant memories based on last user query
         retrieved_context = []
-        if last_user_query and last_user_query.get("content"):
+        if user_query and user_query[0].get("content"):
             retrieved_context = self.active_bank.retrieve(
-                query=last_user_query["content"], top_k=settings.top_k or 3
+                query=user_query[0]["content"], top_k=settings.top_k or 3
             )
 
         # Build memory message if we have retrieved context
@@ -223,17 +184,18 @@ class MemoryProcessor:
 
         # Build result: memory + user query + tool episode
         result = memory_msg.copy()
-        if last_user_query:
-            result.append(last_user_query)
-        result.extend(last_tool_episode)
+        if user_query:
+            result.append(user_query[0])
+        result.extend(conversation_history)
         
         logger.debug(
-            f"""🧠 Memory Bank Context:
-MemoryMessages:{len(memory_msg)} 
-UserQuery:{1 if last_user_query else 0}
-ToolEpisode:{len(last_tool_episode)}
-FinalMessages:{len(result)}
-"""
+            f"""
+            🧠 Memory Bank Context:
+            MemoryMessages:{len(memory_msg)} 
+            UserQuery:{1 if user_query else 0}
+            ToolEpisode:{len(conversation_history)}
+            FinalMessages:{len(result)}
+            """
         )
         return result
 
@@ -253,23 +215,22 @@ FinalMessages:{len(result)}
         if llm_client is None:
             raise ValueError("llm_client is required for progressive summarization")
         
-        last_user_query, archived_context, last_tool_episode = split_llm_trace(messages)
+        user_query, conversation_history = split_llm_trace(messages)
 
         token_count = get_token_count(messages)
 
         # Don't summarize if below threshold or no archived content
-        if token_count <= self.config.compact_threshold or not archived_context:
+        if token_count <= self.config.compact_threshold or not conversation_history:
             # Return: user query + tool episode (if present)
             result = []
-            if last_user_query:
-                result.append(last_user_query)
-            result.extend(last_tool_episode)
-            return result
+            if user_query:
+                result.append(user_query[0])
+            return result + conversation_history
         
         # Build prompt for summarization
-        prompt_messages = [
+        prompt_messages = [ 
             {"role": "system", "content": self.summary_prompt},
-            {"role": "user", "content": f"Conversation history to compress:\n{archived_context}"},
+            {"role": "user", "content": f"Conversation history to compress:\n{conversation_history}"},
         ]
 
         # Call LLM to generate summary (let exceptions propagate)
@@ -290,14 +251,10 @@ FinalMessages:{len(result)}
 
         # Build final message list: user query + summary + tool episode
         summary_message = {"role": "system", "content": summary_text}
-        logger.debug(
-            f"📝 Summarized {len(archived_context)} messages into {len(summary_text)} chars"
-        )
         
         result = []
-        if last_user_query:
-            result.append(last_user_query)
+        if user_query:
+            result.append(user_query[0])
         result.append(summary_message)
-        result.extend(last_tool_episode)
         
         return result
