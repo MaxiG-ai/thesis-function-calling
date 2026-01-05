@@ -129,7 +129,7 @@ class MemoryProcessor:
             current_token_count += msg_token_count  
 
         logger.debug(
-            f"✂️  Truncated context from {token_count} to {len(result)} msgs using max_tokens={max_tokens}"
+            f"✂️  Truncated context from {token_count} to {current_token_count} tokens using max_tokens={max_tokens}"
         )
         return result, current_token_count
     
