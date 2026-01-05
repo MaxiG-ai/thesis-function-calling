@@ -116,7 +116,8 @@ class MemoryProcessor:
         # Build result: user query + tool episode (if present)
         result = []
         if user_query:
-            result.append(user_query)
+            # `user_query` is already a list of message dicts; keep `result` flat
+            result.extend(user_query)
 
         # iterate from newest message to oldest, adding until max_tokens is reached
         current_token_count = get_token_count(result)
