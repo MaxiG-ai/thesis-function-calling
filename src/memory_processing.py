@@ -91,10 +91,8 @@ class MemoryProcessor:
                 )
                 return messages, input_token_info
 
-        # get token count from a list of processed messages
-        post_count = 0
-        for el in processed_messages:
-            post_count += get_token_count(el)
+        # get token count from the list of processed messages
+        post_count = get_token_count(processed_messages)
 
         output_token_info = {
             "post_token_count": post_count,
