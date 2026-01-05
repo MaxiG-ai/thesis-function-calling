@@ -45,20 +45,23 @@ class LLMOrchestrator:
             exp_path: Path to experiment config file
             model_path: Path to model registry config file
         """
-        # 1. Load static config
+        # Load static config
         self.cfg: ExperimentConfig = load_configs(exp_path, model_path)
         
-        # 2. Initialize memory processor
+        # Initialize memory processor
         self.memory_processor = MemoryProcessor(self.cfg)
         
-        # 3. State variables (mutable)
+        # State variables (mutable)
         self.active_model_key: str = self.cfg.enabled_models[0]
         self.active_memory_key: str = self.cfg.enabled_memory_methods[0]
         
-        # 4. Configure LiteLLM
+        # Configure LiteLLM
         os.environ["LITELLM_LOG"] = "ERROR"
         litellm.suppress_debug_info = True
         litellm.success_callback = ["weave"]
+
+        # Create storage variable for full message trace
+        self.full_trace: List[Dict[str, Any]] = []
         
         logger.info(f"🚀 Orchestrator initialized for: {self.cfg.experiment_name}")
 
