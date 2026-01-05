@@ -224,7 +224,7 @@ class MemoryProcessor:
             # Return: user query + tool episode (if present)
             result = []
             if user_query:
-                result.append(user_query)
+                result.append(user_query[0])
             return result + conversation_history
         
         # Build prompt for summarization
