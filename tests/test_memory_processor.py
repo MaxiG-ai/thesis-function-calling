@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 from src.memory_processing import MemoryProcessor
 from src.utils.config import ExperimentConfig, MemoryDef
+from src.utils.trace_processing import detect_tail_loop
 
 
 def _build_config(threshold: int) -> ExperimentConfig:
@@ -93,3 +94,129 @@ def test_progressive_summarization_fails_back_to_full_history() -> None:
         assert False, "Expected RuntimeError to propagate"
     except RuntimeError as e:
         assert "model down" in str(e)
+
+
+def test_detect_tail_loop_with_dict_style_tool_calls() -> None:
+    """Test that detect_tail_loop correctly handles dict-style tool_calls (litellm format)."""
+    # Create messages with dict-style tool_calls
+    messages = [
+        {"role": "user", "content": "Please help"},
+        {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": [
+                {
+                    "id": "call_1",
+                    "type": "function",
+                    "function": {
+                        "name": "get_data",
+                        "arguments": '{"query": "test"}'
+                    }
+                }
+            ]
+        },
+        {"role": "tool", "content": "result", "tool_call_id": "call_1"},
+        {"role": "user", "content": "Please help"},
+        {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": [
+                {
+                    "id": "call_2",
+                    "type": "function",
+                    "function": {
+                        "name": "get_data",
+                        "arguments": '{"query": "test"}'
+                    }
+                }
+            ]
+        },
+        {"role": "tool", "content": "result", "tool_call_id": "call_2"},
+        {"role": "user", "content": "Please help"},
+        {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": [
+                {
+                    "id": "call_3",
+                    "type": "function",
+                    "function": {
+                        "name": "get_data",
+                        "arguments": '{"query": "test"}'
+                    }
+                }
+            ]
+        },
+        {"role": "tool", "content": "result", "tool_call_id": "call_3"},
+        {"role": "user", "content": "Please help"},
+        {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": [
+                {
+                    "id": "call_4",
+                    "type": "function",
+                    "function": {
+                        "name": "get_data",
+                        "arguments": '{"query": "test"}'
+                    }
+                }
+            ]
+        },
+        {"role": "tool", "content": "result", "tool_call_id": "call_4"},
+    ]
+    
+    # Should detect the loop (pattern of 3 messages repeating 4 times)
+    assert detect_tail_loop(messages, threshold=4, max_pattern_len=5) is True
+
+
+def test_detect_tail_loop_no_loop_with_dict_tool_calls() -> None:
+    """Test that detect_tail_loop returns False when there's no loop."""
+    messages = [
+        {"role": "user", "content": "First question"},
+        {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": [
+                {
+                    "id": "call_1",
+                    "type": "function",
+                    "function": {
+                        "name": "get_data",
+                        "arguments": '{"query": "first"}'
+                    }
+                }
+            ]
+        },
+        {"role": "tool", "content": "result1", "tool_call_id": "call_1"},
+        {"role": "user", "content": "Second question"},
+        {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": [
+                {
+                    "id": "call_2",
+                    "type": "function",
+                    "function": {
+                        "name": "get_other_data",
+                        "arguments": '{"query": "second"}'
+                    }
+                }
+            ]
+        },
+        {"role": "tool", "content": "result2", "tool_call_id": "call_2"},
+    ]
+    
+    # Should not detect a loop
+    assert detect_tail_loop(messages, threshold=4, max_pattern_len=5) is False
+
+
+def test_detect_tail_loop_short_history() -> None:
+    """Test that detect_tail_loop handles short message history correctly."""
+    messages = [
+        {"role": "user", "content": "Hi"},
+        {"role": "assistant", "content": "Hello"},
+    ]
+    
+    # Too short to contain a loop
+    assert detect_tail_loop(messages, threshold=4, max_pattern_len=5) is False
