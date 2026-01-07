@@ -76,6 +76,8 @@ class MemoryProcessor:
             logger.debug(
                 f"🧠 Pre-Processing Token Count: {pre_count}, exceeds compact_threshold={self.config.compact_threshold}"
             )
+            # apply trace split here.
+
             # 2. Apply selected memory strategy
             if settings.type == "truncation":
                 processed_messages, _ = self._apply_truncation(messages, pre_count, self.config.compact_threshold)
@@ -135,6 +137,66 @@ class MemoryProcessor:
         )
         return result, current_token_count
     
+    @weave.op()
+    def _apply_progressive_summarization(
+        self,
+        messages: List[Dict],
+        token_count: int,
+        settings,
+        llm_client: Optional[Any],
+    ) -> List[Dict]:
+        """Summarizes archived context when token threshold is exceeded.
+        
+        Re-summarizes all archived context (middle of conversation) each time,
+        keeping the last user query and tool episode intact.
+        """
+        if llm_client is None:
+            raise ValueError("llm_client is required for progressive summarization")
+        
+        user_query, conversation_history = split_llm_trace(messages)
+
+        token_count = get_token_count(messages)
+
+        # Don't summarize if below threshold or no archived content
+        if token_count <= self.config.compact_threshold or not conversation_history:
+            # Return: user query + tool episode (if present)
+            result = []
+            if user_query:
+                result.append(user_query[0])
+            return result + conversation_history
+        
+        # Build prompt for summarization
+        prompt_messages = [ 
+            {"role": "system", "content": self.summary_prompt},
+            {"role": "user", "content": f"Conversation history to compress:\n{conversation_history}"},
+        ]
+
+        # Call LLM to generate summary (let exceptions propagate)
+        summarizer_model = settings.summarizer_model or "gpt-4-1-mini"
+        response = llm_client.generate_plain(
+            input_messages=prompt_messages, model=summarizer_model
+        )
+
+        # Extract summary text from response
+        message = response.choices[0].message
+        if isinstance(message, dict):
+            summary_text = (message.get("content") or "").strip()
+        else:
+            summary_text = (getattr(message, "content", "") or "").strip()
+
+        if not summary_text:
+            raise ValueError("Summarization returned empty content")
+
+        # Build final message list: user query + summary + tool episode
+        summary_message = {"role": "system", "content": summary_text}
+        
+        result = []
+        if user_query:
+            result.append(user_query[0])
+        result.append(summary_message)
+        
+        return result
+
     @weave.op()
     def _apply_memory_bank(self, messages: List[Dict], token_count: int, settings) -> List[Dict]:
         """
@@ -199,62 +261,4 @@ class MemoryProcessor:
         )
         return result
 
-    @weave.op()
-    def _apply_progressive_summarization(
-        self,
-        messages: List[Dict],
-        token_count: int,
-        settings,
-        llm_client: Optional[Any],
-    ) -> List[Dict]:
-        """Summarizes archived context when token threshold is exceeded.
-        
-        Re-summarizes all archived context (middle of conversation) each time,
-        keeping the last user query and tool episode intact.
-        """
-        if llm_client is None:
-            raise ValueError("llm_client is required for progressive summarization")
-        
-        user_query, conversation_history = split_llm_trace(messages)
-
-        token_count = get_token_count(messages)
-
-        # Don't summarize if below threshold or no archived content
-        if token_count <= self.config.compact_threshold or not conversation_history:
-            # Return: user query + tool episode (if present)
-            result = []
-            if user_query:
-                result.append(user_query[0])
-            return result + conversation_history
-        
-        # Build prompt for summarization
-        prompt_messages = [ 
-            {"role": "system", "content": self.summary_prompt},
-            {"role": "user", "content": f"Conversation history to compress:\n{conversation_history}"},
-        ]
-
-        # Call LLM to generate summary (let exceptions propagate)
-        summarizer_model = settings.summarizer_model or "gpt-4-1-mini"
-        response = llm_client.generate_plain(
-            input_messages=prompt_messages, model=summarizer_model
-        )
-
-        # Extract summary text from response
-        message = response.choices[0].message
-        if isinstance(message, dict):
-            summary_text = (message.get("content") or "").strip()
-        else:
-            summary_text = (getattr(message, "content", "") or "").strip()
-
-        if not summary_text:
-            raise ValueError("Summarization returned empty content")
-
-        # Build final message list: user query + summary + tool episode
-        summary_message = {"role": "system", "content": summary_text}
-        
-        result = []
-        if user_query:
-            result.append(user_query[0])
-        result.append(summary_message)
-        
-        return result
+    
