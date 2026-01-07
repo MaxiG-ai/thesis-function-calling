@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from src.utils.config import ExperimentConfig
 from src.strategies.memory_bank.memory_bank import MemoryBank
-from src.strategies.progressive_summarization.prog_sum import split_llm_trace, ProgressiveSummarizer
+from src.utils.split_trace import process_and_split_trace_user
 from src.utils.logger import get_logger
 from src.utils.token_count import get_token_count
 from src.utils.trace_processing import detect_tail_loop
@@ -62,6 +62,7 @@ class MemoryProcessor:
             logger.debug(
                 f"🧠 Pre-Processing Token Count: {pre_count}, exceeds compact_threshold={self.config.compact_threshold}"
             )
+
             # 2. Apply selected memory strategy
             if settings.type == "truncation":
                 processed_messages, _ = self._apply_truncation(messages, pre_count, self.config.compact_threshold)
@@ -89,22 +90,19 @@ class MemoryProcessor:
     @weave.op()
     def _apply_truncation(self, messages: List[Dict], token_count: int, max_tokens: int) -> Tuple[List[Dict], int]:
         """
-        Naive Baseline: Keeps only the last user query + tool episode.
-        Ensures assistant+tool message pairs are kept together.
+        Naive Baseline: Keeps only the last user query + preceding context that fits.
+        Ensures chronological order is maintained.
         """
         if len(messages) <= 3:
             return messages, token_count
 
-        user_query, conversation_history = split_llm_trace(messages)
+        user_query, conversation_history = process_and_split_trace_user(messages)
         
-        # Build result: user query + tool episode (if present)
-        result = []
-        if user_query:
-            # `user_query` is already a list of message dicts; keep `result` flat
-            result.extend(user_query)
-
-        # iterate from newest message to oldest to select messages, but preserve chronological order in result
-        current_token_count = get_token_count(result)
+        # Build result: start with user query to reserve space for it
+        user_token_count = get_token_count(user_query) if user_query else 0
+        current_token_count = user_token_count
+        
+        # iterate from newest message to oldest in conversation_history to select messages
         selected_messages: List[Dict] = []
         for msg in reversed(conversation_history):
             msg_token_count = get_token_count([msg])
@@ -115,23 +113,87 @@ class MemoryProcessor:
 
         # selected_messages currently has newest-to-oldest; reverse to restore chronological order
         selected_messages.reverse()
-        result.extend(selected_messages)
+        
+        # Build final result in chronological order: [older_context, user_query]
+        result = selected_messages
+        if user_query:
+            result.extend(user_query)
+        
         logger.debug(
             f"✂️  Truncated context from {token_count} to {current_token_count} tokens using max_tokens={max_tokens}"
         )
         return result, current_token_count
     
     @weave.op()
+    def _apply_progressive_summarization(
+        self,
+        messages: List[Dict],
+        token_count: int,
+        settings,
+        llm_client: Optional[Any],
+    ) -> List[Dict]:
+        """Summarizes archived context when token threshold is exceeded.
+        
+        Summarizes all messages before the last user query, keeping the 
+        user query intact at the end.
+        """
+        if llm_client is None:
+            raise ValueError("llm_client is required for progressive summarization")
+        
+        user_query, conversation_history = process_and_split_trace_user(messages)
+
+        token_count = get_token_count(messages)
+
+        # Don't summarize if below threshold or no archived content
+        if token_count <= self.config.compact_threshold or not conversation_history:
+            # Return: conversation_history + user query
+            result = conversation_history.copy()
+            if user_query:
+                result.extend(user_query)
+            return result
+        
+        # Build prompt for summarization
+        prompt_messages = [ 
+            {"role": "system", "content": self.summary_prompt},
+            {"role": "user", "content": f"Conversation history to compress:\n{conversation_history}"},
+        ]
+
+        # Call LLM to generate summary (let exceptions propagate)
+        summarizer_model = settings.summarizer_model or "gpt-4-1-mini"
+        response = llm_client.generate_plain(
+            input_messages=prompt_messages, model=summarizer_model
+        )
+
+        # Extract summary text from response
+        message = response.choices[0].message
+        if isinstance(message, dict):
+            summary_text = (message.get("content") or "").strip()
+        else:
+            summary_text = (getattr(message, "content", "") or "").strip()
+
+        if not summary_text:
+            raise ValueError("Summarization returned empty content")
+
+        # Build final message list: [summary, user query]
+        summary_message = {"role": "system", "content": summary_text}
+        
+        result = [summary_message]
+        if user_query:
+            result.extend(user_query)
+        
+        return result
+
+    @weave.op()
     def _apply_memory_bank(self, messages: List[Dict], token_count: int, settings) -> List[Dict]:
         """
         Memory bank strategy: Store archived context in vector DB and retrieve relevant memories.
-        Keeps last user query + tool episode, and injects retrieved memories as context.
+        Keeps last user query and injects retrieved memories as context.
         """
         if self.active_bank is None:
             self.active_bank = MemoryBank(settings.embedding_model)
 
         # Split messages into components
-        user_query, conversation_history = split_llm_trace(messages)
+        user_query, conversation_history = process_and_split_trace_user(messages)
 
         # Store archived messages in memory bank
         for i, msg in enumerate(conversation_history):
@@ -168,38 +230,19 @@ class MemoryProcessor:
             memory_msg = [{"role": "system", "content": memory_block}]
             logger.debug(f"🧠 Injected {len(retrieved_context)} memories into context.")
 
-        # Build result: memory + user query + tool episode
+        # Build result: [memory, user query]
         result = memory_msg.copy()
         if user_query:
-            result.append(user_query[0])
-        result.extend(conversation_history)
+            result.extend(user_query)
         
         logger.debug(
             f"""
             🧠 Memory Bank Context:
             MemoryMessages:{len(memory_msg)} 
             UserQuery:{1 if user_query else 0}
-            ToolEpisode:{len(conversation_history)}
             FinalMessages:{len(result)}
             """
         )
         return result
 
-    @weave.op()
-    def _apply_progressive_summarization(
-        self,
-        messages: List[Dict],
-        token_count: int,
-        settings,
-        llm_client: Optional[Any],
-    ) -> List[Dict]:
-        """Summarizes archived context when token threshold is exceeded.
-        
-        Uses the ProgressiveSummarizer class to handle the summarization logic.
-        """
-        if self.active_summarizer is None:
-            self.active_summarizer = ProgressiveSummarizer(self.config)
-        
-        return self.active_summarizer.summarize(
-            messages, token_count, settings, llm_client
-        )
+    

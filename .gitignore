@@ -205,3 +205,6 @@ results/
 wandb/
 
 .pytest_cache/
+
+# Example files for coding agents
+example_response.json
