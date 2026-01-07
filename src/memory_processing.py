@@ -15,31 +15,17 @@ class MemoryProcessor:
     def __init__(self, config: ExperimentConfig):
         self.config = config
         self.active_bank: Optional[MemoryBank] = None
+        self.active_summarizer: Optional[ProgressiveSummarizer] = None
         self.processed_message_ids: set = set()
         self.current_summary: str = ""
-        self._load_summary_prompt()
 
-
-    def _load_summary_prompt(self):
-        """Utility to load and cache the summary prompt."""
-        # Find the progressive_summarization strategy if configured
-        config_prompt_path = "prompts/progressive_summary.md"
-        for strategy in self.config.memory_strategies.values():
-            if strategy.type == "progressive_summarization" and strategy.summary_prompt:
-                config_prompt_path = strategy.summary_prompt
-                break
-        
-        # parse string to Path
-        prompt_path = Path(__file__).resolve().parents[0] / Path(config_prompt_path)
-        try:
-            self.summary_prompt = prompt_path.read_text(encoding="utf-8")   
-        except FileNotFoundError:
-            logger.error("Missing progressive summary prompt file at %s", prompt_path)
 
     def reset_state(self):
         """Called by Orchestrator to reset memory between runs."""
         if self.active_bank:
             self.active_bank.reset()
+        if self.active_summarizer:
+            self.active_summarizer.reset()
         self.processed_message_ids.clear()
         self.current_summary = ""
         logger.info("🧠 Memory State Reset")
