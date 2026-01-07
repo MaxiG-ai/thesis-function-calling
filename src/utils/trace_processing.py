@@ -14,9 +14,15 @@ def detect_tail_loop(messages: List[Dict], threshold: int = 4, max_pattern_len: 
         # Create a signature tuple: (Role, Content, Sorted Tool Calls)
         tool_sig = None
         if "tool_calls" in m:
-            tool_sig = sorted(
-                [(tc.type, tc.function.name, tc.function.arguments) for tc in m["tool_calls"]]
-            )
+            # Use dict-style access to match litellm response format
+            tool_sig = sorted([
+                (
+                    tc.get("type"),
+                    tc.get("function", {}).get("name") if isinstance(tc.get("function"), dict) else None,
+                    tc.get("function", {}).get("arguments") if isinstance(tc.get("function"), dict) else None
+                )
+                for tc in m["tool_calls"]
+            ])
             tool_sig = tuple(tool_sig)
 
         normalized.append((m.get("role"), m.get("content"), tool_sig))

@@ -1,8 +1,11 @@
-from typing import List, Dict, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+import weave
 
 from src.utils.logger import get_logger
+from src.utils.token_count import get_token_count
 
-logger = get_logger("HistoryUtils")
+logger = get_logger("ProgressiveSummarization")
 
 def split_llm_trace(messages: List[Dict]) -> Tuple[List[Dict], List[Dict]]:
     """
@@ -163,3 +166,118 @@ def split_llm_trace_with_tools(messages: List[Dict]) -> Tuple[Dict, List[Dict], 
     conversation_history = messages[:last_user_idx]
 
     return last_user_query, conversation_history, last_tool_episode
+
+
+class ProgressiveSummarizer:
+    """Progressive Summarization strategy for managing conversation context.
+    
+    Summarizes archived context when token threshold is exceeded,
+    keeping the last user query and tool episode intact.
+    """
+    
+    def __init__(self, summary_prompt_path: Optional[str] = None):
+        """Initialize the ProgressiveSummarizer with a summary prompt.
+        
+        Args:
+            summary_prompt_path: Path to the summary prompt file. 
+                               Defaults to "prompts/progressive_summary.md"
+        """
+        self.summary_prompt = self._load_summary_prompt(summary_prompt_path)
+    
+    def _load_summary_prompt(self, config_prompt_path: Optional[str] = None) -> str:
+        """Load and cache the summary prompt.
+        
+        Args:
+            config_prompt_path: Optional path to the summary prompt file
+            
+        Returns:
+            The loaded summary prompt text
+            
+        Raises:
+            FileNotFoundError: If the prompt file cannot be found
+        """
+        if config_prompt_path is None:
+            config_prompt_path = "prompts/progressive_summary.md"
+        
+        # Resolve path relative to the src directory
+        prompt_path = Path(__file__).resolve().parents[2] / Path(config_prompt_path)
+        
+        try:
+            return prompt_path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            logger.error("Missing progressive summary prompt file at %s", prompt_path)
+            raise
+    
+    @weave.op()
+    def apply_summarization(
+        self,
+        messages: List[Dict],
+        token_count: int,
+        compact_threshold: int,
+        llm_client: Any,
+        summarizer_model: Optional[str] = None,
+    ) -> List[Dict]:
+        """Summarizes archived context when token threshold is exceeded.
+        
+        Re-summarizes all archived context (middle of conversation) each time,
+        keeping the last user query and tool episode intact.
+        
+        Args:
+            messages: List of message dictionaries from the conversation
+            token_count: Current token count of the messages
+            compact_threshold: Token threshold for triggering summarization
+            llm_client: LLM client for generating summaries
+            summarizer_model: Optional model name for summarization
+            
+        Returns:
+            List of processed messages with summary if needed
+            
+        Raises:
+            ValueError: If llm_client is None or summarization returns empty content
+        """
+        if llm_client is None:
+            raise ValueError("llm_client is required for progressive summarization")
+        
+        user_query, conversation_history = split_llm_trace(messages)
+
+        token_count = get_token_count(messages)
+
+        # Don't summarize if below threshold or no archived content
+        if token_count <= compact_threshold or not conversation_history:
+            # Return: user query + tool episode (if present)
+            result = []
+            if user_query:
+                result.append(user_query[0])
+            return result + conversation_history
+        
+        # Build prompt for summarization
+        prompt_messages = [ 
+            {"role": "system", "content": self.summary_prompt},
+            {"role": "user", "content": f"Conversation history to compress:\n{conversation_history}"},
+        ]
+
+        # Call LLM to generate summary (let exceptions propagate)
+        model = summarizer_model or "gpt-4-1-mini"
+        response = llm_client.generate_plain(
+            input_messages=prompt_messages, model=model
+        )
+
+        # Extract summary text from response
+        message = response.choices[0].message
+        if isinstance(message, dict):
+            summary_text = (message.get("content") or "").strip()
+        else:
+            summary_text = (getattr(message, "content", "") or "").strip()
+
+        if not summary_text:
+            raise ValueError("Summarization returned empty content")
+
+        # Build final message list: user query + summary + tool episode
+        summary_message = {"role": "system", "content": summary_text}
+        
+        result = []
+        if user_query:
+            result.append(user_query[0])
+        result.append(summary_message)
+        
+        return result
