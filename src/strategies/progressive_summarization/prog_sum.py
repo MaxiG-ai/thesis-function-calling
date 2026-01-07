@@ -3,7 +3,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from src.utils.logger import get_logger
-from src.utils.token_count import get_token_count
 
 logger = get_logger("ProgressiveSummarization")
 
@@ -231,8 +230,6 @@ class ProgressiveSummarizer:
             raise ValueError("llm_client is required for progressive summarization")
         
         user_query, conversation_history = split_llm_trace(messages)
-
-        token_count = get_token_count(messages)
 
         # Don't summarize if below threshold or no archived content
         if token_count <= self.config.compact_threshold or not conversation_history:
