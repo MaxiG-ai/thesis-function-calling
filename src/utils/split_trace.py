@@ -88,73 +88,106 @@ def get_last_tool_interaction(messages: List[Dict]) -> List[Dict]:
 
 
 def process_and_split_trace_user(messages: List[Dict]) -> Tuple[List[Dict], List[Dict]]:
-    """Process and split the trace into user messages and rest of conversation.
+    """Process and split the trace into last user message and messages before it.
+    
+    This function finds the last user message and splits the conversation into:
+    - Last user message (as a list with one element)
+    - All messages before the last user message
     
     Args:
         messages: List of message dictionaries
         
     Returns:
-        Tuple of (user_messages, rest_of_conversation)
+        Tuple of ([last_user_message], messages_before_last_user)
+        If no user message found, returns ([], all_messages)
     """
     if not messages:
         return [], []
     
-    user_messages = get_user_message(messages)
+    # Find the last user message
+    last_user_idx = None
+    for i in range(len(messages) - 1, -1, -1):
+        if messages[i].get("role") == "user":
+            last_user_idx = i
+            break
     
-    if not user_messages:
+    if last_user_idx is None:
         return [], messages
     
-    # Collect all non-user messages
-    rest_of_conversation = []
-    for msg in messages:
-        if msg.get("role") != "user":
-            rest_of_conversation.append(msg)
+    last_user_message = [messages[last_user_idx]]
+    messages_before = messages[:last_user_idx]
     
-    return user_messages, rest_of_conversation
+    return last_user_message, messages_before
 
 
 def process_and_split_trace_user_tool(messages: List[Dict]) -> Tuple[List[Dict], List[Dict], List[Dict]]:
-    """Process and split the trace into user messages, intermediate messages, and last tool episode.
+    """Process and split the trace into last user message, intermediate messages, and last tool episode.
+    
+    This function performs a 3-way split of the conversation:
+    - Last user message (before the tool episode)
+    - Intermediate messages (before the last user, excluding tool episode)
+    - Last tool episode (assistant with tool_calls + tool responses at the end)
     
     Args:
         messages: List of message dictionaries
         
     Returns:
-        Tuple of (user_messages, intermediate_messages, last_tool_episode)
+        Tuple of ([last_user_message], intermediate_messages, last_tool_episode)
+        where:
+        - last_user_message: List with the last user message (empty if not found)
+        - intermediate_messages: All messages before the last user message
+        - last_tool_episode: The last tool episode at the end (empty if not found)
     """
     if not messages:
         return [], [], []
     
-    user_messages = get_user_message(messages)
+    # First, extract the last tool episode
     last_tool_episode = get_last_tool_interaction(messages)
     
-    # Calculate where the last tool episode starts in the original messages
+    # Determine where to split based on whether we have a tool episode
     if last_tool_episode:
-        # Find the index where the tool episode starts
+        # Find where the tool episode starts in the original messages
         tool_episode_start_idx = None
         for i in range(len(messages)):
             if messages[i] is last_tool_episode[0]:
                 tool_episode_start_idx = i
                 break
         
-        if tool_episode_start_idx is not None:
-            # Intermediate messages are everything before the tool episode, excluding user messages
-            intermediate_messages = []
-            for i in range(tool_episode_start_idx):
-                msg = messages[i]
-                if msg.get("role") != "user":
-                    intermediate_messages.append(msg)
-        else:
+        if tool_episode_start_idx is None:
             # Shouldn't happen, but handle defensively
-            intermediate_messages = []
-            for msg in messages:
-                if msg.get("role") != "user" and msg not in last_tool_episode:
-                    intermediate_messages.append(msg)
+            tool_episode_start_idx = len(messages)
+        
+        # Look for the last user message before the tool episode
+        last_user_idx = None
+        for i in range(tool_episode_start_idx - 1, -1, -1):
+            if messages[i].get("role") == "user":
+                last_user_idx = i
+                break
+        
+        if last_user_idx is None:
+            # No user found before tool episode
+            return [], messages[:tool_episode_start_idx], last_tool_episode
+        
+        # Split: [intermediate] [last_user] [messages between user and tool] [tool_episode]
+        # We want: [intermediate], [last_user], [tool_episode]
+        # So intermediate = everything before last_user
+        last_user_message = [messages[last_user_idx]]
+        intermediate_messages = messages[:last_user_idx]
+        
+        return last_user_message, intermediate_messages, last_tool_episode
     else:
-        # No tool episode, so intermediate is all non-user messages
-        intermediate_messages = []
-        for msg in messages:
-            if msg.get("role") != "user":
-                intermediate_messages.append(msg)
-    
-    return user_messages, intermediate_messages, last_tool_episode
+        # No tool episode, just find the last user and split around it
+        last_user_idx = None
+        for i in range(len(messages) - 1, -1, -1):
+            if messages[i].get("role") == "user":
+                last_user_idx = i
+                break
+        
+        if last_user_idx is None:
+            # No user message at all
+            return [], messages, []
+        
+        last_user_message = [messages[last_user_idx]]
+        intermediate_messages = messages[:last_user_idx]
+        
+        return last_user_message, intermediate_messages, []

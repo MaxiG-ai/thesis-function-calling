@@ -170,19 +170,20 @@ def test_get_last_tool_interaction_no_preceding_assistant() -> None:
 
 # Tests for process_and_split_trace_user
 def test_process_and_split_trace_user_simple() -> None:
-    """Test simple 2-way split (user + rest)."""
+    """Test simple 2-way split (last user + messages before)."""
     messages = [
         _make_message("system", "System prompt"),
-        _make_message("user", "Hello"),
-        _make_message("assistant", "Hi there!"),
-        _make_message("assistant", "How can I help?"),
+        _make_message("user", "First question"),
+        _make_message("assistant", "First answer"),
+        _make_message("user", "Second question"),
     ]
     
     user_messages, rest = process_and_split_trace_user(messages)
     
     assert len(user_messages) == 1
     assert user_messages[0]["role"] == "user"
-    assert len(rest) == 3  # system + 2 assistants
+    assert user_messages[0]["content"] == "Second question"
+    assert len(rest) == 3  # system + first user + first assistant
 
 
 def test_process_and_split_trace_user_no_user() -> None:
@@ -206,9 +207,20 @@ def test_process_and_split_trace_user_empty() -> None:
     assert rest == []
 
 
+def test_process_and_split_trace_user_only_user() -> None:
+    """Test with only a user message."""
+    messages = [_make_message("user", "Hello")]
+    
+    user_messages, rest = process_and_split_trace_user(messages)
+    
+    assert len(user_messages) == 1
+    assert user_messages[0]["content"] == "Hello"
+    assert rest == []
+
+
 # Tests for process_and_split_trace_user_tool
 def test_process_and_split_trace_user_tool_3way() -> None:
-    """Test 3-way split (user + intermediate + last tool episode)."""
+    """Test 3-way split (last user + intermediate + last tool episode)."""
     messages = [
         _make_message("system", "System prompt"),
         _make_message("user", "First question"),
@@ -224,16 +236,16 @@ def test_process_and_split_trace_user_tool_3way() -> None:
     
     user_messages, intermediate, tool_episode = process_and_split_trace_user_tool(messages)
     
-    assert len(user_messages) == 2
-    assert user_messages[0]["content"] == "First question"
-    assert user_messages[1]["content"] == "Get data"
-    assert len(intermediate) == 2  # system + first assistant
+    assert len(user_messages) == 1
+    assert user_messages[0]["content"] == "Get data"
+    assert len(intermediate) == 3  # system + first user + first assistant
     assert len(tool_episode) == 2  # assistant with tool_calls + tool response
 
 
 def test_process_and_split_trace_user_tool_no_tools() -> None:
     """Test 3-way split when no tools at end."""
     messages = [
+        _make_message("system", "System prompt"),
         _make_message("user", "Hello"),
         _make_message("assistant", "Hi there!"),
     ]
@@ -241,7 +253,8 @@ def test_process_and_split_trace_user_tool_no_tools() -> None:
     user_messages, intermediate, tool_episode = process_and_split_trace_user_tool(messages)
     
     assert len(user_messages) == 1
-    assert len(intermediate) == 1
+    assert user_messages[0]["content"] == "Hello"
+    assert len(intermediate) == 1  # just system
     assert tool_episode == []
 
 
@@ -257,6 +270,7 @@ def test_process_and_split_trace_user_tool_empty() -> None:
 def test_process_and_split_trace_user_tool_corrupted_tools() -> None:
     """Test 3-way split with corrupted tool calls."""
     messages = [
+        _make_message("system", "System prompt"),
         _make_message("user", "Get data"),
         _make_message(
             "assistant",
@@ -269,5 +283,25 @@ def test_process_and_split_trace_user_tool_corrupted_tools() -> None:
     user_messages, intermediate, tool_episode = process_and_split_trace_user_tool(messages)
     
     assert len(user_messages) == 1
-    assert len(intermediate) == 2  # user already counted in user_messages, so assistant + tool
+    assert user_messages[0]["content"] == "Get data"
+    assert len(intermediate) == 1  # just system
     assert tool_episode == []  # Corrupted tools should be excluded
+
+
+def test_process_and_split_trace_user_tool_no_user_before_tools() -> None:
+    """Test 3-way split when no user message before tool episode."""
+    messages = [
+        _make_message("system", "System prompt"),
+        _make_message(
+            "assistant",
+            "Fetching...",
+            tool_calls=[{"id": "tc-1", "type": "function", "function": {"name": "fetch"}}],
+        ),
+        _make_message("tool", "Result", tool_call_id="tc-1"),
+    ]
+    
+    user_messages, intermediate, tool_episode = process_and_split_trace_user_tool(messages)
+    
+    assert user_messages == []
+    assert len(intermediate) == 1  # just system before tool episode
+    assert len(tool_episode) == 2  # assistant + tool
