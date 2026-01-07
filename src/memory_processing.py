@@ -76,7 +76,6 @@ class MemoryProcessor:
             logger.debug(
                 f"🧠 Pre-Processing Token Count: {pre_count}, exceeds compact_threshold={self.config.compact_threshold}"
             )
-            # apply trace split here.
 
             # 2. Apply selected memory strategy
             if settings.type == "truncation":

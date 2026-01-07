@@ -1,4 +1,4 @@
-# contains utilties to split llm traces
+# contains utilities to split llm traces
 from typing import List, Dict, Tuple
 
 
