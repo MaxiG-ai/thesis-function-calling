@@ -1,6 +1,6 @@
 import weave
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 from src.utils.logger import get_logger
 
