@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from src.utils.config import ExperimentConfig
 from src.strategies.memory_bank.memory_bank import MemoryBank
-from src.strategies.progressive_summarization.prog_sum import split_llm_trace
+from src.strategies.progressive_summarization.prog_sum import split_llm_trace, ProgressiveSummarizer
 from src.utils.logger import get_logger
 from src.utils.token_count import get_token_count
 from src.utils.trace_processing import detect_tail_loop
@@ -15,31 +15,17 @@ class MemoryProcessor:
     def __init__(self, config: ExperimentConfig):
         self.config = config
         self.active_bank: Optional[MemoryBank] = None
+        self.active_summarizer: Optional[ProgressiveSummarizer] = None
         self.processed_message_ids: set = set()
         self.current_summary: str = ""
-        self._load_summary_prompt()
 
-
-    def _load_summary_prompt(self):
-        """Utility to load and cache the summary prompt."""
-        # Find the progressive_summarization strategy if configured
-        config_prompt_path = "prompts/progressive_summary.md"
-        for strategy in self.config.memory_strategies.values():
-            if strategy.type == "progressive_summarization" and strategy.summary_prompt:
-                config_prompt_path = strategy.summary_prompt
-                break
-        
-        # parse string to Path
-        prompt_path = Path(__file__).resolve().parents[0] / Path(config_prompt_path)
-        try:
-            self.summary_prompt = prompt_path.read_text(encoding="utf-8")   
-        except FileNotFoundError:
-            logger.error("Missing progressive summary prompt file at %s", prompt_path)
 
     def reset_state(self):
         """Called by Orchestrator to reset memory between runs."""
         if self.active_bank:
             self.active_bank.reset()
+        if self.active_summarizer:
+            self.active_summarizer.reset()
         self.processed_message_ids.clear()
         self.current_summary = ""
         logger.info("🧠 Memory State Reset")
@@ -209,52 +195,11 @@ class MemoryProcessor:
     ) -> List[Dict]:
         """Summarizes archived context when token threshold is exceeded.
         
-        Re-summarizes all archived context (middle of conversation) each time,
-        keeping the last user query and tool episode intact.
+        Uses the ProgressiveSummarizer class to handle the summarization logic.
         """
-        if llm_client is None:
-            raise ValueError("llm_client is required for progressive summarization")
+        if self.active_summarizer is None:
+            self.active_summarizer = ProgressiveSummarizer(self.config)
         
-        user_query, conversation_history = split_llm_trace(messages)
-
-        token_count = get_token_count(messages)
-
-        # Don't summarize if below threshold or no archived content
-        if token_count <= self.config.compact_threshold or not conversation_history:
-            # Return: user query + tool episode (if present)
-            result = []
-            if user_query:
-                result.append(user_query[0])
-            return result + conversation_history
-        
-        # Build prompt for summarization
-        prompt_messages = [ 
-            {"role": "system", "content": self.summary_prompt},
-            {"role": "user", "content": f"Conversation history to compress:\n{conversation_history}"},
-        ]
-
-        # Call LLM to generate summary (let exceptions propagate)
-        summarizer_model = settings.summarizer_model or "gpt-4-1-mini"
-        response = llm_client.generate_plain(
-            input_messages=prompt_messages, model=summarizer_model
+        return self.active_summarizer.summarize(
+            messages, token_count, settings, llm_client
         )
-
-        # Extract summary text from response
-        message = response.choices[0].message
-        if isinstance(message, dict):
-            summary_text = (message.get("content") or "").strip()
-        else:
-            summary_text = (getattr(message, "content", "") or "").strip()
-
-        if not summary_text:
-            raise ValueError("Summarization returned empty content")
-
-        # Build final message list: user query + summary + tool episode
-        summary_message = {"role": "system", "content": summary_text}
-        
-        result = []
-        if user_query:
-            result.append(user_query[0])
-        result.append(summary_message)
-        
-        return result

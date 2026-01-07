@@ -1,8 +1,11 @@
-from typing import List, Dict, Tuple
+import weave
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 from src.utils.logger import get_logger
+from src.utils.token_count import get_token_count
 
-logger = get_logger("HistoryUtils")
+logger = get_logger("ProgressiveSummarization")
 
 def split_llm_trace(messages: List[Dict]) -> Tuple[List[Dict], List[Dict]]:
     """
@@ -163,3 +166,114 @@ def split_llm_trace_with_tools(messages: List[Dict]) -> Tuple[Dict, List[Dict], 
     conversation_history = messages[:last_user_idx]
 
     return last_user_query, conversation_history, last_tool_episode
+
+
+class ProgressiveSummarizer:
+    """Handles progressive summarization of conversation history.
+    
+    When token count exceeds threshold, this class summarizes archived context
+    while keeping the last user query and tool episode intact.
+    """
+    
+    def __init__(self, config):
+        """Initialize the summarizer with configuration.
+        
+        Args:
+            config: ExperimentConfig containing memory strategy settings
+        """
+        self.config = config
+        self.summary_prompt = self._load_summary_prompt()
+    
+    def _load_summary_prompt(self) -> str:
+        """Load and cache the summary prompt from file.
+        
+        Returns:
+            The summary prompt text
+        """
+        # Find the progressive_summarization strategy if configured
+        config_prompt_path = "prompts/progressive_summary.md"
+        for strategy in self.config.memory_strategies.values():
+            if strategy.type == "progressive_summarization" and strategy.summary_prompt:
+                config_prompt_path = strategy.summary_prompt
+                break
+        
+        # parse string to Path
+        prompt_path = Path(__file__).resolve().parents[2] / Path(config_prompt_path)
+        try:
+            return prompt_path.read_text(encoding="utf-8")
+        except FileNotFoundError:
+            logger.error("Missing progressive summary prompt file at %s", prompt_path)
+            return ""
+    
+    @weave.op()
+    def summarize(
+        self,
+        messages: List[Dict],
+        token_count: int,
+        settings,
+        llm_client: Any,
+    ) -> List[Dict]:
+        """Summarizes archived context when token threshold is exceeded.
+        
+        Re-summarizes all archived context (middle of conversation) each time,
+        keeping the last user query and tool episode intact.
+        
+        Args:
+            messages: Full list of conversation messages
+            token_count: Current token count of messages
+            settings: MemoryDef settings for this strategy
+            llm_client: LLM client for generating summaries
+            
+        Returns:
+            Processed message list with summary injected
+        """
+        if llm_client is None:
+            raise ValueError("llm_client is required for progressive summarization")
+        
+        user_query, conversation_history = split_llm_trace(messages)
+
+        token_count = get_token_count(messages)
+
+        # Don't summarize if below threshold or no archived content
+        if token_count <= self.config.compact_threshold or not conversation_history:
+            # Return: user query + tool episode (if present)
+            result = []
+            if user_query:
+                result.append(user_query[0])
+            return result + conversation_history
+        
+        # Build prompt for summarization
+        prompt_messages = [ 
+            {"role": "system", "content": self.summary_prompt},
+            {"role": "user", "content": f"Conversation history to compress:\n{conversation_history}"},
+        ]
+
+        # Call LLM to generate summary (let exceptions propagate)
+        summarizer_model = settings.summarizer_model or "gpt-4-1-mini"
+        response = llm_client.generate_plain(
+            input_messages=prompt_messages, model=summarizer_model
+        )
+
+        # Extract summary text from response
+        message = response.choices[0].message
+        if isinstance(message, dict):
+            summary_text = (message.get("content") or "").strip()
+        else:
+            summary_text = (getattr(message, "content", "") or "").strip()
+
+        if not summary_text:
+            raise ValueError("Summarization returned empty content")
+
+        # Build final message list: user query + summary + tool episode
+        summary_message = {"role": "system", "content": summary_text}
+        
+        result = []
+        if user_query:
+            result.append(user_query[0])
+        result.append(summary_message)
+        
+        return result
+    
+    def reset(self):
+        """Reset the summarizer state. Currently no state to reset."""
+        pass
