@@ -5,7 +5,7 @@ from src.utils.split_trace import process_and_split_trace_user
 
 logger = get_logger("ProgressiveSummarization")
 
-def summarize_conv_history(messages, llm_client, summarizer_model = "gpt-4-1-mini") -> List[Dict]:
+def summarize_conv_history(messages: List[Dict], llm_client, summarizer_model: str = "gpt-4-1-mini") -> List[Dict]:
     if llm_client is None:
         raise ValueError("llm_client is required for progressive summarization")
     
