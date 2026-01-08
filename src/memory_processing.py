@@ -2,19 +2,18 @@ import weave
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-from src.utils.config import ExperimentConfig
-from src.strategies.memory_bank.memory_bank import MemoryBank
-from src.strategies.progressive_summarization.prog_sum import split_llm_trace
 from src.utils.logger import get_logger
 from src.utils.token_count import get_token_count
 from src.utils.trace_processing import detect_tail_loop
+from src.utils.config import ExperimentConfig
+
+from src.strategies.progressive_summarization.prog_sum import summarize_conv_history
 
 logger = get_logger("MemoryProcessor")
 
 class MemoryProcessor:
     def __init__(self, config: ExperimentConfig):
         self.config = config
-        self.active_bank: Optional[MemoryBank] = None
         self.processed_message_ids: set = set()
         self.current_summary: str = ""
         self._load_summary_prompt()
@@ -38,8 +37,6 @@ class MemoryProcessor:
 
     def reset_state(self):
         """Called by Orchestrator to reset memory between runs."""
-        if self.active_bank:
-            self.active_bank.reset()
         self.processed_message_ids.clear()
         self.current_summary = ""
         logger.info("🧠 Memory State Reset")
@@ -76,15 +73,19 @@ class MemoryProcessor:
             logger.debug(
                 f"🧠 Pre-Processing Token Count: {pre_count}, exceeds compact_threshold={self.config.compact_threshold}"
             )
-            # 2. Apply selected memory strategy
             if settings.type == "truncation":
                 processed_messages, _ = self._apply_truncation(messages, pre_count, self.config.compact_threshold)
-            elif settings.type == "memory_bank":
-                processed_messages = self._apply_memory_bank(messages, pre_count, settings)
             elif settings.type == "progressive_summarization":
                 processed_messages = self._apply_progressive_summarization(
-                    messages, pre_count, settings, llm_client
+                    messages=messages, 
+                    token_count=pre_count, 
+                    settings=settings, 
+                    llm_client=llm_client
                 )
+            elif settings.type == "memory_bank":
+                raise NotImplementedError("Memory Bank strategy not yet implemented")
+            elif settings.type == "acon":
+                raise NotImplementedError("ACON strategy not yet implemented")
             else:
                 logger.warning(
                     f"🧠 Unknown memory strategy type: {settings.type}. No memory strategy applied; returning original messages."
@@ -134,70 +135,6 @@ class MemoryProcessor:
             f"✂️  Truncated context from {token_count} to {current_token_count} tokens using max_tokens={max_tokens}"
         )
         return result, current_token_count
-    
-    @weave.op()
-    def _apply_memory_bank(self, messages: List[Dict], token_count: int, settings) -> List[Dict]:
-        """
-        Memory bank strategy: Store archived context in vector DB and retrieve relevant memories.
-        Keeps last user query + tool episode, and injects retrieved memories as context.
-        """
-        if self.active_bank is None:
-            self.active_bank = MemoryBank(settings.embedding_model)
-
-        # Split messages into components
-        user_query, conversation_history = split_llm_trace(messages)
-
-        # Store archived messages in memory bank
-        for i, msg in enumerate(conversation_history):
-            try:
-                msg_id = f"{i}_{len(str(msg.get('content', '')))}"
-            except Exception as e:
-                logger.error(f"Failed to generate message ID for memory storage: {e}")
-                msg_id = f"{i}_{id(msg)}_{msg.get('role', 'unknown')}"
-            
-            if msg_id not in self.processed_message_ids:
-                if msg["role"] in ["user", "assistant"]:
-                    content = msg.get("content", "")
-                    if content:
-                        self.active_bank.add_memory(f"{msg['role']}: {content}")
-                self.processed_message_ids.add(msg_id)
-
-        self.active_bank.update_time()
-
-        # Retrieve relevant memories based on last user query
-        retrieved_context = []
-        if user_query and user_query[0].get("content"):
-            retrieved_context = self.active_bank.retrieve(
-                query=user_query[0]["content"], top_k=settings.top_k or 3
-            )
-
-        # Build memory message if we have retrieved context
-        memory_msg = []
-        if retrieved_context:
-            context_str = "\n".join(retrieved_context)
-            memory_block = (
-                f"Relevant Past Info: \n{context_str}\n"
-                "End of Past Info"
-            )
-            memory_msg = [{"role": "system", "content": memory_block}]
-            logger.debug(f"🧠 Injected {len(retrieved_context)} memories into context.")
-
-        # Build result: memory + user query + tool episode
-        result = memory_msg.copy()
-        if user_query:
-            result.append(user_query[0])
-        result.extend(conversation_history)
-        
-        logger.debug(
-            f"""
-            🧠 Memory Bank Context:
-            MemoryMessages:{len(memory_msg)} 
-            UserQuery:{1 if user_query else 0}
-            ToolEpisode:{len(conversation_history)}
-            FinalMessages:{len(result)}
-            """
-        )
-        return result
 
     @weave.op()
     def _apply_progressive_summarization(
@@ -206,55 +143,15 @@ class MemoryProcessor:
         token_count: int,
         settings,
         llm_client: Optional[Any],
-    ) -> List[Dict]:
+    ) -> Tuple[List[Dict], int]:
         """Summarizes archived context when token threshold is exceeded.
         
-        Re-summarizes all archived context (middle of conversation) each time,
-        keeping the last user query and tool episode intact.
+        Summarizes all messages before user query.
         """
-        if llm_client is None:
-            raise ValueError("llm_client is required for progressive summarization")
-        
-        user_query, conversation_history = split_llm_trace(messages)
-
-        token_count = get_token_count(messages)
-
-        # Don't summarize if below threshold or no archived content
-        if token_count <= self.config.compact_threshold or not conversation_history:
-            # Return: user query + tool episode (if present)
-            result = []
-            if user_query:
-                result.append(user_query[0])
-            return result + conversation_history
-        
-        # Build prompt for summarization
-        prompt_messages = [ 
-            {"role": "system", "content": self.summary_prompt},
-            {"role": "user", "content": f"Conversation history to compress:\n{conversation_history}"},
-        ]
-
-        # Call LLM to generate summary (let exceptions propagate)
-        summarizer_model = settings.summarizer_model or "gpt-4-1-mini"
-        response = llm_client.generate_plain(
-            input_messages=prompt_messages, model=summarizer_model
-        )
-
-        # Extract summary text from response
-        message = response.choices[0].message
-        if isinstance(message, dict):
-            summary_text = (message.get("content") or "").strip()
-        else:
-            summary_text = (getattr(message, "content", "") or "").strip()
-
-        if not summary_text:
-            raise ValueError("Summarization returned empty content")
-
-        # Build final message list: user query + summary + tool episode
-        summary_message = {"role": "system", "content": summary_text}
-        
-        result = []
-        if user_query:
-            result.append(user_query[0])
-        result.append(summary_message)
-        
-        return result
+        logger.debug(f"🧠 Applying Progressive Summarization. Current query with {token_count} tokens")
+        summarized_conv = summarize_conv_history(
+            messages=messages, 
+            llm_client=llm_client, 
+            summarizer_model=settings.summarizer_model
+            )
+        return summarized_conv, get_token_count(summarized_conv)

@@ -1,10 +1,9 @@
-from typing import List, Dict, Optional, Any, Union, Iterable
+import litellm
 import weave
 import os
-from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam
-from openai.types.chat import ChatCompletion
-import litellm
-from litellm.files.main import ModelResponse
+
+from typing import List, Dict, Optional, Any, Union, Iterable
+from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam, ChatCompletion
 from src.utils.config import load_configs, ExperimentConfig, ModelDef
 from src.memory_processing import MemoryProcessor, get_token_count
 from src.utils.logger import get_logger
