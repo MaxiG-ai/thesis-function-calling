@@ -205,3 +205,6 @@ results/
 wandb/
 
 .pytest_cache/
+
+# config file
+config.toml

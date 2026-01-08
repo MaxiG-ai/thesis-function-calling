@@ -15,7 +15,7 @@ def detect_tail_loop(messages: List[Dict], threshold: int = 4, max_pattern_len: 
         tool_sig = None
         if "tool_calls" in m:
             tool_sig = sorted(
-                [(tc.type, tc.function.name, tc.function.arguments) for tc in m["tool_calls"]]
+                [(tc["type"], tc["function"]["name"], tc["function"]["arguments"]) for tc in m["tool_calls"]]
             )
             tool_sig = tuple(tool_sig)
 
