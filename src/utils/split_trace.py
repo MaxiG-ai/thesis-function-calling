@@ -27,9 +27,8 @@ def get_user_message(messages: List[Dict]) -> Tuple[List[Dict], List[int]]:
 def get_last_tool_interaction(messages: List[Dict]) -> Tuple[List[Dict], int]:
     """Get the last valid tool interaction from a list of messages.
     
-    Searches backwards through messages to find the last valid tool episode
-    (assistant message with tool_calls + all corresponding tool response messages).
-    Skips corrupted tool_calls (those with _type field from bad serialization).
+    Iterates through messages to find tool interactions following the pattern:
+    Assistant (with tool_calls) -> One or more Tool messages.
     
     Args:
         messages: List of message dictionaries
@@ -41,59 +40,34 @@ def get_last_tool_interaction(messages: List[Dict]) -> Tuple[List[Dict], int]:
     """
     if not messages:
         return [], len(messages)
+
+    last_interaction = ([], len(messages))
+    i = 0
     
-    # Find all indices where tool messages end (followed by non-tool or end of list)
-    i = len(messages) - 1
-    while i >= 0:
-        # Skip until we find a tool message
-        while i >= 0 and messages[i].get("role") != "tool":
-            i -= 1
+    while i < len(messages):
+        msg = messages[i]
         
-        if i < 0:
-            break
-        
-        # Found end of a potential tool sequence, find its start
-        tool_end_idx = i + 1
-        while i >= 0 and messages[i].get("role") == "tool":
-            i -= 1
-        tool_start_idx = i + 1
-        
-        # Need at least one message before the tool messages (the assistant)
-        if tool_start_idx == 0:
-            continue
-        
-        # Check the message before tool messages - should be assistant with tool_calls
-        assistant_idx = tool_start_idx - 1
-        potential_assistant = messages[assistant_idx]
-        
-        if potential_assistant.get("role") != "assistant":
-            continue
-        
-        tool_calls = potential_assistant.get("tool_calls", [])
-        
-        # Check for no tool_calls
-        if not tool_calls:
-            continue
-        
-        # Check for corrupted serialization (raw class dump with _type field)
-        if isinstance(tool_calls[0], dict) and "_type" in tool_calls[0]:
-            continue
-        
-        # Validate tool result IDs match tool_call IDs from assistant
-        tool_call_ids = {tc.get("id") for tc in tool_calls if isinstance(tc, dict)}
-        tool_result_ids = {
-            messages[j].get("tool_call_id") 
-            for j in range(tool_start_idx, tool_end_idx)
-        }
-        
-        # Check if all tool result IDs are present in tool_call IDs
-        if not tool_result_ids.issubset(tool_call_ids):
-            continue
-        
-        # Success: found a valid tool episode
-        return messages[assistant_idx:tool_end_idx], assistant_idx
-    
-    return [], len(messages)
+        # Check for assistant message with tool_calls
+        if msg.get("role") == "assistant" and msg.get("tool_calls"):
+            current_interaction = [msg]
+            start_idx = i
+            
+            # Look ahead for tool messages
+            j = i + 1
+            while j < len(messages) and messages[j].get("role") == "tool":
+                current_interaction.append(messages[j])
+                j += 1
+            
+            # If we found at least one tool response, this is a valid interaction
+            if len(current_interaction) > 1:
+                last_interaction = (current_interaction, start_idx)
+            
+            # Advance main pointer
+            i = j
+        else:
+            i += 1
+            
+    return last_interaction
 
 
 def process_and_split_trace_user(messages: List[Dict]) -> Tuple[List[Dict], List[Dict]]:
@@ -113,20 +87,14 @@ def process_and_split_trace_user(messages: List[Dict]) -> Tuple[List[Dict], List
     if not messages:
         return [], []
     
-    # Find the last user message
-    last_user_idx = None
-    for i in range(len(messages) - 1, -1, -1):
-        if messages[i].get("role") == "user":
-            last_user_idx = i
-            break
+    user_messages, user_message_idx = get_user_message(messages)
     
-    if last_user_idx is None:
+    if not user_messages:
         return [], messages
+
+    conv_after_user_message = messages[user_message_idx[-1] + 1 :]
     
-    last_user_message = [messages[last_user_idx]]
-    messages_before = messages[:last_user_idx]
-    
-    return last_user_message, messages_before
+    return [user_messages[-1]], conv_after_user_message
 
 
 def process_and_split_trace_user_tool(messages: List[Dict]) -> Tuple[List[Dict], List[Dict], List[Dict]]:
@@ -152,16 +120,16 @@ def process_and_split_trace_user_tool(messages: List[Dict]) -> Tuple[List[Dict],
     
     # Get all user messages and use the first one
     user_messages, user_messages_idx = get_user_message(messages)
-    # if not user_messages:
-    #     last_tool_episode, tool_episode_start_idx = get_last_tool_interaction(messages)
-    #     return [], messages[:tool_episode_start_idx], last_tool_episode
     
     # Extract the last valid tool episode and its start index
     last_tool_episode, tool_episode_start_idx = get_last_tool_interaction(messages)
     
+    if not user_messages:
+        return [], messages[:tool_episode_start_idx], last_tool_episode
+
     # Intermediate messages are between first user and the tool episode start
     intermediate_start = user_messages_idx[0] + 1
     intermediate_end = tool_episode_start_idx if last_tool_episode else len(messages)
     intermediate_messages = messages[intermediate_start:intermediate_end]
     
-    return user_messages, intermediate_messages, last_tool_episode
+    return [user_messages[0]], intermediate_messages, last_tool_episode

@@ -39,8 +39,9 @@ def summarize_conv_history(messages, llm_client, summarizer_model = "gpt-4-1-min
     # Build final message list: [summary, user query]
     summary_message = {"role": "system", "content": summary_text}
     
-    result = [summary_message]
+    result = []
     if user_query:
         result.extend(user_query)
+    result.extend([summary_message])
     
     return result
