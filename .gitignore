@@ -208,3 +208,4 @@ wandb/
 
 # Example files for coding agents
 example_response.json
+config.toml
