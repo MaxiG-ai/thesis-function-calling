@@ -8,6 +8,7 @@ from src.utils.trace_processing import detect_tail_loop
 from src.utils.config import ExperimentConfig
 
 from src.strategies.progressive_summarization.prog_sum import summarize_conv_history
+from src.strategies.truncation.truncation import truncate_messages
 
 logger = get_logger("MemoryProcessor")
 
@@ -102,39 +103,12 @@ class MemoryProcessor:
         return processed_messages, output_token_info
     
     @weave.op()
-    def _apply_truncation(self, messages: List[Dict], token_count: int, max_tokens: int) -> Tuple[List[Dict], int]:
+    def _apply_truncation(self, messages: List[Dict], token_count: int) -> Tuple[List[Dict], int]:
+        """Truncates archived context when token threshold is exceeded.
         """
-        Naive Baseline: Keeps only the last user query + tool episode.
-        Ensures assistant+tool message pairs are kept together.
-        """
-        if len(messages) <= 3:
-            return messages, token_count
-
-        user_query, conversation_history = split_llm_trace(messages)
-        
-        # Build result: user query + tool episode (if present)
-        result = []
-        if user_query:
-            # `user_query` is already a list of message dicts; keep `result` flat
-            result.extend(user_query)
-
-        # iterate from newest message to oldest to select messages, but preserve chronological order in result
-        current_token_count = get_token_count(result)
-        selected_messages: List[Dict] = []
-        for msg in reversed(conversation_history):
-            msg_token_count = get_token_count([msg])
-            if current_token_count + msg_token_count > max_tokens:
-                break
-            selected_messages.append(msg)
-            current_token_count += msg_token_count
-
-        # selected_messages currently has newest-to-oldest; reverse to restore chronological order
-        selected_messages.reverse()
-        result.extend(selected_messages)
-        logger.debug(
-            f"✂️  Truncated context from {token_count} to {current_token_count} tokens using max_tokens={max_tokens}"
-        )
-        return result, current_token_count
+        logger.debug(f"🧠 Applying Truncation Strategy. Current query with {token_count} tokens")
+        truncated_conv = truncate_messages(messages)
+        return truncated_conv, get_token_count(truncated_conv)
 
     @weave.op()
     def _apply_progressive_summarization(
