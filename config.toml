@@ -29,7 +29,7 @@ enabled_models = [
 enabled_memory_methods = [
     # "no_strategy",
     "truncation",
-    "progressive_summarization",
+    # "progressive_summarization",
     # "memory_bank",
 ]
 
@@ -38,15 +38,10 @@ enabled_memory_methods = [
 [memory_strategies.truncation]
 type = "truncation"
 
-[memory_strategies.memory_bank]
-type = "memory_bank"
-embedding_model = "BAAI/bge-small-en-v1.5" # or local path
-top_k = 3
-
 [memory_strategies.no_strategy]
 type = "no_strategy"
 
 [memory_strategies.progressive_summarization]
 type = "progressive_summarization"
 summarizer_model = "gpt-4-1-mini"
-summary_prompt = "prompts/progressive_summary.md"
+summary_prompt = "src/strategies/progressive_summarization/prog_sum.prompt.md"
