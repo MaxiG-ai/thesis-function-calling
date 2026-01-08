@@ -1,4 +1,3 @@
-from typing import List, Dict
 from src.utils.split_trace import (
     get_user_message,
     get_last_tool_interaction,
