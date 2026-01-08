@@ -9,7 +9,7 @@ def get_user_message(messages: List[Dict]) -> Tuple[List[Dict], List[int]]:
         messages: List of message dictionaries
         
     Returns:
-        List of user messages (can be empty if no user messages found)
+        Tuple of (user_messages, user_message_indices) where user_messages is a list of user message dicts and user_message_indices is a list of their indices.
     """
     if not messages:
         return [], []
