@@ -49,4 +49,4 @@ type = "no_strategy"
 [memory_strategies.progressive_summarization]
 type = "progressive_summarization"
 summarizer_model = "gpt-4-1-mini"
-summary_prompt = "prompts/progressive_summary.md"
+summary_prompt = "src/strategies/progressive_summarization/prog_sum.prompt.md"
