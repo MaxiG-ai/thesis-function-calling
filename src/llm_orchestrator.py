@@ -1,13 +1,14 @@
-from typing import List, Dict, Optional, Any, Union, Iterable
+import litellm
 import weave
 import os
-from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam
-from openai.types.chat import ChatCompletion
-import litellm
-from litellm.files.main import ModelResponse
+
+from typing import List, Dict, Optional, Any, Union
+
+from openai.types.chat import ChatCompletionToolParam, ChatCompletion
 from src.utils.config import load_configs, ExperimentConfig, ModelDef
-from src.memory_processing import MemoryProcessor, get_token_count
 from src.utils.logger import get_logger
+
+from src.memory_processing import MemoryProcessor, get_token_count
 
 logger = get_logger("Orchestrator")
 
@@ -228,18 +229,20 @@ class LLMOrchestrator:
     @weave.op()
     def generate_plain(
         self,
-        input_messages: Iterable[ChatCompletionMessageParam],
+        input_messages: List[Dict],
         **kwargs,
     ) -> Union[ChatCompletion, Any]:
         """
-        Execute LLM request for evaluation. No memory processing applied. Model defaults to GPT-4.1 
-        Exception: Any errors from OpenAI API (logged to wandb)
+        Execute LLM request for evaluation. No memory processing applied.
+        Exception: Any errors from litellm (logged to wandb)
         """
         kwargs.pop("model", None)
         try:
             
             # Try to find in registry
             model_def = self.get_model_config()
+
+
             
             request_params = {
                 "model": model_def.litellm_name,
@@ -255,4 +258,5 @@ class LLMOrchestrator:
         
         except Exception as e:
             logger.error(f"💥 Generation Failed: {str(e)}")
+            logger.error(f"\n{input_messages}")
             raise e
