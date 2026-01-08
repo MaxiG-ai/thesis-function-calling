@@ -17,24 +17,6 @@ class MemoryProcessor:
         self.config = config
         self.processed_message_ids: set = set()
         self.current_summary: str = ""
-        self._load_summary_prompt()
-
-
-    def _load_summary_prompt(self):
-        """Utility to load and cache the summary prompt."""
-        # Find the progressive_summarization strategy if configured
-        config_prompt_path = "prompts/progressive_summary.md"
-        for strategy in self.config.memory_strategies.values():
-            if strategy.type == "progressive_summarization" and strategy.summary_prompt:
-                config_prompt_path = strategy.summary_prompt
-                break
-        
-        # parse string to Path
-        prompt_path = Path(__file__).resolve().parents[0] / Path(config_prompt_path)
-        try:
-            self.summary_prompt = prompt_path.read_text(encoding="utf-8")   
-        except FileNotFoundError:
-            logger.error("Missing progressive summary prompt file at %s", prompt_path)
 
     def reset_state(self):
         """Called by Orchestrator to reset memory between runs."""
@@ -47,9 +29,9 @@ class MemoryProcessor:
         self,
         messages: List[Dict],
         strategy_key: str,
-        input_token_info: Dict[str, Any],
+        input_token_count: int,
         llm_client: Optional[Any] = None,
-    ) -> Tuple[List[Dict], Dict[str, Any]]:
+    ) -> Tuple[List[Dict], Optional[int]]:
         """
         Apply the configured memory strategy to the incoming messages.
         """
@@ -61,25 +43,21 @@ class MemoryProcessor:
             logger.error(
                 f"🚨 Infinite loop detected in last {len(messages)} messages. Aborting."
             )
-            return [{"role": "system", "content": "Infinite loop detected; aborting."}], {}
+            return [{"role": "system", "content": "Infinite loop detected; aborting."}], None
 
-        # 1. Measure state before context processing
-        # Use trace_raw_token_count if available for accurate baseline
-        pre_count = input_token_info.get("raw_token_count") or get_token_count(messages)
-
-        if pre_count < self.config.compact_threshold:
+        if input_token_count < self.config.compact_threshold:
             # TODO: Context reading for memory bank and ACON should happen here nonetheless.
-            return messages, input_token_info
+            return messages, input_token_count
         else:
             logger.debug(
-                f"🧠 Pre-Processing Token Count: {pre_count}, exceeds compact_threshold={self.config.compact_threshold}"
+                f"🧠 Pre-Processing Token Count: {input_token_count}, exceeds compact_threshold={self.config.compact_threshold}"
             )
             if settings.type == "truncation":
-                processed_messages, _ = self._apply_truncation(messages, pre_count, self.config.compact_threshold)
+                processed_messages, output_token_count = self._apply_truncation(messages, input_token_count)
             elif settings.type == "progressive_summarization":
-                processed_messages = self._apply_progressive_summarization(
+                processed_messages, output_token_count = self._apply_progressive_summarization(
                     messages=messages, 
-                    token_count=pre_count, 
+                    token_count=input_token_count, 
                     settings=settings, 
                     llm_client=llm_client
                 )
@@ -91,16 +69,9 @@ class MemoryProcessor:
                 logger.warning(
                     f"🧠 Unknown memory strategy type: {settings.type}. No memory strategy applied; returning original messages."
                 )
-                return messages, input_token_info
-
-        # get token count from the list of processed messages
-        post_count = get_token_count(processed_messages)
-
-        output_token_info = {
-            "post_token_count": post_count,
-        }
-
-        return processed_messages, output_token_info
+                return messages, None
+            
+        return processed_messages, output_token_count
     
     @weave.op()
     def _apply_truncation(self, messages: List[Dict], token_count: int) -> Tuple[List[Dict], int]:
