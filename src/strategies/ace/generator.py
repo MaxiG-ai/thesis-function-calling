@@ -4,7 +4,7 @@ Generates actions using the playbook as guidance.
 """
 import os
 import re
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 from src.strategies.ace.playbook_utils import extract_json_from_text
 
