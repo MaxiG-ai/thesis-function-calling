@@ -49,7 +49,7 @@ def apply_ace_strategy(
     llm_client,
     settings,
     state: ACEState
-) -> Tuple[List[Dict], int, ACEState]:
+) -> Tuple[List[Dict], int]:
     """
     Apply ACE strategy to messages.
     
@@ -67,7 +67,7 @@ def apply_ace_strategy(
         state: Current ACE state
         
     Returns:
-        (processed_messages, token_count, updated_state)
+        (processed_messages, token_count)
     """
     state.step_count += 1
     logger.debug(f"ACE Strategy - Step {state.step_count}")
@@ -147,4 +147,4 @@ def apply_ace_strategy(
     # Calculate token count (simplified - actual implementation would use tokenizer)
     token_count = sum(len(msg.get("content", "").split()) for msg in processed_messages)
     
-    return processed_messages, token_count, state
+    return processed_messages, token_count

@@ -120,7 +120,7 @@ class MemoryProcessor:
         from src.strategies.ace import apply_ace_strategy
         
         logger.debug(f"🧠 Applying ACE Strategy. Current query with {token_count} tokens")
-        processed, new_count, self._ace_state = apply_ace_strategy(
+        processed, new_count = apply_ace_strategy(
             messages, llm_client, settings, self._ace_state
         )
         return processed, new_count
