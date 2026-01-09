@@ -174,11 +174,12 @@ def apply_curator_operations(
         elif op_type == "REMOVE":
             bullet_id = op.get("bullet_id")
             if bullet_id:
-                lines = [
-                    line for line in lines 
-                    if not (parse_playbook_line(line) and 
-                           parse_playbook_line(line)["id"] == bullet_id)
-                ]
+                new_lines = []
+                for line in lines:
+                    parsed = parse_playbook_line(line)
+                    if not (parsed and parsed["id"] == bullet_id):
+                        new_lines.append(line)
+                lines = new_lines
         
         elif op_type == "UPDATE":
             bullet_id = op.get("bullet_id")
@@ -206,14 +207,18 @@ def get_playbook_stats(playbook_text: str) -> Dict:
         Dict with total_bullets, high_performing, problematic, unused
     """
     lines = playbook_text.split('\n')
-    bullets = [parse_playbook_line(line) for line in lines if parse_playbook_line(line)]
+    bullets = []
+    for line in lines:
+        parsed = parse_playbook_line(line)
+        if parsed:
+            bullets.append(parsed)
     
     total = len(bullets)
     high_performing = sum(1 for b in bullets if b["helpful"] >= 3 and b["harmful"] == 0)
     problematic = sum(1 for b in bullets if b["harmful"] >= 2)
     unused = sum(1 for b in bullets if b["helpful"] == 0 and b["harmful"] == 0)
     
-    return {
+    return:
         "total_bullets": total,
         "high_performing": high_performing,
         "problematic": problematic,
