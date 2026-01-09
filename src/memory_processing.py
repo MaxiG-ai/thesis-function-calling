@@ -23,7 +23,7 @@ class MemoryProcessor:
         """Called by Orchestrator to reset memory between runs."""
         self.processed_message_ids.clear()
         self.current_summary = ""
-        self._ace_state = ACEState()
+        self._ace_state.reset()
         logger.info("🧠 Memory State Reset")
 
     @weave.op()
