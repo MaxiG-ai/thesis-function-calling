@@ -62,8 +62,8 @@ class MemoryProcessor:
                 )
             elif settings.type == "memory_bank":
                 raise NotImplementedError("Memory Bank strategy not yet implemented")
-            elif settings.type == "acon":
-                raise NotImplementedError("ACON strategy not yet implemented")
+            elif settings.type == "ace":
+                raise NotImplementedError("ACE strategy not yet implemented")
             else:
                 logger.warning(
                     f"🧠 Unknown memory strategy type: {settings.type}. No memory strategy applied; returning original messages."
