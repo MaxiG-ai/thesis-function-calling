@@ -15,6 +15,7 @@ from src.strategies.ace.generator import Generator
 from src.strategies.ace.reflector import Reflector
 from src.strategies.ace.curator import Curator
 from src.utils.logger import get_logger
+from src.utils.token_count import get_token_count
 
 logger = get_logger("ACEStrategy")
 
@@ -144,7 +145,7 @@ def apply_ace_strategy(
     
     processed_messages = [playbook_message] + messages
     
-    # Calculate token count (simplified - actual implementation would use tokenizer)
-    token_count = sum(len(msg.get("content", "").split()) for msg in processed_messages)
+    # Calculate token count using the proper tokenizer
+    token_count = get_token_count(processed_messages)
     
     return processed_messages, token_count, state
