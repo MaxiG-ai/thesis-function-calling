@@ -8,6 +8,7 @@ from src.utils.config import ExperimentConfig
 
 from src.strategies.progressive_summarization.prog_sum import summarize_conv_history
 from src.strategies.truncation.truncation import truncate_messages
+from src.strategies.ace.ace_strategy import ACEState
 
 logger = get_logger("MemoryProcessor")
 
@@ -16,11 +17,13 @@ class MemoryProcessor:
         self.config = config
         self.processed_message_ids: set = set()
         self.current_summary: str = ""
+        self._ace_state = ACEState()
 
     def reset_state(self):
         """Called by Orchestrator to reset memory between runs."""
         self.processed_message_ids.clear()
         self.current_summary = ""
+        self._ace_state.reset()
         logger.info("🧠 Memory State Reset")
 
     @weave.op()
@@ -44,6 +47,18 @@ class MemoryProcessor:
             )
             return [{"role": "system", "content": "Infinite loop detected; aborting."}], None
 
+        # ACE strategy should be applied at all times as it's a playbook-based learning system
+        # that builds and refines knowledge regardless of token count
+        if settings.type == "ace":
+            processed_messages, output_token_count = self._apply_ace(
+                messages=messages,
+                token_count=input_token_count,
+                settings=settings,
+                llm_client=llm_client
+            )
+            return processed_messages, output_token_count
+
+        # Other strategies only apply when token count exceeds threshold
         if input_token_count < self.config.compact_threshold:
             # TODO: Context reading for memory bank and ACON should happen here nonetheless.
             return messages, input_token_count
@@ -62,8 +77,6 @@ class MemoryProcessor:
                 )
             elif settings.type == "memory_bank":
                 raise NotImplementedError("Memory Bank strategy not yet implemented")
-            elif settings.type == "acon":
-                raise NotImplementedError("ACON strategy not yet implemented")
             else:
                 logger.warning(
                     f"🧠 Unknown memory strategy type: {settings.type}. No memory strategy applied; returning original messages."
@@ -99,3 +112,20 @@ class MemoryProcessor:
             summarizer_model=settings.summarizer_model
             )
         return summarized_conv, get_token_count(summarized_conv)
+    
+    @weave.op()
+    def _apply_ace(
+        self,
+        messages: List[Dict],
+        token_count: int,
+        settings,
+        llm_client: Optional[Any]
+    ) -> Tuple[List[Dict], int]:
+        """Applies ACE strategy by delegating to ace_strategy module."""
+        from src.strategies.ace import apply_ace_strategy
+        
+        logger.debug(f"🧠 Applying ACE Strategy. Current query with {token_count} tokens")
+        processed, new_count = apply_ace_strategy(
+            messages, llm_client, settings, self._ace_state
+        )
+        return processed, new_count

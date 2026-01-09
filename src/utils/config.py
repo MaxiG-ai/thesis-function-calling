@@ -25,6 +25,13 @@ class MemoryDef(BaseModel):
     # Fields for Progressive Summarization
     summary_prompt: Optional[str] = None
     summarizer_model: Optional[str] = None
+    
+    # ACE strategy fields
+    generator_model: Optional[str] = "gpt-4-1-mini"
+    reflector_model: Optional[str] = "gpt-4-1-mini"
+    curator_model: Optional[str] = "gpt-4-1-mini"
+    curator_frequency: Optional[int] = 1
+    playbook_token_budget: Optional[int] = 4096
 
 
 class ExperimentConfig(BaseModel):
