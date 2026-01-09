@@ -3,7 +3,7 @@ Main ACE strategy orchestration.
 Implements the apply_ace_strategy function and ACEState dataclass.
 """
 from dataclasses import dataclass, field
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple
 
 from src.strategies.ace.playbook_utils import (
     EMPTY_PLAYBOOK_TEMPLATE,
