@@ -20,7 +20,7 @@ class SAPGPTModel:
         prediction = self._predict(prefix, filled_prompt, **kwargs)
         return prediction
     
-    @weave.op()
+    #@weave.op()
     @retry(max_attempts=10)
     def _predict(self, prefix, text, **kwargs):
         try:
@@ -58,7 +58,7 @@ class FunctionCallSAPGPT(SAPGPTModel):
         self.messages = []
         self.orchestrator = orchestrator
 
-    @weave.op()
+    #@weave.op()
     @retry(max_attempts=5, delay=10)
     def generate_response(self, messages, tools=None, **kwargs: Any):
         # The runner manages self.messages directly by appending assistant/tool messages
