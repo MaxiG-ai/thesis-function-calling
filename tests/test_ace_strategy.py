@@ -541,7 +541,7 @@ def test_apply_ace_strategy_injects_playbook():
     state = ACEState()
     messages = [{"role": "user", "content": "Hello"}]
     
-    processed, token_count, new_state = apply_ace_strategy(
+    processed, token_count = apply_ace_strategy(
         messages, mock_client, mock_settings, state
     )
     
@@ -565,11 +565,11 @@ def test_apply_ace_strategy_increments_step_count():
     
     assert state.step_count == 0
     
-    _, _, new_state = apply_ace_strategy(messages, mock_client, mock_settings, state)
-    assert new_state.step_count == 1
+    apply_ace_strategy(messages, mock_client, mock_settings, state)
+    assert state.step_count == 1
     
-    _, _, new_state = apply_ace_strategy(messages, mock_client, mock_settings, new_state)
-    assert new_state.step_count == 2
+    apply_ace_strategy(messages, mock_client, mock_settings, state)
+    assert state.step_count == 2
 
 
 def test_apply_ace_strategy_respects_curator_frequency():
@@ -613,8 +613,8 @@ def test_apply_ace_strategy_respects_curator_frequency():
     messages = [{"role": "user", "content": "Test"}]
     
     # Step 1 - should not run curator
-    _, _, new_state = apply_ace_strategy(messages, mock_client, mock_settings, state)
-    assert new_state.step_count == 1
+    apply_ace_strategy(messages, mock_client, mock_settings, state)
+    assert state.step_count == 1
     
     # Only reflector should have been called (if previous step existed)
     # In this case, curator should not run at step 1
@@ -660,7 +660,7 @@ def test_memory_processor_apply_ace_delegates_correctly():
     messages = [{"role": "user", "content": "Test"}]
     
     # Call apply_ace_strategy directly
-    processed, token_count, new_state = apply_ace_strategy(
+    processed, token_count = apply_ace_strategy(
         messages, mock_client, mock_settings, state
     )
     
@@ -669,4 +669,4 @@ def test_memory_processor_apply_ace_delegates_correctly():
     assert "PLAYBOOK" in processed[0]["content"]
     
     # State should be updated
-    assert new_state.step_count == 1
+    assert state.step_count == 1
