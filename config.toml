@@ -6,11 +6,9 @@ results_dir = "results"
 log_dir = "results/logs"
 logging_level = "INFO"
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
-# Optional: Run specific test cases by ID. When set, only these cases will be run.
-# Examples: ["Car-Rental-0", "Car-Rental-1"] or ["Travel-5", "Cross-10"]
-# Leave commented out or set to null to run all cases (or use benchmark_sample_size for random sampling)
-# selected_test_cases = ["Car-Rental-131"] # Cross-131, Hotels-124 (short
-# benchmark_sample_size = 100
+# Good samples: ["Car-Rental-131", "Cross-131"]
+selected_test_cases = ["Car-Rental-131", "Cross-131"]
+# benchmark_sample_size = 10
 
 # setting for max. context before compression
 compact_threshold = 8000
@@ -30,6 +28,7 @@ enabled_memory_methods = [
     "no_strategy",
     "truncation",
     "progressive_summarization",
+    # "memory_bank",
 ]
 
 # --- Memory Strategy Definitions ---
