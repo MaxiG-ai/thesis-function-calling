@@ -15,6 +15,7 @@ from src.strategies.ace.generator import Generator
 from src.strategies.ace.reflector import Reflector
 from src.strategies.ace.curator import Curator
 from src.utils.logger import get_logger
+from src.utils.token_count import get_token_count
 
 logger = get_logger("ACEStrategy")
 
@@ -135,6 +136,33 @@ def apply_ace_strategy(
             state.next_global_id = updated_id
             logger.debug(f"Applied {len(operations)} curator operations")
     
+    # Run Generator to prepare the next step
+    # The Generator uses the playbook to guide decision-making and returns
+    # a reasoning trace and bullet IDs that will be used in the next reflection
+    logger.debug("Running Generator to prepare next step...")
+    generator = Generator()
+    
+    # Extract context from messages
+    context = "\n".join([
+        f"{msg.get('role', 'unknown')}: {msg.get('content', '')[:200]}..."
+        for msg in messages[-3:]  # Last 3 messages for context
+    ])
+    
+    reasoning_trace, bullet_ids_used = generator.generate(
+        question=last_user_msg,
+        playbook=state.playbook,
+        context=context,
+        reflection=state.last_reflection,
+        llm_client=llm_client,
+        model=getattr(settings, 'generator_model', 'gpt-4-1-mini')
+    )
+    
+    # Store for next reflection cycle
+    state.last_reasoning_trace = reasoning_trace
+    state.last_bullet_ids = bullet_ids_used
+    state.last_predicted_answer = reasoning_trace  # Use reasoning trace as predicted answer
+    logger.debug(f"Generator used {len(bullet_ids_used)} bullets: {bullet_ids_used}")
+    
     # Inject playbook into messages
     # Insert as first system message
     playbook_message = {
@@ -144,7 +172,7 @@ def apply_ace_strategy(
     
     processed_messages = [playbook_message] + messages
     
-    # Calculate token count (simplified - actual implementation would use tokenizer)
-    token_count = sum(len(msg.get("content", "").split()) for msg in processed_messages)
+    # Calculate token count using the existing token counter
+    token_count = get_token_count(processed_messages)
     
     return processed_messages, token_count, state

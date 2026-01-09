@@ -150,6 +150,13 @@ def apply_curator_operations(
             new_bullet = format_playbook_line(updated_id, 0, 0, content)
             section_found = False
             
+            # TODO: The ADD operation modifies the 'lines' list while iterating over it.
+            # When 'lines.insert(insert_idx, new_bullet)' is called inside the loop,
+            # it changes the list size and indices, but the loop continues with the
+            # original enumeration. This could lead to skipping sections or incorrect
+            # insertion points if multiple ADD operations target the same or subsequent
+            # sections. Consider processing ADD operations separately or collecting
+            # insertion points before modifying the list.
             for i, line in enumerate(lines):
                 # Look for section header (e.g., "## Task Decomposition (TSD)")
                 if f"({section_slug})" in line or section.lower() in line.lower():
@@ -218,7 +225,7 @@ def get_playbook_stats(playbook_text: str) -> Dict:
     problematic = sum(1 for b in bullets if b["harmful"] >= 2)
     unused = sum(1 for b in bullets if b["helpful"] == 0 and b["harmful"] == 0)
     
-    return:
+    return {
         "total_bullets": total,
         "high_performing": high_performing,
         "problematic": problematic,
