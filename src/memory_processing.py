@@ -47,6 +47,18 @@ class MemoryProcessor:
             )
             return [{"role": "system", "content": "Infinite loop detected; aborting."}], None
 
+        # ACE strategy should be applied at all times as it's a playbook-based learning system
+        # that builds and refines knowledge regardless of token count
+        if settings.type == "ace":
+            processed_messages, output_token_count = self._apply_ace(
+                messages=messages,
+                token_count=input_token_count,
+                settings=settings,
+                llm_client=llm_client
+            )
+            return processed_messages, output_token_count
+
+        # Other strategies only apply when token count exceeds threshold
         if input_token_count < self.config.compact_threshold:
             # TODO: Context reading for memory bank and ACON should happen here nonetheless.
             return messages, input_token_count
@@ -65,13 +77,6 @@ class MemoryProcessor:
                 )
             elif settings.type == "memory_bank":
                 raise NotImplementedError("Memory Bank strategy not yet implemented")
-            elif settings.type == "ace":
-                processed_messages, output_token_count = self._apply_ace(
-                    messages=messages,
-                    token_count=input_token_count,
-                    settings=settings,
-                    llm_client=llm_client
-                )
             else:
                 logger.warning(
                     f"🧠 Unknown memory strategy type: {settings.type}. No memory strategy applied; returning original messages."
