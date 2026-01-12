@@ -5,6 +5,9 @@ import weave
 from benchmarks.complex_func_bench.prompts.prompts import SimpleTemplatePrompt
 from benchmarks.complex_func_bench.utils.utils import retry
 from src.llm_orchestrator import LLMOrchestrator
+from src.utils.logger import get_logger
+
+logger = get_logger("CFB.SAPGPT")
 
 
 class SAPGPTModel:
@@ -33,7 +36,7 @@ class SAPGPTModel:
                 )
             return completion.choices[0].message.content
         except Exception as e:
-            print(f"Exception: {e}")
+            logger.error(f"SAPGPTModel prediction failed: {e}")
             return None
 
 
@@ -78,7 +81,7 @@ class FunctionCallSAPGPT(SAPGPTModel):
             return response.choices[0].message
             
         except Exception as e:
-            print(f"Exception: {e}")
+            logger.error(f"FunctionCallSAPGPT generate_response failed: {e}")
             return None
 
 

@@ -15,13 +15,11 @@ logger = get_logger("MemoryProcessor")
 class MemoryProcessor:
     def __init__(self, config: ExperimentConfig):
         self.config = config
-        self.processed_message_ids: set = set()
         self.current_summary: str = ""
         self._ace_state = ACEState()
 
     def reset_state(self):
         """Called by Orchestrator to reset memory between runs."""
-        self.processed_message_ids.clear()
         self.current_summary = ""
         self._ace_state.reset()
         logger.info("🧠 Memory State Reset")
@@ -109,7 +107,8 @@ class MemoryProcessor:
         summarized_conv = summarize_conv_history(
             messages=messages, 
             llm_client=llm_client, 
-            summarizer_model=settings.summarizer_model
+            summarizer_model=settings.summarizer_model,
+            summary_prompt_path=settings.summary_prompt,
             )
         return summarized_conv, get_token_count(summarized_conv)
     

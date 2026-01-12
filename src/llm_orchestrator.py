@@ -5,7 +5,8 @@ import os
 from typing import List, Dict, Optional, Any, Union, Iterable
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam, ChatCompletion
 from src.utils.config import load_configs, ExperimentConfig, ModelDef
-from src.memory_processing import MemoryProcessor, get_token_count
+from src.memory_processing import MemoryProcessor
+from src.utils.token_count import get_token_count
 from src.utils.logger import get_logger
 
 logger = get_logger("Orchestrator")
@@ -58,9 +59,6 @@ class LLMOrchestrator:
         os.environ["LITELLM_LOG"] = "ERROR"
         litellm.suppress_debug_info = True
         litellm.success_callback = ["weave"]
-
-        # Create storage variable for full message trace
-        self.full_trace: List[Dict[str, Any]] = []
         
         logger.info(f"🚀 Orchestrator initialized for: {self.cfg.experiment_name}")
 
@@ -176,11 +174,14 @@ class LLMOrchestrator:
             f"🔄 Processing {len(input_messages)} messages with {self.active_memory_key}"
         )
 
+        model_def = self.get_model_config()
+        input_token_count = get_token_count(input_messages, model_name=model_def.litellm_name)
+
         # Apply memory processing
         compressed_view, _ = self.memory_processor.apply_strategy(
             input_messages,
             self.active_memory_key,
-            input_token_count=get_token_count(input_messages),
+            input_token_count=input_token_count,
             llm_client=self,
         )
         
@@ -188,8 +189,6 @@ class LLMOrchestrator:
         kwargs.pop("model", None)
         
         try:
-            model_def = self.get_model_config()
-            
             # Build request parameters
             request_params = {
                 "model": model_def.litellm_name,
