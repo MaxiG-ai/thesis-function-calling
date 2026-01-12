@@ -30,7 +30,6 @@ enabled_memory_methods = [
     "no_strategy",
     "truncation",
     "progressive_summarization",
-    # "memory_bank",
     # "ace",
 ]
 
@@ -38,11 +37,6 @@ enabled_memory_methods = [
 
 [memory_strategies.truncation]
 type = "truncation"
-
-[memory_strategies.memory_bank]
-type = "memory_bank"
-embedding_model = "BAAI/bge-small-en-v1.5" # or local path
-top_k = 3
 
 [memory_strategies.no_strategy]
 type = "no_strategy"

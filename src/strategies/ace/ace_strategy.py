@@ -142,9 +142,9 @@ def apply_ace_strategy(
     logger.debug("Running Generator to prepare next step...")
     generator = Generator()
     
-    # Extract context from messages
+    # Extract context from messages (handle None content values)
     context = "\n".join([
-        f"{msg.get('role', 'unknown')}: {msg.get('content', '')[:200]}..."
+        f"{msg.get('role', 'unknown')}: {(msg.get('content') or '')[:200]}..."
         for msg in messages[-3:]  # Last 3 messages for context
     ])
     
