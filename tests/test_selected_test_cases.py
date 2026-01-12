@@ -11,11 +11,12 @@ def test_config_accepts_selected_test_cases():
         "log_dir": "logs",
         "logging_level": "INFO",
         "input_file": "test.jsonl",
+        "compact_threshold": 8000,
         "enabled_models": ["model1"],
         "enabled_memory_methods": ["truncation"],
         "selected_test_cases": ["Car-Rental-0", "Car-Rental-1"],
         "memory_strategies": {
-            "truncation": {"type": "truncation", "max_tokens": 10000}
+            "truncation": {"type": "truncation"}
         },
         "model_registry": {}
     }
@@ -35,10 +36,11 @@ def test_config_optional_selected_test_cases():
         "log_dir": "logs",
         "logging_level": "INFO",
         "input_file": "test.jsonl",
+        "compact_threshold": 8000,
         "enabled_models": ["model1"],
         "enabled_memory_methods": ["truncation"],
         "memory_strategies": {
-            "truncation": {"type": "truncation", "max_tokens": 10000}
+            "truncation": {"type": "truncation"}
         },
         "model_registry": {}
     }
@@ -57,11 +59,12 @@ def test_config_empty_selected_test_cases():
         "log_dir": "logs",
         "logging_level": "INFO",
         "input_file": "test.jsonl",
+        "compact_threshold": 8000,
         "enabled_models": ["model1"],
         "enabled_memory_methods": ["truncation"],
         "selected_test_cases": [],
         "memory_strategies": {
-            "truncation": {"type": "truncation", "max_tokens": 10000}
+            "truncation": {"type": "truncation"}
         },
         "model_registry": {}
     }

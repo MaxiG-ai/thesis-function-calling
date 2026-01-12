@@ -32,26 +32,20 @@ For an LLM + tool-calling + evaluation harness, the principles that usually matt
 
 ## High priority
 
-### 1) Fix trace splitting semantics (likely correctness bug)
+### 1) Fix trace splitting semantics (docstring + clarity)
 
 Why it matters: memory strategies are only as good as the “conversation slice” they operate on.
 
-- `src/utils/split_trace.py` has `process_and_split_trace_user()` whose behavior and docstring don’t match:
-  - It returns `conv_after_user_message = messages[user_messages_idx[-1] + 1:]`.
-  - But the docstring says it returns “messages before the last user message”.
+-- `src/utils/split_trace.py` has `process_and_split_trace_user()` whose behavior is fine for ComplexFuncBench,
+  but the docstring was misleading:
+  - It returns `messages_after_last_user = messages[last_user_index + 1:]`.
+  - ComplexFuncBench typically has a single user message at the start; the remainder is system/assistant/tool.
 - `src/strategies/progressive_summarization/prog_sum.py` uses it as:
   - `user_query, conversation_history = process_and_split_trace_user(messages)`
   - then summarizes `conversation_history`.
 
 Recommendation:
-- Decide on the intended behavior (most likely: **summarize messages *before* the last user query**, not after).
-- Rename functions to reflect the contract (examples):
-  - `split_before_last_user()` / `split_after_last_user()`
-  - `get_last_user_and_prefix()`
-- Add 2–3 small unit tests that lock in the contract for:
-  - no user messages,
-  - multiple user messages,
-  - tool-call episode after user.
+- Update docstrings / naming so the contract is unambiguous.
 
 ### 2) Collapse/remove the legacy SAP GPT path
 
@@ -66,10 +60,6 @@ Why it matters: duplicate model adapters create drift, inconsistent behavior, an
 
 Recommendation:
 - If it’s not actively used: delete both legacy files.
-- If you still need it for comparison:
-  - move it to a clearly labeled location like `benchmarks/complex_func_bench/legacy/…`,
-  - add a short README note explaining when to use it,
-  - ensure it cannot be accidentally selected by default.
 
 ### 3) Eliminate `print()` from non-demo code paths
 

@@ -3,6 +3,10 @@ import tomllib as tomli
 from typing import Dict, List, Optional
 from pydantic import BaseModel, Field, ValidationError
 
+from .logger import get_logger
+
+logger = get_logger("Config")
+
 class ModelDef(BaseModel):
     model_config = {"extra": "allow"}
     
@@ -83,6 +87,6 @@ def load_configs(
         
         return config
     except ValidationError as e:
-        print("❌ Configuration Error:")
-        print(e)
+        logger.error("❌ Configuration Error")
+        logger.error(str(e))
         raise
