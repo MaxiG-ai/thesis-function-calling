@@ -36,7 +36,7 @@ class SAPGPTModel:
                 )
             return completion.choices[0].message.content
         except Exception as e:
-                logger.error(f"SAPGPTModel prediction failed: {e}")
+            logger.error(f"SAPGPTModel prediction failed: {e}")
             return None
 
 
