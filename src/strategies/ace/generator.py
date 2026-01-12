@@ -7,6 +7,9 @@ import re
 from typing import List, Tuple
 
 from src.strategies.ace.playbook_utils import extract_json_from_text
+from src.utils.logger import get_logger
+
+logger = get_logger("ACE.Generator")
 
 
 class Generator:
@@ -62,6 +65,9 @@ class Generator:
             context=context or "No additional context"
         )
         
+        logger.debug(f"Generator input - playbook (first 200 chars): {playbook[:200]}...")
+        logger.debug(f"Generator input - question (first 100 chars): {question[:100]}...")
+        
         # Call LLM
         messages = [{"role": "user", "content": prompt}]
         response = llm_client.generate_plain(input_messages=messages, model=model)
@@ -72,8 +78,11 @@ class Generator:
         else:
             response_text = getattr(response.choices[0].message, "content", "")
         
+        logger.debug(f"Generator LLM response (first 300 chars): {response_text[:300]}...")
+        
         # Extract bullet IDs
         bullet_ids = self._extract_bullet_ids(response_text)
+        logger.debug(f"Generator extracted bullet_ids: {bullet_ids}")
         
         return response_text, bullet_ids
     

@@ -6,6 +6,9 @@ import os
 from typing import Dict, List, Tuple
 
 from src.strategies.ace.playbook_utils import extract_json_from_text
+from src.utils.logger import get_logger
+
+logger = get_logger("ACE.Reflector")
 
 
 class Reflector:
@@ -90,6 +93,9 @@ class Reflector:
                 bullets_used=bullets_used or "No bullets used"
             )
         
+        logger.debug(f"Reflector input - bullets_used: {bullets_used[:200] if bullets_used else '<empty>'}...")
+        logger.debug(f"Reflector input - reasoning_trace (first 200 chars): {reasoning_trace[:200] if reasoning_trace else '<empty>'}...")
+        
         # Call LLM
         messages = [{"role": "user", "content": prompt}]
         response = llm_client.generate_plain(input_messages=messages, model=model)
@@ -100,8 +106,11 @@ class Reflector:
         else:
             response_text = getattr(response.choices[0].message, "content", "")
         
+        logger.debug(f"Reflector LLM response (first 300 chars): {response_text[:300]}...")
+        
         # Extract bullet tags
         bullet_tags = self._extract_bullet_tags(response_text)
+        logger.debug(f"Reflector extracted bullet_tags: {bullet_tags}")
         
         return response_text, bullet_tags
     

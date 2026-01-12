@@ -444,7 +444,7 @@ def test_curator_applies_operations():
     mock_response.choices = [Mock(message=mock_message)]
     mock_client.generate_plain.return_value = mock_response
     
-    curator = Curator()
+    curator = Curator(prompt_path_gt=None, prompt_path_no_gt=None)
     updated_playbook, next_id, operations = curator.curate(
         current_playbook=EMPTY_PLAYBOOK_TEMPLATE,
         recent_reflection="Test reflection",
@@ -535,8 +535,23 @@ def test_apply_ace_strategy_injects_playbook():
     mock_settings = Mock()
     mock_settings.reflector_model = "gpt-4-1-mini"
     mock_settings.curator_model = "gpt-4-1-mini"
+    mock_settings.generator_model = "gpt-4-1-mini"
     mock_settings.curator_frequency = 1
     mock_settings.playbook_token_budget = 4096
+    
+    # Mock curator response (now runs on step 1 for empty playbook bootstrap)
+    mock_curator_response = Mock()
+    mock_curator_message = Mock()
+    mock_curator_message.content = json.dumps({"reasoning": "Bootstrap", "operations": []})
+    mock_curator_response.choices = [Mock(message=mock_curator_message)]
+    
+    # Mock generator response
+    mock_generator_response = Mock()
+    mock_generator_message = Mock()
+    mock_generator_message.content = json.dumps({"reasoning_trace": "Trace", "response": "OK", "bullet_ids_used": []})
+    mock_generator_response.choices = [Mock(message=mock_generator_message)]
+    
+    mock_client.generate_plain.side_effect = [mock_curator_response, mock_generator_response]
     
     state = ACEState()
     messages = [{"role": "user", "content": "Hello"}]
@@ -557,8 +572,27 @@ def test_apply_ace_strategy_increments_step_count():
     mock_settings = Mock()
     mock_settings.reflector_model = "gpt-4-1-mini"
     mock_settings.curator_model = "gpt-4-1-mini"
+    mock_settings.generator_model = "gpt-4-1-mini"
     mock_settings.curator_frequency = 1
     mock_settings.playbook_token_budget = 4096
+    
+    # Mock responses - step 1: curator + generator, step 2: reflector + curator + generator
+    def make_mock_response(content):
+        resp = Mock()
+        msg = Mock()
+        msg.content = json.dumps(content)
+        resp.choices = [Mock(message=msg)]
+        return resp
+    
+    # Step 1: curator, generator
+    # Step 2: reflector (has reasoning from step 1), curator, generator
+    mock_client.generate_plain.side_effect = [
+        make_mock_response({"reasoning": "OK", "operations": []}),  # curator step 1
+        make_mock_response({"reasoning_trace": "Trace", "response": "OK", "bullet_ids_used": []}),  # gen step 1
+        make_mock_response({"reflection": "OK", "bullet_tags": []}),  # reflector step 2
+        make_mock_response({"reasoning": "OK", "operations": []}),  # curator step 2
+        make_mock_response({"reasoning_trace": "Trace", "response": "OK", "bullet_ids_used": []}),  # gen step 2
+    ]
     
     state = ACEState()
     messages = [{"role": "user", "content": "Test"}]
@@ -653,8 +687,23 @@ def test_memory_processor_apply_ace_delegates_correctly():
     mock_settings = Mock()
     mock_settings.reflector_model = "gpt-4-1-mini"
     mock_settings.curator_model = "gpt-4-1-mini"
+    mock_settings.generator_model = "gpt-4-1-mini"
     mock_settings.curator_frequency = 1
     mock_settings.playbook_token_budget = 4096
+    
+    # Mock curator response (runs on step 1 for bootstrap)
+    mock_curator_response = Mock()
+    mock_curator_message = Mock()
+    mock_curator_message.content = json.dumps({"reasoning": "Bootstrap", "operations": []})
+    mock_curator_response.choices = [Mock(message=mock_curator_message)]
+    
+    # Mock generator response
+    mock_generator_response = Mock()
+    mock_generator_message = Mock()
+    mock_generator_message.content = json.dumps({"reasoning_trace": "Trace", "response": "OK", "bullet_ids_used": []})
+    mock_generator_response.choices = [Mock(message=mock_generator_message)]
+    
+    mock_client.generate_plain.side_effect = [mock_curator_response, mock_generator_response]
     
     state = ACEState()
     messages = [{"role": "user", "content": "Test"}]

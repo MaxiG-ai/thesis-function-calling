@@ -71,7 +71,18 @@ def apply_ace_strategy(
         (processed_messages, token_count)
     """
     state.step_count += 1
+    curator_frequency = getattr(settings, 'curator_frequency', 1)
+    
+    # Debug: Log entry state and configuration
+    logger.debug(f"\n{'='*60}")
     logger.debug(f"ACE Strategy - Step {state.step_count}")
+    logger.debug(f"{'='*60}")
+    logger.debug(f"State: last_reasoning_trace={'<set>' if state.last_reasoning_trace else '<empty>'}")
+    logger.debug(f"State: last_bullet_ids={state.last_bullet_ids}")
+    logger.debug(f"State: last_reflection={'<set>' if state.last_reflection else '<empty>'}")
+    logger.debug(f"State: next_global_id={state.next_global_id}")
+    logger.debug(f"Config: curator_frequency={curator_frequency}")
+    logger.debug(f"Playbook preview (first 200 chars): {state.playbook[:200]}...")
     
     # Extract current action/observation from messages
     # The last user message typically contains the observation
@@ -82,12 +93,18 @@ def apply_ace_strategy(
             break
     
     # Run Reflector if we have previous step data
-    if state.last_reasoning_trace and state.last_bullet_ids:
-        logger.debug("Running Reflector...")
+    # Note: Only require reasoning trace - bullets may be empty on first steps (empty playbook bootstrap)
+    has_reasoning = bool(state.last_reasoning_trace)
+    has_bullets = bool(state.last_bullet_ids)
+    logger.debug(f"Reflector conditions: has_reasoning={has_reasoning}, has_bullets={has_bullets}")
+    
+    if has_reasoning:
+        logger.debug("✓ Reflector WILL run (conditions met)")
         reflector = Reflector()
         
         # Extract bullets used
         bullets_used = extract_playbook_bullets(state.playbook, state.last_bullet_ids)
+        logger.debug(f"Bullets extracted for reflection: {bullets_used[:200] if bullets_used else '<empty>'}...")
         
         # Run reflection
         reflection_text, bullet_tags = reflector.reflect(
@@ -101,21 +118,33 @@ def apply_ace_strategy(
             use_ground_truth=False
         )
         
+        logger.debug(f"Reflector output - bullet_tags: {bullet_tags}")
+        logger.debug(f"Reflector output - reflection_text (first 200 chars): {reflection_text[:200] if reflection_text else '<empty>'}...")
+        
         # Update bullet counts
         if bullet_tags:
             state.playbook = update_bullet_counts(state.playbook, bullet_tags)
             logger.debug(f"Updated {len(bullet_tags)} bullet counts")
+        else:
+            logger.debug("⚠ No bullet_tags returned from Reflector - playbook counts NOT updated")
         
         state.last_reflection = reflection_text
+        logger.debug(f"✓ last_reflection now set (len={len(reflection_text)})")
+    else:
+        logger.debug(f"✗ Reflector SKIPPED (has_reasoning={has_reasoning}, has_bullets={has_bullets})")
     
-    # Run Curator based on frequency
-    curator_frequency = getattr(settings, 'curator_frequency', 1)
-    if state.step_count % curator_frequency == 0 and state.last_reflection:
-        logger.debug("Running Curator...")
+    # Run Curator based on frequency (runs even without reflection to bootstrap empty playbook)
+    frequency_match = (state.step_count % curator_frequency == 0)
+    has_reflection = bool(state.last_reflection)
+    logger.debug(f"Curator conditions: step={state.step_count}, frequency={curator_frequency}, frequency_match={frequency_match}, has_reflection={has_reflection}")
+    
+    if frequency_match:
+        logger.debug("✓ Curator WILL run (conditions met)")
         curator = Curator()
         
         # Get playbook stats
         stats = get_playbook_stats(state.playbook)
+        logger.debug(f"Playbook stats: {stats}")
         
         # Run curation
         updated_playbook, updated_id, operations = curator.curate(
@@ -131,10 +160,17 @@ def apply_ace_strategy(
             use_ground_truth=False
         )
         
+        logger.debug(f"Curator output - operations: {operations}")
+        
         if operations:
             state.playbook = updated_playbook
             state.next_global_id = updated_id
-            logger.debug(f"Applied {len(operations)} curator operations")
+            logger.debug(f"✓ Applied {len(operations)} curator operations")
+            logger.debug(f"Playbook after curation (first 300 chars): {state.playbook[:300]}...")
+        else:
+            logger.debug("⚠ No operations returned from Curator - playbook NOT updated")
+    else:
+        logger.debug(f"✗ Curator SKIPPED (frequency_match={frequency_match}, has_reflection={has_reflection})")
     
     # Run Generator to prepare the next step
     # The Generator uses the playbook to guide decision-making and returns
@@ -157,11 +193,14 @@ def apply_ace_strategy(
         model=getattr(settings, 'generator_model', 'gpt-4-1-mini')
     )
     
+    logger.debug(f"Generator output - reasoning_trace (first 200 chars): {reasoning_trace[:200] if reasoning_trace else '<empty>'}...")
+    logger.debug(f"Generator output - bullet_ids_used: {bullet_ids_used}")
+    
     # Store for next reflection cycle
     state.last_reasoning_trace = reasoning_trace
     state.last_bullet_ids = bullet_ids_used
     state.last_predicted_answer = reasoning_trace  # Use reasoning trace as predicted answer
-    logger.debug(f"Generator used {len(bullet_ids_used)} bullets: {bullet_ids_used}")
+    logger.debug(f"✓ State updated for next cycle: last_bullet_ids={bullet_ids_used}")
     
     # Inject playbook into messages
     # Insert as first system message
@@ -174,5 +213,11 @@ def apply_ace_strategy(
     
     # Calculate token count using the existing token counter
     token_count = get_token_count(processed_messages)
+    
+    # Final summary logging
+    logger.debug(f"\n--- ACE Step {state.step_count} Summary ---")
+    logger.debug(f"Final playbook (first 400 chars): {state.playbook[:400]}...")
+    logger.debug(f"Output token count: {token_count}")
+    logger.debug(f"{'='*60}\n")
     
     return processed_messages, token_count

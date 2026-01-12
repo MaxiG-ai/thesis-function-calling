@@ -6,6 +6,9 @@ import os
 from typing import Dict, List, Tuple
 
 from src.strategies.ace.playbook_utils import extract_json_from_text, apply_curator_operations
+from src.utils.logger import get_logger
+
+logger = get_logger("ACE.Curator")
 
 
 class Curator:
@@ -100,6 +103,10 @@ Unused: {playbook_stats.get('unused', 0)}
                 token_budget=token_budget
             )
         
+        logger.debug(f"Curator input - current_playbook (first 200 chars): {current_playbook[:200]}...")
+        logger.debug(f"Curator input - recent_reflection (first 200 chars): {recent_reflection[:200] if recent_reflection else '<empty>'}...")
+        logger.debug(f"Curator input - stats: {stats_text}")
+        
         # Call LLM
         messages = [{"role": "user", "content": prompt}]
         response = llm_client.generate_plain(input_messages=messages, model=model)
@@ -110,8 +117,11 @@ Unused: {playbook_stats.get('unused', 0)}
         else:
             response_text = getattr(response.choices[0].message, "content", "")
         
+        logger.debug(f"Curator LLM response (first 400 chars): {response_text[:400]}...")
+        
         # Extract operations
         operations = self._extract_operations(response_text)
+        logger.debug(f"Curator extracted operations: {operations}")
         
         # Apply operations
         updated_playbook, updated_id = apply_curator_operations(
@@ -119,6 +129,8 @@ Unused: {playbook_stats.get('unused', 0)}
             operations,
             next_global_id
         )
+        
+        logger.debug(f"Curator updated_playbook (first 300 chars): {updated_playbook[:300]}...")
         
         return updated_playbook, updated_id, operations
     
