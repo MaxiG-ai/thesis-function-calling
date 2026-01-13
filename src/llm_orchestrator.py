@@ -136,7 +136,9 @@ class LLMOrchestrator:
         
         return model_kwargs
     
-    @weave.op()
+    @weave.op(
+            postprocess_inputs=lambda inputs: {k: v for k, v in inputs.items() if k not in ["input_messages"]},
+    )
     def generate_with_memory_applied(
         self,
         input_messages: List[Dict[str, str]],

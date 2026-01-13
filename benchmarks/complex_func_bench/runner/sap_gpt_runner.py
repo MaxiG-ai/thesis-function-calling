@@ -52,7 +52,9 @@ class SAPGPTRunner(ModelRunner):
 
         return function_call
     
-    @weave.op()
+    @weave.op(
+            enable_code_capture=False,
+    )
     def run(self, data):
         convs, functions = data['conversations'], data['functions']
         self.CompareClass.add_free_function(convs)

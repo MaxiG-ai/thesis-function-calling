@@ -42,7 +42,9 @@ class RespEvalRunner:
             return None
         return decoded_correct_result
 
-    @weave.op()
+    @weave.op(
+            enable_code_capture=False,
+    )
     def run(self, data, gen_response):
         if gen_response == "":
             return {

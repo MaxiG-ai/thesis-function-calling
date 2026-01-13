@@ -253,32 +253,9 @@ def save_results(
     logger.info(f"📊 Metrics saved to {metrics_file}")
 
 
-def scrub_trace_args(inputs: Dict) -> Dict:
-    """
-    Filter out technical objects and redundant data from Weave logs.
-    Used in postprocess_inputs for evaluate_single_case.
-    """
-    scrubbed = inputs.copy()
-    
-    # Remove technical objects that clutter logs
-    keys_to_remove = ["orchestrator", "resp_eval_runner", "log_dir"]
-    for key in keys_to_remove:
-        if key in scrubbed:
-            del scrubbed[key]
-            
-    # Simplify the 'case' object to avoid logging full conversation history at the root level
-    if "case" in scrubbed and isinstance(scrubbed["case"], dict):
-        # Only keep the ID and domain, remove the heavy 'conversations' list
-        # This forces you to look at the child 'generate' trace for the actual messages
-        scrubbed["case"] = {
-            "id": scrubbed["case"].get("id"),
-            "domain": scrubbed["case"].get("id", "").split("-")[0]
-        }
-        
-    return scrubbed
-
 @weave.op(
-        postprocess_inputs=scrub_trace_args
+        # keep only case id and domain in the root log
+        postprocess_inputs=lambda inputs: inputs['case']
 )
 def evaluate_single_case(
     case: Dict,
