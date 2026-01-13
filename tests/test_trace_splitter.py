@@ -164,7 +164,7 @@ def test_get_last_tool_interaction_no_preceding_assistant() -> None:
 
 # Tests for process_and_split_trace_user
 def test_process_and_split_trace_user_simple() -> None:
-    """Test simple 2-way split (last user + messages before)."""
+    """Test simple 2-way split (last user + messages after)."""
     messages = [
         _make_message("system", "System prompt"),
         _make_message("user", "First question"),
@@ -178,7 +178,7 @@ def test_process_and_split_trace_user_simple() -> None:
     assert len(user_messages) == 1
     assert user_messages[0]["role"] == "user"
     assert user_messages[0]["content"] == "Second question"
-    assert len(rest) == 3  # system + first user + first assistant
+    assert rest == []
 
 
 def test_process_and_split_trace_user_no_user() -> None:

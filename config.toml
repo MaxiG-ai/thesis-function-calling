@@ -6,14 +6,12 @@ results_dir = "results"
 log_dir = "results/logs"
 logging_level = "INFO"
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
-# Optional: Run specific test cases by ID. When set, only these cases will be run.
-# Examples: ["Car-Rental-0", "Car-Rental-1"] or ["Travel-5", "Cross-10"]
-# Leave commented out or set to null to run all cases (or use benchmark_sample_size for random sampling)
-# selected_test_cases = ["Car-Rental-131"] # Cross-131, Hotels-124 (short
-benchmark_sample_size = 10
+# Good samples: ["Car-Rental-131", "Cross-131"]
+selected_test_cases = ["Car-Rental-131", "Cross-131", "Flights-91"]
+# benchmark_sample_size = 10
 
 # setting for max. context before compression
-compact_threshold = 5000
+compact_threshold = 8000
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [
@@ -28,9 +26,9 @@ enabled_models = [
 # 2. Define Memory Architectures to test
 enabled_memory_methods = [
     # "no_strategy",
-    "truncation",
+    # "truncation",
     # "progressive_summarization",
-    # "memory_bank",
+    "ace",
 ]
 
 # --- Memory Strategy Definitions ---
@@ -45,3 +43,12 @@ type = "no_strategy"
 type = "progressive_summarization"
 summarizer_model = "gpt-4-1-mini"
 summary_prompt = "src/strategies/progressive_summarization/prog_sum.prompt.md"
+
+[memory_strategies.ace]
+type = "ace"
+generator_model = "gpt-4-1-mini"     # Model for generating next actions
+reflector_model = "gpt-4-1-mini"     # Model for analyzing mistakes
+curator_model = "gpt-4-1-mini"       # Model for updating playbook
+max_reflection_rounds = 1            # Reflection iterations per step
+curator_frequency = 1                # Curate every N steps
+playbook_token_budget = 4096

@@ -3,6 +3,10 @@ import tomllib as tomli
 from typing import Dict, List, Optional
 from pydantic import BaseModel, Field, ValidationError
 
+from .logger import get_logger
+
+logger = get_logger("Config")
+
 class ModelDef(BaseModel):
     model_config = {"extra": "allow"}
     
@@ -25,6 +29,13 @@ class MemoryDef(BaseModel):
     # Fields for Progressive Summarization
     summary_prompt: Optional[str] = None
     summarizer_model: Optional[str] = None
+    
+    # ACE strategy fields
+    generator_model: Optional[str] = "gpt-4-1-mini"
+    reflector_model: Optional[str] = "gpt-4-1-mini"
+    curator_model: Optional[str] = "gpt-4-1-mini"
+    curator_frequency: Optional[int] = 1
+    playbook_token_budget: Optional[int] = 4096
 
 
 class ExperimentConfig(BaseModel):
@@ -76,6 +87,6 @@ def load_configs(
         
         return config
     except ValidationError as e:
-        print("❌ Configuration Error:")
-        print(e)
+        logger.error("❌ Configuration Error")
+        logger.error(str(e))
         raise

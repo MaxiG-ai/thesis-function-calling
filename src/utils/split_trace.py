@@ -71,17 +71,18 @@ def get_last_tool_interaction(messages: List[Dict]) -> Tuple[List[Dict], int]:
 
 
 def process_and_split_trace_user(messages: List[Dict]) -> Tuple[List[Dict], List[Dict]]:
-    """Process and split the trace into last user message and messages before it.
-    
-    This function finds the last user message and splits the conversation into:
-    - Last user message (as a list with one element)
-    - All messages before the last user message
+    """Split a trace into the last user message and everything *after* it.
+
+    Note:
+        In ComplexFuncBench traces there is typically a single initial user message
+        followed by system/assistant/tool traffic. This helper is used to isolate
+        that user message and return the remainder of the trace.
     
     Args:
         messages: List of message dictionaries
         
     Returns:
-        Tuple of ([last_user_message], messages_before_last_user)
+        Tuple of ([last_user_message], messages_after_last_user)
         If no user message found, returns ([], all_messages)
     """
     if not messages:

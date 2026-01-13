@@ -30,18 +30,13 @@ enabled_memory_methods = [
     "no_strategy",
     "truncation",
     "progressive_summarization",
-    # "memory_bank",
+    # "ace",
 ]
 
 # --- Memory Strategy Definitions ---
 
 [memory_strategies.truncation]
 type = "truncation"
-
-[memory_strategies.memory_bank]
-type = "memory_bank"
-embedding_model = "BAAI/bge-small-en-v1.5" # or local path
-top_k = 3
 
 [memory_strategies.no_strategy]
 type = "no_strategy"
@@ -50,3 +45,12 @@ type = "no_strategy"
 type = "progressive_summarization"
 summarizer_model = "gpt-4-1-mini"
 summary_prompt = "src/strategies/progressive_summarization/prog_sum.prompt.md"
+
+[memory_strategies.ace]
+type = "ace"
+generator_model = "gpt-4-1-mini"     # Model for generating next actions
+reflector_model = "gpt-4-1-mini"     # Model for analyzing mistakes
+curator_model = "gpt-4-1-mini"       # Model for updating playbook
+max_reflection_rounds = 1            # Reflection iterations per step
+curator_frequency = 1                # Curate every N steps
+playbook_token_budget = 4096         # Max playbook size in tokens
