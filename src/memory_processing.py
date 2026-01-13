@@ -8,7 +8,7 @@ from src.utils.config import ExperimentConfig
 
 from src.strategies.progressive_summarization.prog_sum import summarize_conv_history
 from src.strategies.truncation.truncation import truncate_messages
-from src.strategies.ace.ace_strategy import ACEState
+from src.strategies.ace.ace_strategy import ACEState, apply_ace_strategy
 
 logger = get_logger("MemoryProcessor")
 
@@ -121,7 +121,6 @@ class MemoryProcessor:
         llm_client: Optional[Any]
     ) -> Tuple[List[Dict], int]:
         """Applies ACE strategy by delegating to ace_strategy module."""
-        from src.strategies.ace import apply_ace_strategy
         
         logger.debug(f"🧠 Applying ACE Strategy. Current query with {token_count} tokens")
         processed, new_count = apply_ace_strategy(
