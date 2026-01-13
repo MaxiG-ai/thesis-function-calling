@@ -97,6 +97,7 @@ class MemoryProcessor:
     
     @weave.op(
             postprocess_inputs=clean_weave_input_args,
+            enable_code_capture=False,
     )
     def _apply_truncation(self, messages: List[Dict], token_count: int) -> Tuple[List[Dict], int]:
         """Truncates archived context when token threshold is exceeded.
@@ -107,6 +108,7 @@ class MemoryProcessor:
 
     @weave.op(
             postprocess_inputs=clean_weave_input_args,
+            enable_code_capture=False,
     )
     def _apply_progressive_summarization(
         self,
@@ -130,6 +132,7 @@ class MemoryProcessor:
     
     @weave.op(
             postprocess_inputs=clean_weave_input_args,
+            enable_code_capture=False,
     )
     def _apply_ace(
         self,

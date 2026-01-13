@@ -138,6 +138,7 @@ class LLMOrchestrator:
     
     @weave.op(
             postprocess_inputs=lambda inputs: {k: v for k, v in inputs.items() if k not in ["input_messages"]},
+            enable_code_capture=False,
     )
     def generate_with_memory_applied(
         self,
@@ -220,7 +221,9 @@ class LLMOrchestrator:
             logger.error(f"💥 Generation Failed: {str(e)}")
             raise e
         
-    @weave.op()
+    @weave.op(
+            enable_code_capture=False,
+    )
     def generate_plain(
         self,
         input_messages: Iterable[ChatCompletionMessageParam],
