@@ -16,7 +16,7 @@ class Curator:
     Curator agent that maintains and improves the playbook.
     """
     
-    def __init__(self, prompt_path_gt: str = None, prompt_path_no_gt: str = None):
+    def __init__(self, prompt_path_gt: str | None = None, prompt_path_no_gt: str | None = None):
         """
         Initialize curator with prompt templates.
         
