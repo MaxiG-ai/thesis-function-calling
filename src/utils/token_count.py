@@ -1,20 +1,14 @@
 import tiktoken
+from src.utils.logger import get_logger
 
-
-def _normalize_model_name(model_name: str | None) -> str:
-    if not model_name:
-        return "gpt-4.1"
-    # litellm-style names often look like "openai/gpt-4.1-mini"
-    if "/" in model_name:
-        model_name = model_name.split("/", 1)[1]
-    return model_name
-
+logger = get_logger("TokenCounter")
 
 def _get_encoder(model_name: str | None):
-    normalized = _normalize_model_name(model_name)
+    normalized = model_name or "gpt-4"
     try:
         return tiktoken.encoding_for_model(normalized)
-    except Exception:
+    except Exception as e:
+        logger.warning(f"⚠️ Could not find encoder for model '{normalized}': {e}. Falling back to cl100k_base.")
         return tiktoken.get_encoding("cl100k_base")
 
 
@@ -41,6 +35,8 @@ def _iter_message_text_parts(message: dict) -> list[str]:
 
     function_call = message.get("function_call")
     if function_call is not None:
+        # if found necessary
+        # TODO: Extract actual content from function_call instead of using str() to get accurate token counts
         parts.append(str(function_call))
 
     return parts
