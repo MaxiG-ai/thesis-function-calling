@@ -12,6 +12,17 @@ from src.strategies.ace.ace_strategy import ACEState, apply_ace_strategy
 
 logger = get_logger("MemoryProcessor")
 
+def clean_weave_input_args(inputs: Dict) -> Dict:
+    """Cleans technical objects from inputs for logging purposes."""
+    scrubbed = inputs.copy()
+    
+    # Remove technical objects that clutter logs
+    keys_to_remove = ["settings", "llm_client"]
+    for key in keys_to_remove:
+        if key in scrubbed:
+            del scrubbed[key]
+    return scrubbed
+
 class MemoryProcessor:
     def __init__(self, config: ExperimentConfig):
         self.config = config
@@ -24,7 +35,8 @@ class MemoryProcessor:
         self._ace_state.reset()
         logger.info("🧠 Memory State Reset")
 
-    @weave.op()
+    # disabled weave op to avoid duplication
+    # @weave.op()
     def apply_strategy(
         self,
         messages: List[Dict],
@@ -83,7 +95,10 @@ class MemoryProcessor:
             
         return processed_messages, output_token_count
     
-    @weave.op()
+    @weave.op(
+            postprocess_inputs=clean_weave_input_args,
+            enable_code_capture=False,
+    )
     def _apply_truncation(self, messages: List[Dict], token_count: int) -> Tuple[List[Dict], int]:
         """Truncates archived context when token threshold is exceeded.
         """
@@ -91,7 +106,10 @@ class MemoryProcessor:
         truncated_conv = truncate_messages(messages)
         return truncated_conv, get_token_count(truncated_conv)
 
-    @weave.op()
+    @weave.op(
+            postprocess_inputs=clean_weave_input_args,
+            enable_code_capture=False,
+    )
     def _apply_progressive_summarization(
         self,
         messages: List[Dict],
@@ -112,7 +130,10 @@ class MemoryProcessor:
             )
         return summarized_conv, get_token_count(summarized_conv)
     
-    @weave.op()
+    @weave.op(
+            postprocess_inputs=clean_weave_input_args,
+            enable_code_capture=False,
+    )
     def _apply_ace(
         self,
         messages: List[Dict],
@@ -127,3 +148,5 @@ class MemoryProcessor:
             messages, llm_client, settings, self._ace_state
         )
         return processed, new_count
+    
+

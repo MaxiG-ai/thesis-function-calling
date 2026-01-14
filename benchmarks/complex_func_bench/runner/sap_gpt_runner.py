@@ -52,7 +52,9 @@ class SAPGPTRunner(ModelRunner):
 
         return function_call
     
-    @weave.op()
+    @weave.op(
+            enable_code_capture=False,
+    )
     def run(self, data):
         convs, functions = data['conversations'], data['functions']
         self.CompareClass.add_free_function(convs)
@@ -120,7 +122,6 @@ class SAPGPTRunner(ModelRunner):
                 self.logger.debug(f"Observations:\n{json.dumps(real_time_obs, ensure_ascii=False, indent=4)}\n")
                 messages.append({"role": "observation", "content": real_time_obs})
 
-            # TODO: Log the final answer to weave
             elif llm_response.content is not None:
                 final_response = llm_response.content
                 self.logger.debug(f"Final Response: {final_response}\n")
