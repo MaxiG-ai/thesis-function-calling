@@ -2,6 +2,7 @@
 import json
 import os
 import copy
+import langfuse
 import random
 import logging
 import tomllib
@@ -9,7 +10,9 @@ from datetime import datetime
 from typing import Dict, List, Optional
 from collections import defaultdict
 
-from langfuse import Langfuse, observe
+from dotenv import load_dotenv
+
+from langfuse import Langfuse, propagate_attributes
 
 from src.utils.logger import get_logger
 from src.llm_orchestrator import LLMOrchestrator
@@ -20,6 +23,7 @@ from benchmarks.complex_func_bench.runner.response_runner import RespEvalRunner
 from benchmarks.complex_func_bench.utils.utils import load_json
 logger = get_logger("CFB_Runner")
 
+load_dotenv()
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
@@ -398,103 +402,105 @@ def run_single_configuration(
         return None
     
     # Create a trace for this evaluation configuration
-    with langfuse_client.start_as_current_span(
-        name=f"Eval_{model}_{memory}",
-        input={
-            "model": model,
-            "memory_method": memory,
-            "dataset": "ComplexFuncBench",
-            "config": orchestrator.get_exp_config()
-        }
-    ) as eval_span:
+    with propagate_attributes(session_id=f"Eval_{model}_{memory}") as eval_span:
         # Process all cases
         results = []
         success_count = 0
+
+        dataset_dict = {case['id']: case for case in dataset}
+        print("Dataset cases:", list(dataset_dict.keys()))
+
+        ds = langfuse_client.get_dataset("DemoComplexFuncBench")
         
-        for i, case in enumerate(dataset):
-            orchestrator.reset_session()
-            case_id = case.get('id', i)
-            logger.info(f"Processing case {i+1}/{len(dataset)}: {case_id}")
-            
-            try:
-                result = evaluate_single_case(
-                    case=case,
-                    orchestrator=orchestrator,
-                    resp_eval_runner=resp_eval_runner,
-                    langfuse_client=langfuse_client,
-                )
-                
-                # Track success
-                if result['message'] == "Success.":
-                    success_count += 1
-                
-                # Add metadata
-                result['memory_method'] = memory
-                results.append(result)
-                
-                # Log scores for this prediction to Langfuse on the current span
-                wandb_data = format_result_for_wandb(result)
-                eval_span.score(
-                    name="success",
-                    value=1.0 if wandb_data['success'] else 0.0,
-                    comment=f"Case {case_id}"
-                )
-                eval_span.score(
-                    name="turn_accuracy",
-                    value=wandb_data.get('turn_accuracy', 0.0),
-                    comment=f"Case {case_id}"
-                )
-                eval_span.score(
-                    name="call_accuracy",
-                    value=wandb_data.get('call_accuracy', 0.0),
-                    comment=f"Case {case_id}"
-                )
-                
-                if wandb_data.get('response_complete_score') is not None:
-                    eval_span.score(
-                        name="response_complete",
-                        value=float(wandb_data['response_complete_score']),
+        for item in ds.items:
+            case = dataset_dict[item.id]
+            case_id = case.get('id', item.id)
+            with item.run(
+                run_name=item.id
+            ) as root_span:
+                orchestrator.reset_session()
+                logger.info(f"Processing case {case_id}/{len(dataset)}: {case_id}")
+                try:
+                    result = evaluate_single_case(
+                        case=case,
+                        orchestrator=orchestrator,
+                        resp_eval_runner=resp_eval_runner,
+                        langfuse_client=langfuse_client,
+                    )
+                    
+                    # Track success
+                    if result['message'] == "Success.":
+                        success_count += 1
+                    
+                    # Add metadata
+                    result['memory_method'] = memory
+                    results.append(result)
+                    
+                    # Log scores for this prediction to Langfuse on the current span
+                    wandb_data = format_result_for_wandb(result)
+                    root_span.score(
+                        name="success",
+                        value=1.0 if wandb_data['success'] else 0.0,
                         comment=f"Case {case_id}"
                     )
-                if wandb_data.get('response_correct_score') is not None:
-                    eval_span.score(
-                        name="response_correct",
-                        value=float(wandb_data['response_correct_score']),
+                    root_span.score(
+                        name="turn_accuracy",
+                        value=wandb_data.get('turn_accuracy', 0.0),
                         comment=f"Case {case_id}"
                     )
+                    root_span.score(
+                        name="call_accuracy",
+                        value=wandb_data.get('call_accuracy', 0.0),
+                        comment=f"Case {case_id}"
+                    )
+                    
+                    if wandb_data.get('response_complete_score') is not None:
+                        eval_span.score(
+                            name="response_complete",
+                            value=float(wandb_data['response_complete_score']),
+                            comment=f"Case {case_id}"
+                        )
+                    if wandb_data.get('response_correct_score') is not None:
+                        eval_span.score(
+                            name="response_correct",
+                            value=float(wandb_data['response_correct_score']),
+                            comment=f"Case {case_id}"
+                        )
                 
-            except Exception as e:
-                logger.error(f"❌ Failed on case {case_id}: {e}")
-                # Continue with remaining cases
-                continue
+                except Exception as e:
+                    logger.error(f"❌ Failed on case {case_id}: {e}")
+                    # Continue with remaining cases
+                    continue
         
-        # Calculate aggregate metrics
-        logger.info("🧮 Calculating aggregate metrics...")
-        metrics = calculate_metrics(results)
+    # Calculate aggregate metrics
+    logger.info("🧮 Calculating aggregate metrics...")
+    metrics = calculate_metrics(results)
 
-        # Setup directories
-        log_dir = setup_directories(
-            orchestrator.cfg.experiment_name,
-            run_timestamp,
-            model,
-            memory
-        )
-        
-        # Save results to disk
-        save_results(results, metrics, model, memory, log_dir, run_timestamp)
+    # Setup directories
+    log_dir = setup_directories(
+        orchestrator.cfg.experiment_name,
+        run_timestamp,
+        model,
+        memory
+    )
+    
+    # Save results to disk
+    save_results(results, metrics, model, memory, log_dir, run_timestamp)
 
-        # Update evaluation span with summary
-        summary = {
-            "model": model,
-            "memory": memory,
-            "total_cases": len(dataset),
-            "success_count": success_count,
-            "pass_rate": (success_count / len(dataset)) * 100 if dataset else 0,
-            **metrics
-        }
-        eval_span.update(output=summary)
-        
-        logger.info(f"✅ Completed evaluation: {model}/{memory}")
+    # Update evaluation span with summary
+    summary = {
+        "model": model,
+        "memory": memory,
+        "total_cases": len(dataset),
+        "success_count": success_count,
+        "pass_rate": (success_count / len(dataset)) * 100 if dataset else 0,
+        **metrics
+    }
+    for k, v in enumerate(summary):
+        langfuse_client.score_current_span(name=k, value=v)
+
+    
+    logger.info(f"✅ Completed evaluation: {model}/{memory}")
 
 
 def main(experiment_name=None):
@@ -513,7 +519,9 @@ def main(experiment_name=None):
     # Initialize Langfuse for the entire experiment
     # Langfuse reads LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST from env
     session_id = experiment_name if experiment_name else orchestrator.cfg.experiment_name
-    langfuse_client = Langfuse()
+    langfuse_client = Langfuse(public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
+                               secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
+                               base_url=os.getenv("LANGFUSE_BASE_URL"))
     logger.info(f"📊 Langfuse initialized for session: {session_id}")
     
     # Load dataset
@@ -534,6 +542,7 @@ def main(experiment_name=None):
         logger.info(f"🎯 Filtered to {len(dataset)} specific test case(s): {selected_test_cases}")
     else:
         # Sample subset if configured (only when not using specific test cases)
+        # TODO: Replace with sampling from langfuse
         sample_size = orchestrator.cfg.benchmark_sample_size
         if sample_size is not None and sample_size > 0:
             if sample_size > len(dataset):
