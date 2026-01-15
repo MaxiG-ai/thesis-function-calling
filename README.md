@@ -95,5 +95,17 @@ The proxy implementation handles the **Stateless Transformation**:
 
 ## Getting Started
 
+### Environment Variables for Langfuse Tracing
+
+This project uses [Langfuse](https://langfuse.com/) for observability and tracing of LLM calls. Configure the following environment variables:
+
+```bash
+export LANGFUSE_PUBLIC_KEY="your-public-key"
+export LANGFUSE_SECRET_KEY="your-secret-key"
+export LANGFUSE_HOST="https://cloud.langfuse.com"  # Optional, defaults to cloud.langfuse.com
+```
+
+### Running the Evaluation
+
 1. Run local SAP AI Core Proxy `cd dev/sap` and run `sap`
 2. Run cost orchestration `cd dev/apantli`, activate env and run `apantli --port 4000`.
