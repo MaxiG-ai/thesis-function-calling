@@ -1,7 +1,7 @@
 from typing import Any
 import json
 import copy
-import weave
+from langfuse import observe
 from benchmarks.complex_func_bench.prompts.prompts import SimpleTemplatePrompt
 from benchmarks.complex_func_bench.utils.utils import retry
 from src.llm_orchestrator import LLMOrchestrator
@@ -23,7 +23,7 @@ class SAPGPTModel:
         prediction = self._predict(prefix, filled_prompt, **kwargs)
         return prediction
     
-    #@weave.op()
+    #@observe()
     @retry(max_attempts=10)
     def _predict(self, prefix, text, **kwargs):
         try:
@@ -61,7 +61,7 @@ class FunctionCallSAPGPT(SAPGPTModel):
         self.messages = []
         self.orchestrator = orchestrator
 
-    #@weave.op()
+    #@observe()
     @retry(max_attempts=5, delay=10)
     def generate_response(self, messages, tools=None, **kwargs: Any):
         # The runner manages self.messages directly by appending assistant/tool messages

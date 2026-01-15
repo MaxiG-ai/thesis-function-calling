@@ -2,7 +2,7 @@ import json
 import requests
 import copy
 import os
-import weave
+from langfuse import observe
 from benchmarks.complex_func_bench.utils.utils import retry
 
 
@@ -17,7 +17,7 @@ class RapidAPICall():
         self.path_params = tool_info['path_params']
         self.tool = tool
         
-    @weave.op()
+    @observe()
     @retry(max_attempts=3)
     def _call(self, func_call):
         self.url = self.name_to_url[func_call["name"]]

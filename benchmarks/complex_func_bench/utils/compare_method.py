@@ -2,7 +2,7 @@ import os
 import json
 import gc
 import torch
-import weave
+from langfuse import observe
 from FlagEmbedding import FlagModel
 from scipy.optimize import linear_sum_assignment
 
@@ -83,7 +83,7 @@ class CompareFCBase:
                             "obs": convs[i+1]['content'][j]
                         }
 
-    @weave.op()
+    @observe()
     def rule_based(self, predict, golden):
         """
         Rule-based Match.
@@ -103,7 +103,7 @@ class CompareFCBase:
         
         return True
 
-    @weave.op()
+    @observe()
     def response_based(self, predict, golden):
         try:
             resp_1 = self.api_call._call(predict)
@@ -124,7 +124,7 @@ class CompareFCBase:
         
         return resp_1 == resp_2
 
-    @weave.op()
+    @observe()
     def similarity_based(self, predict, golden):
         embedding_1 = self.embedding.encode([json.dumps(predict, ensure_ascii=False)])
         embedding_2 = self.embedding.encode([json.dumps(golden, ensure_ascii=False)])
@@ -135,7 +135,7 @@ class CompareFCBase:
         self.logger.debug(f"Similarity-based comparison output: {similarity[0][0]}")
         return similarity[0][0] > 0.98
 
-    @weave.op()
+    @observe()
     def llm_based(self, functions, history, predict, golden):
         kwargs = {
             "functions": json.dumps(functions, ensure_ascii=False),
@@ -200,7 +200,7 @@ class CompareFC(CompareFCBase):
             if k not in golden_call['arguments']:
                 return {'error_type': "param_hallucination", "content": f"Parameter {k} is hallucinated."}
             
-    @weave.op()
+    @observe()
     def mapping_call(self, predict, golden, golden_obs):
         def sort_arguments(call_list):
             for value in call_list:
@@ -278,7 +278,7 @@ class CompareFC(CompareFCBase):
 
         return matching
 
-    @weave.op()
+    @observe()
     def compare_single_call(self, functions, history, pred_call, golden_call):
         self.logger.info(f"Start compare_single_call: \n{pred_call}\n{golden_call}")
         # rule-based
@@ -304,7 +304,7 @@ class CompareFC(CompareFCBase):
         self.logger.info("All compare method failed.")
         return False, None
 
-    @weave.op()
+    @observe()
     def compare_turn_prediction(self, functions, history, predict, golden, golden_obs):
         self.error_message = []
         golden, golden_obs = self.remove_called_fc(golden, golden_obs)

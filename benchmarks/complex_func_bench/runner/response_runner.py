@@ -1,5 +1,5 @@
 import json
-import weave
+from langfuse import observe
 from benchmarks.complex_func_bench.utils.utils import retry, decode_json
 from benchmarks.complex_func_bench.models.sap_gpt import SAPGPTModel
 
@@ -42,7 +42,7 @@ class RespEvalRunner:
             return None
         return decoded_correct_result
 
-    @weave.op()
+    @observe()
     def run(self, data, gen_response):
         if gen_response == "":
             return {

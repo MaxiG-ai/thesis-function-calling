@@ -3,14 +3,6 @@ from src.utils.logger import get_logger
 
 logger = get_logger("TokenCounter")
 
-def _get_encoder(model_name: str | None):
-    normalized = model_name or "gpt-4"
-    try:
-        return tiktoken.encoding_for_model(normalized)
-    except Exception as e:
-        logger.warning(f"⚠️ Could not find encoder for model '{normalized}': {e}. Falling back to cl100k_base.")
-        return tiktoken.get_encoding("cl100k_base")
-
 
 def _iter_message_text_parts(message: dict) -> list[str]:
     parts: list[str] = []
@@ -49,7 +41,7 @@ def get_token_count(count_obj, model_name: str | None = None) -> int:
         - Counts `content` plus common tool-calling fields (`tool_calls[].function.arguments`)
           and benchmark-style `function_call` payloads.
     """
-    enc = _get_encoder(model_name)
+    enc = tiktoken.get_encoding("cl100k_base")
     count = 0
     # count tokens in a list of messages
     if isinstance(count_obj, list):
