@@ -1,4 +1,4 @@
-import weave
+from langfuse import observe
 from typing import Any, Dict, List, Optional, Tuple
 
 from src.utils.logger import get_logger
@@ -24,7 +24,7 @@ class MemoryProcessor:
         self._ace_state.reset()
         logger.info("🧠 Memory State Reset")
 
-    @weave.op()
+    @observe()
     def apply_strategy(
         self,
         messages: List[Dict],
@@ -83,7 +83,7 @@ class MemoryProcessor:
             
         return processed_messages, output_token_count
     
-    @weave.op()
+    @observe()
     def _apply_truncation(self, messages: List[Dict], token_count: int) -> Tuple[List[Dict], int]:
         """Truncates archived context when token threshold is exceeded.
         """
@@ -91,7 +91,7 @@ class MemoryProcessor:
         truncated_conv = truncate_messages(messages)
         return truncated_conv, get_token_count(truncated_conv)
 
-    @weave.op()
+    @observe()
     def _apply_progressive_summarization(
         self,
         messages: List[Dict],
@@ -112,7 +112,7 @@ class MemoryProcessor:
             )
         return summarized_conv, get_token_count(summarized_conv)
     
-    @weave.op()
+    @observe()
     def _apply_ace(
         self,
         messages: List[Dict],

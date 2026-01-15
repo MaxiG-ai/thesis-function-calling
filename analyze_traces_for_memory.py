@@ -1,5 +1,5 @@
 import streamlit as st
-import weave
+from langfuse import Langfuse
 import json
 
 st.set_page_config(layout="wide", page_title="🔍 Memory Strategy Trace Viewer")
@@ -7,12 +7,12 @@ st.title("🔍 Memory Strategy Trace Viewer")
 
 # --- HELPERS ---
 def unwrap(data):
-    """Recursively convert Weave objects to native Python types."""
+    """Recursively convert Langfuse objects to native Python types."""
     if hasattr(data, "data"):
         return unwrap(data.data)
-    if isinstance(data, (list, tuple)) or "WeaveList" in type(data).__name__:
+    if isinstance(data, (list, tuple)):
         return [unwrap(x) for x in data]
-    if isinstance(data, dict) or "WeaveDict" in type(data).__name__:
+    if isinstance(data, dict):
         return {k: unwrap(v) for k, v in data.items()}
     return data
 
@@ -21,50 +21,48 @@ def get_messages(inputs):
     data = unwrap(inputs)
     return data.get("messages", []) if isinstance(data, dict) else []
 
-def get_strategy_key(call):
-    """Extract strategy_key from call inputs."""
-    inputs = unwrap(call.inputs)
+def get_strategy_key(observation):
+    """Extract strategy_key from observation inputs."""
+    inputs = unwrap(observation.input) if observation.input else {}
     return inputs.get("strategy_key", "unknown") if isinstance(inputs, dict) else "unknown"
 
-# --- SIDEBAR: Project & Call ID ---
+# --- SIDEBAR: Project & Trace ID ---
 st.sidebar.header("Load Trace")
-org = st.sidebar.text_input("Weave Org", "maxigraf-karlsruhe-institute-of-technology")
-project = st.sidebar.text_input("Weave Project", "gpt41mini_memory_test")
-call_id = st.sidebar.text_input("Call ID", placeholder="019b2bfb-3ec6-7bf9-bc1b-1c6829cf5d13")
+st.sidebar.info("Configure LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, and LANGFUSE_HOST as environment variables")
+trace_id = st.sidebar.text_input("Trace ID", placeholder="Enter Langfuse trace ID")
 
-if not call_id:
-    st.info("Enter a Call ID in the sidebar to load a trace.")
+if not trace_id:
+    st.info("Enter a Trace ID in the sidebar to load a trace.")
     st.stop()
 
-# --- FETCH CALL ---
+# --- FETCH TRACE ---
 try:
-    client = weave.init(f"{org}/{project}")
-    call = client.get_call(call_id)
-    if not call:
-        st.error(f"Call {call_id} not found.")
+    client = Langfuse()
+    trace = client.fetch_trace(trace_id)
+    if not trace or not trace.data:
+        st.error(f"Trace {trace_id} not found.")
         st.stop()
+    trace_data = trace.data
 except Exception as e:
-    st.error(f"Error loading call: {e}")
+    st.error(f"Error loading trace: {e}")
     st.stop()
 
 # --- EXTRACT DATA ---
-inputs = unwrap(call.inputs)
-output = unwrap(call.output)
-summary = unwrap(call.summary) if call.summary else {}
+inputs = unwrap(trace_data.input) if trace_data.input else {}
+output = unwrap(trace_data.output) if trace_data.output else {}
 
-in_messages = [unwrap(m) for m in get_messages(call.inputs)]
+in_messages = [unwrap(m) for m in get_messages(trace_data.input)] if trace_data.input else []
 out_messages = [unwrap(m) for m in output] if isinstance(output, list) else []
 
 # --- SIDEBAR: METADATA ---
 st.sidebar.header("Trace Metadata")
-strategy = get_strategy_key(call)
-latency = summary.get("weave", {}).get("latency_ms", 0)
+latency_ms = trace_data.latency if hasattr(trace_data, 'latency') and trace_data.latency else 0
 memory_key = inputs.get("strategy_key", "N/A") if isinstance(inputs, dict) else "N/A"
-time_str = call.started_at.strftime("%Y-%m-%d %H:%M:%S") if call.started_at else "N/A"
+time_str = trace_data.timestamp.strftime("%Y-%m-%d %H:%M:%S") if hasattr(trace_data, 'timestamp') and trace_data.timestamp else "N/A"
 
 st.sidebar.metric("Memory Key", memory_key)
 st.sidebar.metric("Messages", f"{len(in_messages)} → {len(out_messages)}")
-st.sidebar.metric("Latency", f"{latency:.0f}ms")
+st.sidebar.metric("Latency", f"{latency_ms:.0f}ms")
 st.sidebar.text(f"Started: {time_str}")
 
 # --- RENDER MESSAGE ---
@@ -120,7 +118,7 @@ with left:
 with right:
     st.subheader(f"📤 Output ({len(out_messages)} messages)")
     if out_messages:
-        for i, msg in enumerate(out_messages[0]):
+        for i, msg in enumerate(out_messages[0] if isinstance(out_messages[0], list) else out_messages):
             render_message(msg, i)
     else:
         st.warning("No output messages.")
@@ -136,4 +134,4 @@ with st.expander("📋 Available Tools"):
         st.write("No tools defined.")
 
 with st.expander("🔎 Raw Trace Data"):
-    st.json({"trace_id": call.id, "inputs": inputs, "output": output, "summary": summary}, expanded=False)
+    st.json({"trace_id": trace_data.id, "inputs": inputs, "output": output}, expanded=False)

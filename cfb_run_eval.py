@@ -4,11 +4,12 @@ import os
 import copy
 import random
 import logging
-import weave
 import tomllib
 from datetime import datetime
 from typing import Dict, List, Optional
 from collections import defaultdict
+
+from langfuse import Langfuse, observe
 
 from src.utils.logger import get_logger
 from src.llm_orchestrator import LLMOrchestrator
@@ -255,13 +256,13 @@ def save_results(
 
 def scrub_trace_args(inputs: Dict) -> Dict:
     """
-    Filter out technical objects and redundant data from Weave logs.
-    Used in postprocess_inputs for evaluate_single_case.
+    Filter out technical objects and redundant data from Langfuse logs.
+    Used to clean inputs for evaluate_single_case.
     """
     scrubbed = inputs.copy()
     
     # Remove technical objects that clutter logs
-    keys_to_remove = ["orchestrator", "resp_eval_runner", "log_dir"]
+    keys_to_remove = ["orchestrator", "resp_eval_runner", "log_dir", "langfuse_client"]
     for key in keys_to_remove:
         if key in scrubbed:
             del scrubbed[key]
@@ -277,13 +278,12 @@ def scrub_trace_args(inputs: Dict) -> Dict:
         
     return scrubbed
 
-@weave.op(
-        postprocess_inputs=scrub_trace_args
-)
+
 def evaluate_single_case(
     case: Dict,
     orchestrator: LLMOrchestrator,
     resp_eval_runner: RespEvalRunner,
+    langfuse_client: Langfuse,
 ) -> Dict:
     """
     Evaluate a single test case.
@@ -293,61 +293,69 @@ def evaluate_single_case(
         case: Test case dictionary from the dataset
         orchestrator: LLM Orchestrator instance
         resp_eval_runner: Response quality evaluator
-        log_dir: Directory for logs
+        langfuse_client: Langfuse client for tracing
         
     Returns:
         Result dictionary in backwards-compatible CFB format
     """
     case_id = case.get('id', 'unknown')
+    span_name = f"{case_id}_{orchestrator.active_model_key}_{orchestrator.active_memory_key}"
     
-    # Set the trace name
-    weave.require_current_call().display_name = f"{case_id}_{orchestrator.active_model_key}_{orchestrator.active_memory_key}"
-    
-    # Create runner for this case with orchestrator injection
-    runner = create_runner(log_dir=orchestrator.cfg.results_dir, orchestrator=orchestrator)
-    
-    # Extract ground truth metrics
-    ground_truth = extract_ground_truth_metrics(case)
-    
-    # Execute the case (runner.run internally calls orchestrator.generate multiple times)
-    try:
-        convs, message, success_turn_num, correct_call_num = runner.run(copy.deepcopy(case))
-    except Exception as e:
-        logger.error(f"❌ Exception on case {case_id}: {e}")
-        raise
-    
-    # Check for API errors
-    if isinstance(message, dict) and message.get("error_type") == "unknown_error":
-        logger.error(f"❌ API error on case {case_id}: {message}")
-        raise RuntimeError("API Error encountered during case execution.")
-    
-    # Extract actual metrics
-    actual = extract_actual_metrics(convs)
-    
-    # Evaluate response quality if available
-    resp_eval = None
-    if convs and convs[-1].get('role') == 'assistant' and 'content' in convs[-1]:
-        final_response = convs[-1]['content']
-        if final_response and resp_eval_runner:
-            resp_eval = resp_eval_runner.run(case, final_response)
-    
-    # Build result in backwards-compatible format
-    result = {
-        "id": case_id,
-        "gen_convs": convs,
-        "message": message,
-        "count_dict": {
-            "success_turn_num": success_turn_num,
-            "total_turn_num": ground_truth['turn_count'],
-            "correct_call_num": correct_call_num,
-            "total_call_num": ground_truth['call_count'],
-            "real_turn_num": actual['turn_count']
-        },
-        "resp_eval": resp_eval,
-        "status": "Success" if message == "Success." else "Failed"
-    }
-    
-    return result
+    # Create a trace span for this case evaluation
+    with langfuse_client.start_as_current_span(
+        name=span_name,
+        input=scrub_trace_args({"case": case})
+    ) as span:
+        # Create runner for this case with orchestrator injection
+        runner = create_runner(log_dir=orchestrator.cfg.results_dir, orchestrator=orchestrator)
+        
+        # Extract ground truth metrics
+        ground_truth = extract_ground_truth_metrics(case)
+        
+        # Execute the case (runner.run internally calls orchestrator.generate multiple times)
+        try:
+            convs, message, success_turn_num, correct_call_num = runner.run(copy.deepcopy(case))
+        except Exception as e:
+            logger.error(f"❌ Exception on case {case_id}: {e}")
+            span.update(output={"error": str(e)})
+            raise
+        
+        # Check for API errors
+        if isinstance(message, dict) and message.get("error_type") == "unknown_error":
+            logger.error(f"❌ API error on case {case_id}: {message}")
+            span.update(output={"error": message})
+            raise RuntimeError("API Error encountered during case execution.")
+        
+        # Extract actual metrics
+        actual = extract_actual_metrics(convs)
+        
+        # Evaluate response quality if available
+        resp_eval = None
+        if convs and convs[-1].get('role') == 'assistant' and 'content' in convs[-1]:
+            final_response = convs[-1]['content']
+            if final_response and resp_eval_runner:
+                resp_eval = resp_eval_runner.run(case, final_response)
+        
+        # Build result in backwards-compatible format
+        result = {
+            "id": case_id,
+            "gen_convs": convs,
+            "message": message,
+            "count_dict": {
+                "success_turn_num": success_turn_num,
+                "total_turn_num": ground_truth['turn_count'],
+                "correct_call_num": correct_call_num,
+                "total_call_num": ground_truth['call_count'],
+                "real_turn_num": actual['turn_count']
+            },
+            "resp_eval": resp_eval,
+            "status": "Success" if message == "Success." else "Failed"
+        }
+        
+        # Update span with output
+        span.update(output=result)
+        
+        return result
 
 
 def run_single_configuration(
@@ -356,7 +364,8 @@ def run_single_configuration(
     model: str,
     memory: str,
     run_timestamp: str,
-    resp_eval_runner: RespEvalRunner
+    resp_eval_runner: RespEvalRunner,
+    langfuse_client: Langfuse,
 ) -> Optional[Dict]:
     """
     Run evaluation for a single model/memory configuration.
@@ -364,7 +373,7 @@ def run_single_configuration(
     This function:
     1. Sets the active context in the orchestrator
     2. Processes all test cases
-    3. Calculates and logs metrics to wandb
+    3. Calculates and logs metrics to Langfuse
     4. Saves results to disk
     
     Args:
@@ -374,6 +383,7 @@ def run_single_configuration(
         memory: Memory method identifier
         run_timestamp: Timestamp string for this run
         resp_eval_runner: Response quality evaluator
+        langfuse_client: Langfuse client for tracing
         
     Returns:
         Summary statistics dictionary, or None if failed
@@ -387,87 +397,104 @@ def run_single_configuration(
         logger.error(f"❌ Failed to switch context: {e}")
         return None
     
-    # Initialize weave evaluation logger for this configuration
-    eval_logger = weave.EvaluationLogger(
+    # Create a trace for this evaluation configuration
+    with langfuse_client.start_as_current_span(
         name=f"Eval_{model}_{memory}",
-        model=model,
-        dataset="ComplexFuncBench",
-        eval_attributes={"memory_method": memory, "config": orchestrator.get_exp_config()},
-        scorers=["success", "turn_accuracy", "call_accuracy", "response_complete", "response_correct"],
-    )
-    
-    # Process all cases
-    results = []
-    success_count = 0
-    
-    for i, case in enumerate(dataset):
-        orchestrator.reset_session()
-        case_id = case.get('id', i)
-        logger.info(f"Processing case {i+1}/{len(dataset)}: {case_id}")
+        input={
+            "model": model,
+            "memory_method": memory,
+            "dataset": "ComplexFuncBench",
+            "config": orchestrator.get_exp_config()
+        }
+    ) as eval_span:
+        # Process all cases
+        results = []
+        success_count = 0
         
-        try:
-
-            result = evaluate_single_case(
-                case=case,
-                orchestrator=orchestrator,
-                resp_eval_runner=resp_eval_runner,
-            )
+        for i, case in enumerate(dataset):
+            orchestrator.reset_session()
+            case_id = case.get('id', i)
+            logger.info(f"Processing case {i+1}/{len(dataset)}: {case_id}")
             
-            # Track success
-            if result['message'] == "Success.":
-                success_count += 1
-            
-            # Add metadata
-            result['memory_method'] = memory
-            results.append(result)
-            
-            # Log case prediction to wandb
-            wandb_data = format_result_for_wandb(result)
-            with eval_logger.log_prediction(
-                inputs={"case_id": case_id, "domain": wandb_data['domain']},
-                output={"status": wandb_data['status'], "message": wandb_data['message']}
-            ) as pred:
-                # Log scores for this prediction
-                pred.log_score("success", 1.0 if wandb_data['success'] else 0.0)
-                pred.log_score("turn_accuracy", wandb_data.get('turn_accuracy', 0.0))
-                pred.log_score("call_accuracy", wandb_data.get('call_accuracy', 0.0))
+            try:
+                result = evaluate_single_case(
+                    case=case,
+                    orchestrator=orchestrator,
+                    resp_eval_runner=resp_eval_runner,
+                    langfuse_client=langfuse_client,
+                )
+                
+                # Track success
+                if result['message'] == "Success.":
+                    success_count += 1
+                
+                # Add metadata
+                result['memory_method'] = memory
+                results.append(result)
+                
+                # Log scores for this prediction to Langfuse
+                wandb_data = format_result_for_wandb(result)
+                langfuse_client.score(
+                    name="success",
+                    value=1.0 if wandb_data['success'] else 0.0,
+                    comment=f"Case {case_id}"
+                )
+                langfuse_client.score(
+                    name="turn_accuracy",
+                    value=wandb_data.get('turn_accuracy', 0.0),
+                    comment=f"Case {case_id}"
+                )
+                langfuse_client.score(
+                    name="call_accuracy",
+                    value=wandb_data.get('call_accuracy', 0.0),
+                    comment=f"Case {case_id}"
+                )
                 
                 if wandb_data.get('response_complete_score') is not None:
-                    pred.log_score("response_complete", wandb_data['response_complete_score'])
+                    langfuse_client.score(
+                        name="response_complete",
+                        value=float(wandb_data['response_complete_score']),
+                        comment=f"Case {case_id}"
+                    )
                 if wandb_data.get('response_correct_score') is not None:
-                    pred.log_score("response_correct", wandb_data['response_correct_score'])
-            
-        except Exception as e:
-            logger.error(f"❌ Failed on case {case_id}: {e}")
-            # Continue with remaining cases
-            continue
-    
-    # Calculate aggregate metrics
-    logger.info("🧮 Calculating aggregate metrics...")
-    metrics = calculate_metrics(results)
+                    langfuse_client.score(
+                        name="response_correct",
+                        value=float(wandb_data['response_correct_score']),
+                        comment=f"Case {case_id}"
+                    )
+                
+            except Exception as e:
+                logger.error(f"❌ Failed on case {case_id}: {e}")
+                # Continue with remaining cases
+                continue
+        
+        # Calculate aggregate metrics
+        logger.info("🧮 Calculating aggregate metrics...")
+        metrics = calculate_metrics(results)
 
-    # Setup directories
-    log_dir = setup_directories(
-        orchestrator.cfg.experiment_name,
-        run_timestamp,
-        model,
-        memory
-    )
-    
-    # Save results to disk
-    save_results(results, metrics, model, memory, log_dir, run_timestamp)
+        # Setup directories
+        log_dir = setup_directories(
+            orchestrator.cfg.experiment_name,
+            run_timestamp,
+            model,
+            memory
+        )
+        
+        # Save results to disk
+        save_results(results, metrics, model, memory, log_dir, run_timestamp)
 
-    # Log summary to wandb
-    eval_logger.log_summary({
-        "model": model,
-        "memory": memory,
-        "total_cases": len(dataset),
-        "success_count": success_count,
-        "pass_rate": (success_count / len(dataset)) * 100 if dataset else 0,
-        **metrics
-    })
-    
-    logger.info(f"✅ Completed evaluation: {model}/{memory}")
+        # Update evaluation span with summary
+        summary = {
+            "model": model,
+            "memory": memory,
+            "total_cases": len(dataset),
+            "success_count": success_count,
+            "pass_rate": (success_count / len(dataset)) * 100 if dataset else 0,
+            **metrics
+        }
+        eval_span.update(output=summary)
+        
+        logger.info(f"✅ Completed evaluation: {model}/{memory}")
 
 
 def main(experiment_name=None):
@@ -475,7 +502,7 @@ def main(experiment_name=None):
     Main orchestration function for ComplexFuncBench evaluation.
     
     This function:
-    1. Initializes wandb tracking
+    1. Initializes Langfuse tracking
     2. Loads the orchestrator and dataset
     3. Iterates through all model/memory configurations
     4. Aggregates and reports final results
@@ -483,12 +510,11 @@ def main(experiment_name=None):
     # Initialize orchestrator
     orchestrator = LLMOrchestrator()
     
-    # Initialize wandb for the entire experiment
-    if experiment_name:
-        weave.init(experiment_name)
-    else:
-        weave.init(orchestrator.cfg.experiment_name)
-    logger.info(f"📊 Weave initialized: {orchestrator.cfg.experiment_name}")
+    # Initialize Langfuse for the entire experiment
+    # Langfuse reads LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST from env
+    session_id = experiment_name if experiment_name else orchestrator.cfg.experiment_name
+    langfuse_client = Langfuse()
+    logger.info(f"📊 Langfuse initialized for session: {session_id}")
     
     # Load dataset
     data_path = os.path.join("benchmarks", "complex_func_bench", "data", "ComplexFuncBench.jsonl")
@@ -536,8 +562,12 @@ def main(experiment_name=None):
                 model=model,
                 memory=memory,
                 run_timestamp=run_timestamp,
-                resp_eval_runner=resp_eval_runner
+                resp_eval_runner=resp_eval_runner,
+                langfuse_client=langfuse_client,
             )
+    
+    # Flush any remaining data to Langfuse
+    langfuse_client.flush()
     
     # Final summary
     logger.info("\n" + "=" * 80)

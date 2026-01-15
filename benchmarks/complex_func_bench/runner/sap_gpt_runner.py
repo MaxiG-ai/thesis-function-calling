@@ -1,7 +1,7 @@
 import re
 import copy
 import json
-import weave
+from langfuse import observe
 from benchmarks.complex_func_bench.models.sap_gpt import FunctionCallSAPGPT
 from benchmarks.complex_func_bench.runner.base_runner import ModelRunner
 from src.llm_orchestrator import LLMOrchestrator
@@ -52,7 +52,7 @@ class SAPGPTRunner(ModelRunner):
 
         return function_call
     
-    @weave.op()
+    @observe()
     def run(self, data):
         convs, functions = data['conversations'], data['functions']
         self.CompareClass.add_free_function(convs)
@@ -120,7 +120,7 @@ class SAPGPTRunner(ModelRunner):
                 self.logger.debug(f"Observations:\n{json.dumps(real_time_obs, ensure_ascii=False, indent=4)}\n")
                 messages.append({"role": "observation", "content": real_time_obs})
 
-            # TODO: Log the final answer to weave
+            # TODO: Log the final answer to Langfuse
             elif llm_response.content is not None:
                 final_response = llm_response.content
                 self.logger.debug(f"Final Response: {final_response}\n")

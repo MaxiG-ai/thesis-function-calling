@@ -1,6 +1,7 @@
 import litellm
-import weave
 import os
+
+from langfuse import observe
 
 from typing import List, Dict, Optional, Any, Union, Iterable
 from openai.types.chat import ChatCompletionMessageParam, ChatCompletionToolParam, ChatCompletion
@@ -18,7 +19,7 @@ class LLMOrchestrator:
     Integrates:
     - LiteLLM for model interactions
     - Memory processing for context optimization
-    - Comprehensive tracking with weave/wandb
+    - Comprehensive tracking with Langfuse
     
     Usage:
         # Initialize
@@ -55,16 +56,16 @@ class LLMOrchestrator:
         self.active_model_key: str = self.cfg.enabled_models[0]
         self.active_memory_key: str = self.cfg.enabled_memory_methods[0]
         
-        # Configure LiteLLM
+        # Configure LiteLLM with Langfuse callback
         os.environ["LITELLM_LOG"] = "ERROR"
         litellm.suppress_debug_info = True
-        litellm.success_callback = ["weave"]
+        litellm.success_callback = ["langfuse"]
         
         logger.info(f"🚀 Orchestrator initialized for: {self.cfg.experiment_name}")
 
     def get_exp_config(self) -> Dict[str, Any]:
         """
-        Return only experiment configs (no model registry). Used for logging with weave.
+        Return only experiment configs (no model registry). Used for logging with Langfuse.
         """
         exp_dict = self.cfg.model_dump()
         exp_dict.pop("model_registry", None)
@@ -136,7 +137,7 @@ class LLMOrchestrator:
         
         return model_kwargs
     
-    @weave.op()
+    @observe(as_type="generation")
     def generate_with_memory_applied(
         self,
         input_messages: List[Dict[str, str]],
@@ -165,7 +166,7 @@ class LLMOrchestrator:
             ChatCompletion response from OpenAI API
             
         Raises:
-            Exception: Any errors from OpenAI API (logged to wandb)
+            Exception: Any errors from OpenAI API (logged to Langfuse)
         """
         # Sync raw history (append only new messages)
         # TODO: Feature: Keep complete trace before truncation.
@@ -218,7 +219,7 @@ class LLMOrchestrator:
             logger.error(f"💥 Generation Failed: {str(e)}")
             raise e
         
-    @weave.op()
+    @observe(as_type="generation")
     def generate_plain(
         self,
         input_messages: Iterable[ChatCompletionMessageParam],
@@ -226,7 +227,7 @@ class LLMOrchestrator:
     ) -> Union[ChatCompletion, Any]:
         """
         Execute LLM request for evaluation. No memory processing applied. Model defaults to GPT-4.1 
-        Exception: Any errors from OpenAI API (logged to wandb)
+        Exception: Any errors from OpenAI API (logged to Langfuse)
         """
         kwargs.pop("model", None)
         try:
