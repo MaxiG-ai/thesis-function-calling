@@ -7,7 +7,7 @@ log_dir = "results/logs"
 logging_level = "INFO"
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
 # Good samples: ["Car-Rental-131", "Cross-131"]
-selected_test_cases = ["Car-Rental-131", "Cross-131", "Flights-91"]
+selected_test_cases = ["Car-Rental-0", "Car-Rental-1", "Car-Rental-3", "Car-Rental-4", "Car-Rental-8", "Car-Rental-9"]
 # benchmark_sample_size = 10
 
 # setting for max. context before compression

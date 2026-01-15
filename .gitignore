@@ -209,3 +209,5 @@ wandb/
 # config file
 config.toml
 ./config.toml
+
+uv.lock
