@@ -118,7 +118,12 @@ with left:
 with right:
     st.subheader(f"📤 Output ({len(out_messages)} messages)")
     if out_messages:
-        for i, msg in enumerate(out_messages[0] if isinstance(out_messages[0], list) else out_messages):
+        # Handle case where out_messages is a list of lists or a flat list
+        if len(out_messages) > 0 and isinstance(out_messages[0], list):
+            messages_to_render = out_messages[0]
+        else:
+            messages_to_render = out_messages
+        for i, msg in enumerate(messages_to_render):
             render_message(msg, i)
     else:
         st.warning("No output messages.")

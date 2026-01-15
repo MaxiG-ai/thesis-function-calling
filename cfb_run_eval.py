@@ -432,32 +432,32 @@ def run_single_configuration(
                 result['memory_method'] = memory
                 results.append(result)
                 
-                # Log scores for this prediction to Langfuse
+                # Log scores for this prediction to Langfuse on the current span
                 wandb_data = format_result_for_wandb(result)
-                langfuse_client.score(
+                eval_span.score(
                     name="success",
                     value=1.0 if wandb_data['success'] else 0.0,
                     comment=f"Case {case_id}"
                 )
-                langfuse_client.score(
+                eval_span.score(
                     name="turn_accuracy",
                     value=wandb_data.get('turn_accuracy', 0.0),
                     comment=f"Case {case_id}"
                 )
-                langfuse_client.score(
+                eval_span.score(
                     name="call_accuracy",
                     value=wandb_data.get('call_accuracy', 0.0),
                     comment=f"Case {case_id}"
                 )
                 
                 if wandb_data.get('response_complete_score') is not None:
-                    langfuse_client.score(
+                    eval_span.score(
                         name="response_complete",
                         value=float(wandb_data['response_complete_score']),
                         comment=f"Case {case_id}"
                     )
                 if wandb_data.get('response_correct_score') is not None:
-                    langfuse_client.score(
+                    eval_span.score(
                         name="response_correct",
                         value=float(wandb_data['response_correct_score']),
                         comment=f"Case {case_id}"
