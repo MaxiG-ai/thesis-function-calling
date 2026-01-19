@@ -2,7 +2,6 @@
 import json
 import os
 import copy
-import langfuse
 import random
 import logging
 import tomllib
@@ -306,7 +305,8 @@ def evaluate_single_case(
     span_name = f"{case_id}_{orchestrator.active_model_key}_{orchestrator.active_memory_key}"
     
     # Create a trace span for this case evaluation
-    with langfuse_client.start_as_current_span(
+    with langfuse_client.start_as_current_observation(
+        as_type='span',
         name=span_name,
         input=scrub_trace_args({"case": case})
     ) as span:
@@ -355,9 +355,21 @@ def evaluate_single_case(
             "resp_eval": resp_eval,
             "status": "Success" if message == "Success." else "Failed"
         }
+
+        system_final_response = result['gen_convs'][-1]['content'] if result['gen_convs'] and 'content' in result['gen_convs'][-1] else "No final message provided by benchmark."
         
         # Update span with output
-        span.update(output=result)
+        span.update(
+            output=system_final_response,
+            metadata=result
+        )
+
+        for element, value in result['count_dict'].items():
+            span.score_current_trace(
+                name=element,
+                value=value,
+                data_type="NUMERIC",
+            )
         
         return result
 
