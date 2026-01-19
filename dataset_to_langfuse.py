@@ -1,5 +1,6 @@
 import os
 import logging
+import time
 
 from benchmarks.complex_func_bench.utils.utils import load_json
 from src.utils.logger import get_logger
@@ -68,8 +69,10 @@ for idx, item in enumerate(dataset, 1):
         uploaded_count += 1
         
         # Log progress every 100 items
-        if idx % 100 == 0:
+        if idx % 50 == 0:
             logger.info(f"  Progress: {idx}/{len(dataset)} items processed...")
+        
+        time.sleep(0.5) # To avoid rate limiting
             
     except Exception as e:
         error_msg = str(e)
