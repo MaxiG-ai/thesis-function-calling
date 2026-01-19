@@ -282,6 +282,34 @@ def scrub_trace_args(inputs: Dict) -> Dict:
     return scrubbed
 
 
+def _reconstruct_case_from_langfuse_item(item) -> Dict:
+    """
+    Reconstruct the full case object from a Langfuse dataset item.
+    
+    Langfuse stores data as:
+    - input: first conversation turn (user message)
+    - expected_output: rest of conversation (assistant responses, observations)
+    - metadata: functions and other metadata
+    
+    This reconstructs it to match the original case format.
+    """
+    # Get the input (first user turn) and expected output (rest of conversation)
+    input_turn = item.input if isinstance(item.input, dict) else {"role": "user", "content": str(item.input)}
+    expected_turns = item.expected_output if isinstance(item.expected_output, list) else []
+    
+    # Reconstruct full conversations list
+    conversations = [input_turn] + expected_turns
+    
+    # Extract metadata (functions)
+    metadata = item.metadata if item.metadata else {}
+    
+    return {
+        "id": item.id,
+        "conversations": conversations,
+        "functions": metadata,
+    }
+
+
 def evaluate_single_case(
     case: Dict,
     orchestrator: LLMOrchestrator,
@@ -365,7 +393,7 @@ def evaluate_single_case(
         )
 
         for element, value in result['count_dict'].items():
-            span.score_current_span(
+            span.score(
                 name=element,
                 value=value,
                 data_type="NUMERIC",
@@ -388,13 +416,13 @@ def run_single_configuration(
     
     This function:
     1. Sets the active context in the orchestrator
-    2. Processes all test cases
+    2. Fetches test cases from Langfuse dataset
     3. Calculates and logs metrics to Langfuse
     4. Saves results to disk
     
     Args:
         orchestrator: LLM Orchestrator instance
-        dataset: List of test cases
+        dataset: List of test cases (used for filtering, not iteration)
         model: Model identifier
         memory: Memory method identifier
         run_timestamp: Timestamp string for this run
@@ -413,19 +441,30 @@ def run_single_configuration(
         logger.error(f"❌ Failed to switch context: {e}")
         return None
     
+    # Fetch dataset from Langfuse
+    dataset_name = "ComplexFuncBench"
+    try:
+        ds = langfuse_client.get_dataset(dataset_name)
+        if ds is None:
+            raise RuntimeError(f"Dataset '{dataset_name}' not found in Langfuse")
+        if not ds.items:
+            raise RuntimeError(f"Dataset '{dataset_name}' is empty")
+        logger.info(f"📊 Loaded {len(ds.items)} items from Langfuse dataset '{dataset_name}'")
+    except Exception as e:
+        logger.error(f"❌ Failed to fetch Langfuse dataset '{dataset_name}': {e}")
+        raise RuntimeError(f"Cannot proceed without Langfuse dataset. Error: {e}") from e
+    
     # Create a trace for this evaluation configuration
-    with propagate_attributes(session_id=f"Eval_{model}_{memory}") as eval_span:
+    with propagate_attributes(
+        tags=[memory, model]
+        ) as eval_span:
         # Process all cases
         results = []
         success_count = 0
 
-        dataset_dict = {case['id']: case for case in dataset}
-        print("Dataset cases:", list(dataset_dict.keys()))
-
-        ds = langfuse_client.get_dataset("DemoComplexFuncBench")
-        
         for item in ds.items:
-            case = dataset_dict[item.id]
+            # Reconstruct case from Langfuse item
+            case = _reconstruct_case_from_langfuse_item(item)
             case_id = case.get('id', item.id)
             with item.run(
                 run_name=item.id
@@ -501,16 +540,18 @@ def run_single_configuration(
     save_results(results, metrics, model, memory, log_dir, run_timestamp)
 
     # Update evaluation span with summary
+    total_cases = len(ds.items)
     summary = {
         "model": model,
         "memory": memory,
-        "total_cases": len(dataset),
+        "total_cases": total_cases,
         "success_count": success_count,
-        "pass_rate": (success_count / len(dataset)) * 100 if dataset else 0,
+        "pass_rate": (success_count / total_cases) * 100 if total_cases > 0 else 0,
         **metrics
     }
-    for k, v in enumerate(summary):
-        langfuse_client.score_current_span(name=k, value=v)
+    for k, v in summary.items():
+        if isinstance(v, (int, float)):
+            eval_span.score(name=k, value=v)
 
     
     logger.info(f"✅ Completed evaluation: {model}/{memory}")
@@ -532,62 +573,47 @@ def main(experiment_name=None):
     
     # Initialize Langfuse for the entire experiment
     # Langfuse reads LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST from env
-    session_id = experiment_name if experiment_name else orchestrator.cfg.experiment_name
+    experiment_id = experiment_name if experiment_name else orchestrator.cfg.experiment_name
     langfuse_client = Langfuse(public_key=os.getenv("LANGFUSE_PUBLIC_KEY"),
                                secret_key=os.getenv("LANGFUSE_SECRET_KEY"),
                                base_url=os.getenv("LANGFUSE_BASE_URL"))
-    logger.info(f"📊 Langfuse initialized for session: {session_id}")
+    logger.info(f"📊 Langfuse initialized for session: {experiment_id}")
     
-    # Load dataset
+    # Note: Dataset loading kept for reference and potential future filtering logic.
+    # Cases are now fetched directly from Langfuse dataset in run_single_configuration()
     data_path = os.path.join("benchmarks", "complex_func_bench", "data", "ComplexFuncBench.jsonl")
     dataset = load_json(data_path)
     
     if not dataset:
-        logger.error("❌ No data loaded. Exiting.")
-        return
+        logger.warning("⚠️ Local dataset is empty, but will fetch from Langfuse instead")
+    else:
+        logger.info(f"📂 Loaded {len(dataset)} items from local dataset (for reference only)")
     
-    # Filter by specific test case IDs if configured
+    # Note: selected_test_cases and benchmark_sample_size are currently used for local filtering only.
+    # For Langfuse-only operation, these configs should be applied at Langfuse dataset creation time.
     selected_test_cases = orchestrator.cfg.selected_test_cases
     if selected_test_cases:
-        dataset = [case for case in dataset if case.get('id') in selected_test_cases]
-        if not dataset:
-            logger.error(f"❌ No test cases found matching the selected IDs: {selected_test_cases}")
-            return
-        logger.info(f"🎯 Filtered to {len(dataset)} specific test case(s): {selected_test_cases}")
-    else:
-        # Sample subset if configured (only when not using specific test cases)
-        # TODO: Replace with sampling from langfuse
-        sample_size = orchestrator.cfg.benchmark_sample_size
-        if sample_size is not None and sample_size > 0:
-            if sample_size > len(dataset):
-                logger.warning(
-                    f"⚠️ Sample size {sample_size} exceeds dataset size {len(dataset)}, "
-                    "using full dataset"
-                )
-            else:
-                random.seed(42)
-                dataset = random.sample(dataset, sample_size)
-                logger.info(f"📊 Sampled {sample_size} cases from dataset")
-            
+        logger.warning(f"⚠️ Config 'selected_test_cases' is set but will be ignored. Using all cases from Langfuse dataset instead.")
+    
     # Initialize response evaluator (shared across all configurations)
     run_timestamp = datetime.now().strftime('%Y%m%d_%H%M')
     temp_log_dir = os.path.join("results", orchestrator.cfg.experiment_name, run_timestamp, "temp")
     os.makedirs(temp_log_dir, exist_ok=True)
     resp_eval_runner = initialize_response_evaluator(temp_log_dir)
     
-    with propagate_attributes(tags=["ComplexFuncBench", experiment_name])
-    for model in orchestrator.cfg.enabled_models:
-        for memory in orchestrator.cfg.enabled_memory_methods:
-            # Run one of the cross product results memory - model            
-            run_single_configuration(
-                orchestrator=orchestrator,
-                dataset=dataset,
-                model=model,
-                memory=memory,
-                run_timestamp=run_timestamp,
-                resp_eval_runner=resp_eval_runner,
-                langfuse_client=langfuse_client,
-            )
+    with propagate_attributes(tags=["ComplexFuncBench", experiment_id]):
+        for model in orchestrator.cfg.enabled_models:
+            for memory in orchestrator.cfg.enabled_memory_methods:
+                # Run one of the cross product results memory - model            
+                run_single_configuration(
+                    orchestrator=orchestrator,
+                    dataset=dataset,
+                    model=model,
+                    memory=memory,
+                    run_timestamp=run_timestamp,
+                    resp_eval_runner=resp_eval_runner,
+                    langfuse_client=langfuse_client,
+                )
     
     # Flush any remaining data to Langfuse
     langfuse_client.flush()
