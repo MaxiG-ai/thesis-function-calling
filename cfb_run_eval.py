@@ -365,7 +365,7 @@ def evaluate_single_case(
         )
 
         for element, value in result['count_dict'].items():
-            span.score_current_trace(
+            span.score_current_span(
                 name=element,
                 value=value,
                 data_type="NUMERIC",
@@ -433,6 +433,7 @@ def run_single_configuration(
                 orchestrator.reset_session()
                 logger.info(f"Processing case {case_id}/{len(dataset)}: {case_id}")
                 try:
+                    # TODO: Could intercept to run langfuse experiment
                     result = evaluate_single_case(
                         case=case,
                         orchestrator=orchestrator,
@@ -573,9 +574,9 @@ def main(experiment_name=None):
     os.makedirs(temp_log_dir, exist_ok=True)
     resp_eval_runner = initialize_response_evaluator(temp_log_dir)
     
+    with propagate_attributes(tags=["ComplexFuncBench", experiment_name])
     for model in orchestrator.cfg.enabled_models:
         for memory in orchestrator.cfg.enabled_memory_methods:
-
             # Run one of the cross product results memory - model            
             run_single_configuration(
                 orchestrator=orchestrator,
