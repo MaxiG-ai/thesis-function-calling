@@ -1,10 +1,8 @@
 import json
-from langfuse import observe
 from benchmarks.complex_func_bench.utils.utils import retry, decode_json
 from benchmarks.complex_func_bench.models.sap_gpt import SAPGPTModel
 
 from src.llm_orchestrator import LLMOrchestrator
-
 
 from benchmarks.complex_func_bench.prompts.response import (
     complete_system_prompt, 
@@ -42,7 +40,6 @@ class RespEvalRunner:
             return None
         return decoded_correct_result
 
-    @observe()
     def run(self, data, gen_response):
         if gen_response == "":
             return {
