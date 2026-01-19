@@ -1,10 +1,11 @@
 # --- Experiment Matrix ---
 # The suite will iterate through the Cartesian product of these lists.
 
-experiment_name = "initial_tests"
+experiment_name = "langfuse_test"
 results_dir = "results"
 log_dir = "results/logs"
 logging_level = "INFO"
+langfuse_tracing_environment = "development"
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
 # Good samples: ["Car-Rental-131", "Cross-131"]
 selected_test_cases = ["Car-Rental-0", "Car-Rental-1", "Car-Rental-3", "Car-Rental-4", "Car-Rental-8", "Car-Rental-9"]
@@ -25,9 +26,9 @@ enabled_models = [
 
 # 2. Define Memory Architectures to test
 enabled_memory_methods = [
-    # "no_strategy",
-    # "truncation",
-    # "progressive_summarization",
+    "no_strategy",
+    "truncation",
+    "progressive_summarization",
     "ace",
 ]
 

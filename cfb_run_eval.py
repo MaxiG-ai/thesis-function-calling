@@ -528,6 +528,7 @@ def main(experiment_name=None):
     """
     # Initialize orchestrator
     orchestrator = LLMOrchestrator()
+    os.environ["LANGFUSE_TRACING_ENVIRONMENT"] = orchestrator.cfg.langfuse_tracing_environment
     
     # Initialize Langfuse for the entire experiment
     # Langfuse reads LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY, LANGFUSE_HOST from env
