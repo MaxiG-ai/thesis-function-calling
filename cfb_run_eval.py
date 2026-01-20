@@ -278,7 +278,7 @@ def scrub_trace_args(inputs: Dict) -> Dict:
     return scrubbed
 
 @weave.op(
-        postprocess_inputs=scrub_trace_args
+    postprocess_inputs=scrub_trace_args
 )
 def evaluate_single_case(
     case: Dict,
@@ -302,6 +302,8 @@ def evaluate_single_case(
     
     # Set the trace name
     weave.require_current_call().display_name = f"{case_id}_{orchestrator.active_model_key}_{orchestrator.active_memory_key}"
+
+    # log settings for this trace to weave
     
     # Create runner for this case with orchestrator injection
     runner = create_runner(log_dir=orchestrator.cfg.results_dir, orchestrator=orchestrator)
@@ -388,11 +390,10 @@ def run_single_configuration(
         return None
     
     # Initialize weave evaluation logger for this configuration
+    # Note: experiment config is provided at the global level via weave.init()
     eval_logger = weave.EvaluationLogger(
         name=f"Eval_{model}_{memory}",
-        model=model,
         dataset="ComplexFuncBench",
-        eval_attributes={"memory_method": memory, "config": orchestrator.get_exp_config()},
         scorers=["success", "turn_accuracy", "call_accuracy", "response_complete", "response_correct"],
     )
     
@@ -482,13 +483,18 @@ def main(experiment_name=None):
     """
     # Initialize orchestrator
     orchestrator = LLMOrchestrator()
-    
-    # Initialize wandb for the entire experiment
-    if experiment_name:
-        weave.init(experiment_name)
-    else:
-        weave.init(orchestrator.cfg.experiment_name)
-    logger.info(f"📊 Weave initialized: {orchestrator.cfg.experiment_name}")
+    run_timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+
+    # Initialize weave for the entire experiment and attach experiment-level metadata
+    # (use a clear key name and include a run timestamp so traces can be correlated)
+    weave.init(
+        project_name=experiment_name or orchestrator.cfg.experiment_name, 
+        global_attributes={
+            "experiment_config": orchestrator.get_exp_config(), 
+            "run_timestamp": run_timestamp
+            }
+    )
+    logger.info(f"📊 Weave initialized with global attributes: {orchestrator.cfg.experiment_name}")
     
     # Load dataset
     data_path = os.path.join("benchmarks", "complex_func_bench", "data", "ComplexFuncBench.jsonl")
@@ -521,7 +527,6 @@ def main(experiment_name=None):
                 logger.info(f"📊 Sampled {sample_size} cases from dataset")
             
     # Initialize response evaluator (shared across all configurations)
-    run_timestamp = datetime.now().strftime('%Y%m%d_%H%M')
     temp_log_dir = os.path.join("results", orchestrator.cfg.experiment_name, run_timestamp, "temp")
     os.makedirs(temp_log_dir, exist_ok=True)
     resp_eval_runner = initialize_response_evaluator(temp_log_dir)
