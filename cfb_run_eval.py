@@ -304,8 +304,6 @@ def evaluate_single_case(
     # Set the trace name
     weave.require_current_call().display_name = f"{case_id}_{orchestrator.active_model_key}_{orchestrator.active_memory_key}"
 
-    # log settings for this trace to weave
-    
     # Create runner for this case with orchestrator injection
     runner = create_runner(log_dir=orchestrator.cfg.results_dir, orchestrator=orchestrator)
     
