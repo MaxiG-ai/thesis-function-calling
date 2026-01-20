@@ -43,6 +43,7 @@ class ExperimentConfig(BaseModel):
     results_dir: str
     log_dir: str
     logging_level: str
+    weave_deep_logging: bool = Field(default=False, alias="weave_logging")
     input_file: str
     proc_num: int = 1
     benchmark_sample_size: Optional[int]=None

@@ -489,11 +489,12 @@ def main(experiment_name=None):
     # Initialize weave for the entire experiment and attach experiment-level metadata
     # (use a clear key name and include a run timestamp so traces can be correlated)
     weave.init(
-        project_name=experiment_name or orchestrator.cfg.experiment_name, 
+        project_name=experiment_name or orchestrator.cfg.experiment_name,
         global_attributes={
-            "experiment_config": orchestrator.get_exp_config(), 
-            "run_timestamp": run_timestamp
-            }
+            "experiment_config": orchestrator.get_exp_config(),
+            "run_timestamp": run_timestamp,
+        },
+        settings={"implicitly_patch_integrations": False},
     )
     logger.info(f"📊 Weave initialized with global attributes: {orchestrator.cfg.experiment_name}")
     

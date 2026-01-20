@@ -5,6 +5,7 @@ experiment_name = "initial_tests"
 results_dir = "results"
 log_dir = "results/logs"
 logging_level = "INFO"
+weave_deep_logging = false
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
 # Good samples: ["Car-Rental-131", "Cross-131"]
 selected_test_cases = ["Car-Rental-131", "Cross-131", "Flights-91"]
