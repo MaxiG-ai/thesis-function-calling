@@ -278,7 +278,8 @@ def scrub_trace_args(inputs: Dict) -> Dict:
     return scrubbed
 
 @weave.op(
-    postprocess_inputs=scrub_trace_args
+    postprocess_inputs=scrub_trace_args,
+    enable_code_capture=False
 )
 def evaluate_single_case(
     case: Dict,

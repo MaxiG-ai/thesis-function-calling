@@ -136,7 +136,7 @@ class LLMOrchestrator:
         
         return model_kwargs
     
-    @weave.op()
+    @weave.op(enable_code_capture=False)
     def generate_with_memory_applied(
         self,
         input_messages: List[Dict[str, str]],
@@ -218,7 +218,9 @@ class LLMOrchestrator:
             logger.error(f"💥 Generation Failed: {str(e)}")
             raise e
         
-    @weave.op()
+    @weave.op(
+            enable_code_capture=False
+    )
     def generate_plain(
         self,
         input_messages: Iterable[ChatCompletionMessageParam],

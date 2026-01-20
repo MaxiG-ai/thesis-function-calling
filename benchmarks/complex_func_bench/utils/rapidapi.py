@@ -17,7 +17,7 @@ class RapidAPICall():
         self.path_params = tool_info['path_params']
         self.tool = tool
         
-    @weave.op()
+    @weave.op(enable_code_capture=False)
     @retry(max_attempts=3)
     def _call(self, func_call):
         self.url = self.name_to_url[func_call["name"]]
