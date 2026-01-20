@@ -25,6 +25,7 @@ class MemoryDef(BaseModel):
     # New fields for MemoryBank
     embedding_model: Optional[str] = "BAAI/bge-small-en-v1.5"
     top_k: Optional[int] = 3
+    raw_data_char_limit: Optional[int] = 2000
 
     # Fields for Progressive Summarization
     summary_prompt: Optional[str] = None
