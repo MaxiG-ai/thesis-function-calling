@@ -56,9 +56,10 @@ class LLMOrchestrator:
         self.active_memory_key: str = self.cfg.enabled_memory_methods[0]
         
         # Configure LiteLLM
-        os.environ["LITELLM_LOG"] = "ERROR"
-        litellm.suppress_debug_info = True
-        litellm.success_callback = ["weave"]
+        if self.cfg.weave_deep_logging:
+            os.environ["LITELLM_LOG"] = "DEBUG"
+            litellm.suppress_debug_info = False
+            litellm.success_callback = ["weave", "console"]
         
         logger.info(f"🚀 Orchestrator initialized for: {self.cfg.experiment_name}")
 
@@ -136,7 +137,7 @@ class LLMOrchestrator:
         
         return model_kwargs
     
-    @weave.op()
+    @weave.op(enable_code_capture=False)
     def generate_with_memory_applied(
         self,
         input_messages: List[Dict[str, str]],
@@ -218,7 +219,9 @@ class LLMOrchestrator:
             logger.error(f"💥 Generation Failed: {str(e)}")
             raise e
         
-    @weave.op()
+    @weave.op(
+            enable_code_capture=False
+    )
     def generate_plain(
         self,
         input_messages: Iterable[ChatCompletionMessageParam],
