@@ -172,9 +172,9 @@ class MemoryProcessor:
             f"🧠 Applying Memory Bank Strategy. Current query with {token_count} tokens"
         )
 
-        # Lazy initialization of memory bank state (loads embedding model)
+        # Lazy initialization of memory bank state (model loaded in apply_memory_bank_strategy)
         if self._memory_bank_state is None:
-            self._memory_bank_state = MemoryBankState(settings)
+            self._memory_bank_state = MemoryBankState()
 
         processed, new_count = apply_memory_bank_strategy(
             messages, llm_client, settings, self._memory_bank_state
