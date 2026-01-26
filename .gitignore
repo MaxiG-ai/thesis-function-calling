@@ -194,6 +194,9 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 
+# VS Code
+.vscode
+
 # Marimo
 marimo/_static/
 marimo/_lsp/
@@ -209,3 +212,4 @@ wandb/
 # config file
 config.toml
 ./config.toml
+model_config.toml
