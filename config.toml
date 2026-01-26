@@ -8,11 +8,11 @@ logging_level = "INFO"
 weave_deep_logging = true
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
 # Good samples: ["Car-Rental-131", "Cross-131"]
-selected_test_cases = ["Car-Rental-131", "Cross-131", "Flights-91"]
-# benchmark_sample_size = 10
+# selected_test_cases = ["Car-Rental-131", "Cross-131", "Flights-91"]
+benchmark_sample_size = 10
 
 # setting for max. context before compression
-compact_threshold = 8000
+compact_threshold = 6000
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [
@@ -27,8 +27,9 @@ enabled_models = [
 # 2. Define Memory Architectures to test
 enabled_memory_methods = [
     # "no_strategy",
-    "truncation",
-    "progressive_summarization",
+    # "truncation",
+    # "progressive_summarization",
+    "memory_bank",
     # "ace",
 ]
 
@@ -53,3 +54,10 @@ curator_model = "gpt-4-1-mini"       # Model for updating playbook
 max_reflection_rounds = 1            # Reflection iterations per step
 curator_frequency = 1                # Curate every N steps
 playbook_token_budget = 4096
+
+[memory_strategies.memory_bank]
+type = "memory_bank"
+observer_model = "gpt-4-1-mini"             # Model for summarizing tool outputs
+embedding_model = "BAAI/bge-small-en-v1.5"  # Model for vector embeddings
+top_k = 3                                   # Number of past interactions to retrieve
+max_chars_per_record = 2000                 # Max characters per stored record
