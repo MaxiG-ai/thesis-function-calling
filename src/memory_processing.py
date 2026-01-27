@@ -33,14 +33,14 @@ class MemoryProcessor:
     def apply_strategy(
         self,
         messages: List[Dict],
-        strategy_key: str,
+        memory_key: str,
         input_token_count: int,
         llm_client: Optional[Any] = None,
     ) -> Tuple[List[Dict], Optional[int]]:
         """
         Apply the configured memory strategy to the incoming messages.
         """
-        settings = self.config.memory_strategies[strategy_key]
+        settings = self.config.memory_strategies[memory_key]
         logger.debug(f"🧠 Applying Memory Strategy: {settings.type}")
 
         # Loop detection to prevent infinite context growth

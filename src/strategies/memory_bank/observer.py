@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
+from src.utils.llm_helpers import extract_content
 from src.utils.logger import get_logger
 
 logger = get_logger("Observer")
@@ -77,13 +78,7 @@ Summarize what this tool execution achieved."""
     ]
 
     response = llm_client.generate_plain(input_messages=messages, model=model)
-
-    # Extract content from response
-    message = response.choices[0].message
-    if isinstance(message, dict):
-        summary = (message.get("content") or "").strip()
-    else:
-        summary = (getattr(message, "content", "") or "").strip()
+    summary = extract_content(response)
 
     if not summary:
         logger.warning(f"Observer returned empty summary for tool {tool_name}")
