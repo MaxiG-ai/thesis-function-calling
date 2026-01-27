@@ -7,13 +7,14 @@ from .logger import get_logger
 
 logger = get_logger("Config")
 
+
 class ModelDef(BaseModel):
     model_config = {"extra": "allow"}
-    
+
     litellm_name: str
     context_window: int
     provider: str
-    api_base: Optional[str] = None 
+    api_base: Optional[str] = None
     api_key: Optional[str] = None
 
 
@@ -22,14 +23,16 @@ class MemoryDef(BaseModel):
     target_summary_length: Optional[int] = None
     auto_compact_threshold: Optional[int] = None
 
-    # New fields for MemoryBank
+    # Memory Bank strategy fields
     embedding_model: Optional[str] = "BAAI/bge-small-en-v1.5"
     top_k: Optional[int] = 3
+    observer_model: Optional[str] = "gpt-4-1-mini"
+    max_chars_per_record: Optional[int] = 2000
 
     # Fields for Progressive Summarization
     summary_prompt: Optional[str] = None
     summarizer_model: Optional[str] = None
-    
+
     # ACE strategy fields
     generator_model: Optional[str] = "gpt-4-1-mini"
     reflector_model: Optional[str] = "gpt-4-1-mini"
@@ -46,7 +49,7 @@ class ExperimentConfig(BaseModel):
     weave_deep_logging: bool = Field(default=False, alias="weave_logging")
     input_file: str
     proc_num: int = 1
-    benchmark_sample_size: Optional[int]=None
+    benchmark_sample_size: Optional[int] = None
     selected_test_cases: Optional[List[str]] = None
     enabled_models: List[str]
     enabled_memory_methods: List[str]
@@ -81,11 +84,12 @@ def load_configs(
 
     try:
         config = ExperimentConfig(**exp_data)
-        
+
         # Set global logging level from config
         from .logger import set_global_log_level
+
         set_global_log_level(config.logging_level)
-        
+
         return config
     except ValidationError as e:
         logger.error("❌ Configuration Error")
