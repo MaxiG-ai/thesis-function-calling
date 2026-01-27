@@ -7,8 +7,6 @@ both dict-style and object-style message formats from LLM responses.
 
 from unittest.mock import MagicMock
 
-import pytest
-
 from src.utils.llm_helpers import extract_content
 
 

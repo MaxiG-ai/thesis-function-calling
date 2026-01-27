@@ -7,7 +7,7 @@ retrieval system for agent interaction history.
 
 import pytest
 import numpy as np
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import Mock
 
 from src.strategies.memory_bank.models import InteractionRecord
 from src.strategies.memory_bank.fact_store import FactStore
