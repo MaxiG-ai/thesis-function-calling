@@ -6,7 +6,7 @@ This project intercepts conversation history from benchmarks, applies memory com
 
 ## Architecture
 
-```
+```markdown
 ┌─────────────────┐     ┌──────────────────────┐     ┌─────────────────┐
 │    Benchmark    │────►│   Memory Processor   │────►│  SAP AI Proxy   │
 │  (CFB Dataset)  │     │  (Context Transform) │     │   (LiteLLM)     │
@@ -14,6 +14,7 @@ This project intercepts conversation history from benchmarks, applies memory com
 ```
 
 **Components:**
+
 - **LLMOrchestrator** (`src/llm_orchestrator.py`) - Central LLM management with memory integration
 - **MemoryProcessor** (`src/memory_processing.py`) - Dispatches to active memory strategy
 - **Strategies** (`src/strategies/`) - Individual compression implementations
@@ -72,13 +73,14 @@ uv run pytest
 ## Benchmark
 
 Currently integrated: **ComplexFuncBench** (CFB)
+
 - Focus: Complex and repeated function calls
 - Data: `benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl`
 - Source: [GitHub](https://github.com/zai-org/ComplexFuncBench)
 
 ## Project Structure
 
-```
+```bash
 ├── cfb_run_eval.py              # Main evaluation entry point
 ├── config.toml                  # Experiment configuration
 ├── model_config.toml            # Model registry
