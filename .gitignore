@@ -213,3 +213,6 @@ wandb/
 config.toml
 ./config.toml
 model_config.toml
+mcp_servers_info.json
+mcp_servers_info.md
+cache/tool_cache.db
