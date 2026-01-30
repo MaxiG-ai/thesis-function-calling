@@ -216,3 +216,10 @@ model_config.toml
 mcp_servers_info.json
 mcp_servers_info.md
 cache/tool_cache.db
+
+tool_cache.*
+
+# benchmarks/mcpbench/
+benchmarks/mcpbench/mcp_servers
+benchmarks/mcpbench/mcp_modules
+
