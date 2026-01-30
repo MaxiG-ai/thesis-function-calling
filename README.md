@@ -1,99 +1,99 @@
 # thesis-function-calling
 
-The purpose of this repository is to evaluate the impact of different **Memory architectures** on Function Calling performance.
+Evaluating the impact of different **Memory Architectures** on LLM Function Calling performance.
 
-This project operates as a **Middleware Proxy** between standard benchmarks and LLM providers. It intercepts the conversation history sent by the benchmark client, transforms it using specific memory strategies (e.g., summarization, RAG selection), and forwards the optimized context to the model.
+This project intercepts conversation history from benchmarks, applies memory compression strategies, and forwards optimized context to LLM providers via SAP AI Core Proxy.
 
-## Components
+## Architecture
 
-The repository consists of three core components: Benchmarks (Clients), Memory Middleware (Proxy Logic), and Models (Providers).
-
-### Memory Techniques (Middleware)
-
-The core thesis work involves implementing `Context Transformation` functions. These functions take the full conversation history `List[Message]` provided by the benchmark and return an optimized `List[Message]`.
-
-#### Baselines
-
-* **Full Context:** No modification (Control group).
-* **Truncation:** Mechanically cutting context after $N$ tokens (Baseline for failure).
-
-#### Implemented Techniques
-
-* **Tool Output Summarization (Semantic Compression):**
-  * Interprets massive JSON `tool_outputs`.
-  * Replaces raw data with concise, semantic natural language summaries before forwarding to the LLM.
-  * *Hypothesis:* Reduces token usage and distraction without losing semantic resolution.
-* **RAG-based Turn Selection:**
-  * Uses the current `user_query` to embed and retrieve only the most relevant past `(ToolCall, ToolOutput)` pairs from the history.
-  * *Constraint:* Maintains atomic consistency (never separates a Call from its Result) to preserve API validity.
-* **Progressive Summarization:**
-  * Periodically condenses older conversation turns into a running "state summary" injected into the System Prompt.
-
-### Models & Providers
-
-LLM logic is abstracted using [Apantli](https://github.com/pborenstein/apantli).
-The Middleware acts as a standard OpenAI-compatible API. The Benchmarks point to this proxy, unaware that their requests are being intercepted and optimized.
-
-To add/edit models the following files need to be changed:
-
-* `/dev/apantli/config.yaml` or wherever the apantli server is installed
-* `model_config.toml` important to send to AICore Proxy
-* `config.toml` use model in enabled model list
-
-### Benchmarks (Clients)
-
-The benchmarks manage the execution loop and state. They send the accumulating history to the proxy at every turn.
-
-#### ComplexFuncBench (z.ai)
-
-* **Focus:** Complex and repeated function calls
-* **Source:** [GitHub](https://github.com/zai-org/ComplexFuncBench)
-
-#### NestFul (IBM)
-
-* **Focus:** Nested function calling and multi-step reasoning.
-* **Source:** [GitHub](https://github.com/IBM/NESTFUL)
-
-#### MCP-Bench (Accenture)
-
-* **Focus:** Complex tasks using Model Context Protocol (MCP) servers and cross-tool coordination.
-* **Source:** [GitHub](https://github.com/Accenture/mcp-bench)
-
-## Implementation Details
-
-### Config
-
-A central `config.toml` defines the active Memory Strategy and the target Model Provider.
-
-#### Running Specific Test Cases
-
-You can run the benchmark on specific test cases by setting the `selected_test_cases` option in `config.toml`:
-
-```toml
-# Run only specific test cases by their IDs
-selected_test_cases = ["Car-Rental-0", "Car-Rental-1", "Travel-5"]
+```markdown
+┌─────────────────┐     ┌──────────────────────┐     ┌─────────────────┐
+│    Benchmark    │────►│   Memory Processor   │────►│  SAP AI Proxy   │
+│  (CFB Dataset)  │     │  (Context Transform) │     │   (LiteLLM)     │
+└─────────────────┘     └──────────────────────┘     └─────────────────┘
 ```
 
-When `selected_test_cases` is set:
-- Only the specified test cases will be executed
-- The `benchmark_sample_size` option is ignored
-- This provides minimal overhead as only the selected cases are loaded and processed
+**Components:**
 
-To run all test cases or use random sampling, comment out or remove the `selected_test_cases` line.
+- **LLMOrchestrator** (`src/llm_orchestrator.py`) - Central LLM management with memory integration
+- **MemoryProcessor** (`src/memory_processing.py`) - Dispatches to active memory strategy
+- **Strategies** (`src/strategies/`) - Individual compression implementations
 
-### Middleware Logic
+## Memory Strategies
 
-The proxy implementation handles the **Stateless Transformation**:
+### Baselines
 
-1. **Intercept:** Receive `POST /chat/completions` with `messages=[]`.
-2. **Identify:** Isolate the `System`, `User`, and `History` (Assistant/Tool pairs).
-3. **Transform:** Apply the active Memory Technique (e.g., compress `ToolOutput` messages).
-4. **Forward:** Send the optimized payload to the real LLM via LiteLLM.
-5. **Return:** Stream the response back to the Benchmark.
+| Strategy | Type Key | Description |
+|----------|----------|-------------|
+| **Full Context** | `no_strategy` | Passthrough, no modification (control group) |
+| **Truncation** | `truncation` | Keeps user query + last tool interaction, discards middle history |
 
-> **Note:** All transformations strictly preserve `tool_call_id` integrity to ensure the Benchmark's execution loop remains valid.
+### Implemented Techniques
 
-## Getting Started
+| Strategy | Type Key | Description |
+|----------|----------|-------------|
+| **Progressive Summarization** | `progressive_summarization` | LLM periodically condenses history into a running summary |
+| **Memory Bank** | `memory_bank` | Dual-store (vector + key-value) retrieval over past interactions. See [docs/memorybank.md](docs/memorybank.md) |
+| **ACE** | `ace` | Agentic Context Engineering with Generator → Reflector → Curator learning cycle |
 
-1. Run local SAP AI Core Proxy `cd dev/sap` and run `sap`
-2. Run cost orchestration `cd dev/apantli`, activate env and run `apantli --port 4000`.
+## Configuration
+
+### config.toml
+
+```toml
+# Experiment settings
+experiment_name = "my_experiment"
+benchmark_sample_size = 3                    # Number of test cases (null for full)
+compact_threshold = 6000                     # Tokens before compression activates
+
+# Select models and strategies to test (Cartesian product)
+enabled_models = ["gpt-4-1"]
+enabled_memory_methods = ["memory_bank"]
+
+# Optional: run specific test cases only
+selected_test_cases = ["Car-Rental-131", "Cross-131"]
+```
+
+### model_config.toml
+
+Model registry with LiteLLM names. All models route through SAP AI Core Proxy at `localhost`.
+
+## Running
+
+```bash
+# Run evaluation
+uv run python cfb_run_eval.py
+
+# Run tests
+uv run pytest
+```
+
+**Output:** Results saved to `results/<experiment_name>/<timestamp>/<memory>/<model>/`
+
+## Benchmark
+
+Currently integrated: **ComplexFuncBench** (CFB)
+
+- Focus: Complex and repeated function calls
+- Data: `benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl`
+- Source: [GitHub](https://github.com/zai-org/ComplexFuncBench)
+
+## Project Structure
+
+```bash
+├── cfb_run_eval.py              # Main evaluation entry point
+├── config.toml                  # Experiment configuration
+├── model_config.toml            # Model registry
+├── src/
+│   ├── llm_orchestrator.py      # Central LLM + memory management
+│   ├── memory_processing.py     # Strategy dispatch
+│   └── strategies/              # Memory strategy implementations
+│       ├── truncation/
+│       ├── progressive_summarization/
+│       ├── memory_bank/
+│       └── ace/
+├── benchmarks/
+│   └── complex_func_bench/      # CFB benchmark integration
+├── tests/                       # Test suite
+└── docs/                        # Detailed documentation
+```
