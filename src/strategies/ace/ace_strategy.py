@@ -86,6 +86,7 @@ def apply_ace_strategy(
     
     # Extract current action/observation from messages
     # The last user message typically contains the observation
+    # TODO: This is not true, for ComplexFuncBench there is exactly one user message at the start
     last_user_msg = ""
     for msg in reversed(messages):
         if msg.get("role") == "user":

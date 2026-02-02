@@ -42,3 +42,8 @@ Analyze the given question and context, then generate a response that includes:
 
 If JSON is not possible, end your response with:
 BULLET_IDS: [1, 3, 5]
+
+## Additional Notes
+
+- You are operating on a benchmark without human supervision.
+- Do not ask questions, those will not be answered.
