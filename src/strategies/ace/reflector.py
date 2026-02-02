@@ -18,29 +18,20 @@ class Reflector:
     Reflector agent that evaluates performance and tags bullets.
     """
 
-    def __init__(self, prompt_path_gt: str|None = None, prompt_path_no_gt: str|None = None):
+    def __init__(self, prompt_path: str | None = None):
         """
-        Initialize reflector with prompt templates.
+        Initialize reflector with prompt template.
 
         Args:
-            prompt_path_gt: Path to ground truth prompt
-            prompt_path_no_gt: Path to no ground truth prompt
+            prompt_path: Path to reflector prompt file
         """
-        if prompt_path_gt is None:
-            prompt_path_gt = os.path.join(
+        if prompt_path is None:
+            prompt_path = os.path.join(
                 os.path.dirname(__file__), "prompts", "reflector.prompt.md"
             )
 
-        if prompt_path_no_gt is None:
-            prompt_path_no_gt = os.path.join(
-                os.path.dirname(__file__), "prompts", "reflector_no_gt.prompt.md"
-            )
-
-        with open(prompt_path_gt, "r") as f:
-            self.prompt_template_gt = f.read()
-
-        with open(prompt_path_no_gt, "r") as f:
-            self.prompt_template_no_gt = f.read()
+        with open(prompt_path, "r") as f:
+            self.prompt_template = f.read()
 
     def reflect(
         self,
@@ -51,8 +42,6 @@ class Reflector:
         bullets_used: str,
         llm_client,
         model: str = "gpt-4-1-mini",
-        use_ground_truth: bool = False,
-        ground_truth: str = "",
     ) -> Tuple[str, List[Dict]]:
         """
         Reflect on performance and tag bullets.
@@ -65,31 +54,18 @@ class Reflector:
             bullets_used: Formatted bullets that were used
             llm_client: LLM client
             model: Model to use
-            use_ground_truth: Whether ground truth is available
-            ground_truth: Ground truth answer (if available)
 
         Returns:
             (reflection_text, bullet_tags)
             bullet_tags: List of dicts with bullet_id and tag
         """
-        # Choose prompt template
-        if use_ground_truth:
-            prompt = self.prompt_template_gt.format(
-                question=question,
-                reasoning_trace=reasoning_trace,
-                predicted_answer=predicted_answer,
-                environment_feedback=environment_feedback or "No feedback",
-                ground_truth=ground_truth,
-                bullets_used=bullets_used or "No bullets used",
-            )
-        else:
-            prompt = self.prompt_template_no_gt.format(
-                question=question,
-                reasoning_trace=reasoning_trace,
-                predicted_answer=predicted_answer,
-                environment_feedback=environment_feedback or "No feedback",
-                bullets_used=bullets_used or "No bullets used",
-            )
+        prompt = self.prompt_template.format(
+            question=question,
+            reasoning_trace=reasoning_trace,
+            predicted_answer=predicted_answer,
+            environment_feedback=environment_feedback or "No feedback",
+            bullets_used=bullets_used or "No bullets used",
+        )
 
         logger.debug(
             f"Reflector input - bullets_used: {bullets_used[:200] if bullets_used else '<empty>'}..."
