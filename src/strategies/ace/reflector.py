@@ -18,7 +18,7 @@ class Reflector:
     Reflector agent that evaluates performance and tags bullets.
     """
 
-    def __init__(self, prompt_path_gt: str = None, prompt_path_no_gt: str = None):
+    def __init__(self, prompt_path_gt: str|None = None, prompt_path_no_gt: str|None = None):
         """
         Initialize reflector with prompt templates.
 
@@ -128,13 +128,17 @@ class Reflector:
         if json_data and "bullet_tags" in json_data:
             tags = json_data["bullet_tags"]
             if isinstance(tags, list):
-                return [
-                    {
-                        "bullet_id": int(tag.get("bullet_id")),
-                        "tag": tag.get("tag", "neutral"),
-                    }
-                    for tag in tags
-                    if isinstance(tag, dict) and "bullet_id" in tag
-                ]
+                try:
+                    return [
+                        {
+                            "bullet_id": int(tag["bullet_id"]),
+                            "tag": tag["tag"],
+                        }
+                        for tag in tags
+                    ]
+                except (KeyError, ValueError, TypeError) as e:
+                    logger.warning(
+                        f"⚠ Error parsing bullet_tags from JSON: {e}. Falling back to text extraction."
+                    )
 
         return []
