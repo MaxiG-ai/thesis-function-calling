@@ -19,7 +19,7 @@ class Generator:
     Generator agent that uses playbook to guide decision-making.
     """
 
-    def __init__(self, prompt_path: str = None):
+    def __init__(self, prompt_path: str|None = None):
         """
         Initialize generator with prompt template.
 

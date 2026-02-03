@@ -21,31 +21,20 @@ class Curator:
     Curator agent that maintains and improves the playbook.
     """
 
-    def __init__(
-        self, prompt_path_gt: str | None = None, prompt_path_no_gt: str | None = None
-    ):
+    def __init__(self, prompt_path: str | None = None):
         """
-        Initialize curator with prompt templates.
+        Initialize curator with prompt template.
 
         Args:
-            prompt_path_gt: Path to ground truth prompt
-            prompt_path_no_gt: Path to no ground truth prompt
+            prompt_path: Path to curator prompt file
         """
-        if prompt_path_gt is None:
-            prompt_path_gt = os.path.join(
+        if prompt_path is None:
+            prompt_path = os.path.join(
                 os.path.dirname(__file__), "prompts", "curator.prompt.md"
             )
 
-        if prompt_path_no_gt is None:
-            prompt_path_no_gt = os.path.join(
-                os.path.dirname(__file__), "prompts", "curator_no_gt.prompt.md"
-            )
-
-        with open(prompt_path_gt, "r") as f:
-            self.prompt_template_gt = f.read()
-
-        with open(prompt_path_no_gt, "r") as f:
-            self.prompt_template_no_gt = f.read()
+        with open(prompt_path, "r") as f:
+            self.prompt_template = f.read()
 
     def curate(
         self,
@@ -58,7 +47,6 @@ class Curator:
         llm_client,
         model: str = "gpt-4-1-mini",
         next_global_id: int = 1,
-        use_ground_truth: bool = False,
     ) -> Tuple[str, int, List[Dict]]:
         """
         Curate the playbook based on recent performance.
@@ -73,7 +61,6 @@ class Curator:
             llm_client: LLM client
             model: Model to use
             next_global_id: Next available bullet ID
-            use_ground_truth: Whether ground truth is available
 
         Returns:
             (updated_playbook, next_global_id, operations)
@@ -86,25 +73,14 @@ Problematic: {playbook_stats.get("problematic", 0)}
 Unused: {playbook_stats.get("unused", 0)}
 """
 
-        # Choose prompt template
-        if use_ground_truth:
-            prompt = self.prompt_template_gt.format(
-                current_playbook=current_playbook,
-                playbook_stats=stats_text,
-                recent_reflection=recent_reflection or "No recent reflection",
-                question_context=question_context or "No context",
-                step=step,
-                token_budget=token_budget,
-            )
-        else:
-            prompt = self.prompt_template_no_gt.format(
-                current_playbook=current_playbook,
-                playbook_stats=stats_text,
-                recent_reflection=recent_reflection or "No recent reflection",
-                question_context=question_context or "No context",
-                step=step,
-                token_budget=token_budget,
-            )
+        prompt = self.prompt_template.format(
+            current_playbook=current_playbook,
+            playbook_stats=stats_text,
+            recent_reflection=recent_reflection or "No recent reflection",
+            question_context=question_context or "No context",
+            step=step,
+            token_budget=token_budget,
+        )
 
         logger.debug(
             f"Curator input - current_playbook (first 200 chars): {current_playbook[:200]}..."
