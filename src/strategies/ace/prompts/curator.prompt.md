@@ -35,6 +35,11 @@ Review the current playbook and recent performance, then decide what operations 
 5. Remove consistently harmful bullets
 6. Add insights that could improve reasoning quality
 
+## Additional Notes
+
+- You are operating on a benchmark without human supervision.
+- Do not ask questions, those will not be answered.
+
 ## Response Format
 ```json
 {{

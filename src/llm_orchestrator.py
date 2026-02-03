@@ -219,9 +219,7 @@ class LLMOrchestrator:
             logger.error(f"💥 Generation Failed: {str(e)}")
             raise e
         
-    @weave.op(
-            enable_code_capture=False
-    )
+    @weave.op()
     def generate_plain(
         self,
         input_messages: Iterable[ChatCompletionMessageParam],
