@@ -6,9 +6,9 @@ Analyzes performance and tags playbook bullets.
 import os
 from typing import Dict, List, Tuple
 
-from src.strategies.ace.playbook_utils import extract_json_from_text
-from src.utils.llm_helpers import extract_content
-from src.utils.logger import get_logger
+from memorch.strategies.ace.playbook_utils import extract_json_from_text
+from memorch.utils.llm_helpers import extract_content
+from memorch.utils.logger import get_logger
 
 logger = get_logger("ACE.Reflector")
 

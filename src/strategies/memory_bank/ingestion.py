@@ -8,11 +8,11 @@ via Observer LLM, and stores embeddings in InsightStore.
 import json
 from typing import Any, Dict, List, Tuple
 
-from src.strategies.memory_bank.models import InteractionRecord
-from src.strategies.memory_bank.fact_store import FactStore
-from src.strategies.memory_bank.insight_store import InsightStore
-from src.strategies.memory_bank.observer import observe_tool_output
-from src.utils.logger import get_logger
+from memorch.strategies.memory_bank.models import InteractionRecord
+from memorch.strategies.memory_bank.fact_store import FactStore
+from memorch.strategies.memory_bank.insight_store import InsightStore
+from memorch.strategies.memory_bank.observer import observe_tool_output
+from memorch.utils.logger import get_logger
 
 logger = get_logger("Ingestion")
 

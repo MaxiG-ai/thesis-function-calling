@@ -4,8 +4,8 @@ import copy
 import weave
 from benchmarks.complex_func_bench.prompts.prompts import SimpleTemplatePrompt
 from benchmarks.complex_func_bench.utils.utils import retry
-from src.llm_orchestrator import LLMOrchestrator
-from src.utils.logger import get_logger
+from memorch.llm_orchestrator import LLMOrchestrator
+from memorch.utils.logger import get_logger
 
 logger = get_logger("CFB.SAPGPT")
 

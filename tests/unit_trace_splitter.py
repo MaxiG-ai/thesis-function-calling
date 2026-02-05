@@ -1,4 +1,4 @@
-from src.utils.split_trace import (
+from memorch.utils.split_trace import (
     get_user_message,
     get_last_tool_interaction,
     process_and_split_trace_user,

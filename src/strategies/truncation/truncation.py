@@ -1,7 +1,7 @@
 from typing import List, Dict
-from src.utils.logger import get_logger
-from src.utils.split_trace import process_and_split_trace_user_tool
-from src.utils.token_count import get_token_count
+from memorch.utils.logger import get_logger
+from memorch.utils.split_trace import process_and_split_trace_user_tool
+from memorch.utils.token_count import get_token_count
 
 logger = get_logger("TruncationStrategy")
 

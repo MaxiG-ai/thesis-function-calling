@@ -12,19 +12,19 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from FlagEmbedding import FlagModel
 
-from src.strategies.memory_bank.fact_store import FactStore
-from src.strategies.memory_bank.insight_store import InsightStore
-from src.strategies.memory_bank.ingestion import (
+from memorch.strategies.memory_bank.fact_store import FactStore
+from memorch.strategies.memory_bank.insight_store import InsightStore
+from memorch.strategies.memory_bank.ingestion import (
     extract_tool_outputs,
     ingest_tool_outputs,
 )
-from src.strategies.memory_bank.retrieval import (
+from memorch.strategies.memory_bank.retrieval import (
     retrieve_and_format,
     format_retrieved_memory,
 )
-from src.utils.logger import get_logger
-from src.utils.token_count import get_token_count
-from src.utils.split_trace import get_user_message, get_last_tool_interaction
+from memorch.utils.logger import get_logger
+from memorch.utils.token_count import get_token_count
+from memorch.utils.split_trace import get_user_message, get_last_tool_interaction
 
 logger = get_logger("MemoryBankStrategy")
 

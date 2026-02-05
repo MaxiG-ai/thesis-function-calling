@@ -8,10 +8,10 @@ Available strategies:
 - Truncation: Simple message truncation
 """
 
-from src.strategies.ace import ACEState, apply_ace_strategy
-from src.strategies.memory_bank import MemoryBankState, apply_memory_bank_strategy
-from src.strategies.progressive_summarization.prog_sum import summarize_conv_history
-from src.strategies.truncation.truncation import truncate_messages
+from memorch.strategies.ace import ACEState, apply_ace_strategy
+from memorch.strategies.memory_bank import MemoryBankState, apply_memory_bank_strategy
+from memorch.strategies.progressive_summarization.prog_sum import summarize_conv_history
+from memorch.strategies.truncation.truncation import truncate_messages
 
 __all__ = [
     "ACEState",

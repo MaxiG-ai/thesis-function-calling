@@ -9,10 +9,10 @@ import pytest
 import numpy as np
 from unittest.mock import Mock
 
-from src.strategies.memory_bank.models import InteractionRecord
-from src.strategies.memory_bank.fact_store import FactStore
-from src.strategies.memory_bank.insight_store import InsightStore
-from src.strategies.memory_bank.retrieval import (
+from memorch.strategies.memory_bank.models import InteractionRecord
+from memorch.strategies.memory_bank.fact_store import FactStore
+from memorch.strategies.memory_bank.insight_store import InsightStore
+from memorch.strategies.memory_bank.retrieval import (
     retrieve_and_format,
     format_retrieved_memory,
 )
@@ -469,7 +469,7 @@ class TestObserver:
         observe_tool_output() should call the LLM with proper prompt
         and return the summary from the response.
         """
-        from src.strategies.memory_bank.observer import observe_tool_output
+        from memorch.strategies.memory_bank.observer import observe_tool_output
 
         mock_llm = Mock()
         mock_response = Mock()
@@ -493,7 +493,7 @@ class TestObserver:
         observe_tool_output() should truncate raw_output >10k chars.
         Prevents LLM context overflow during observation.
         """
-        from src.strategies.memory_bank.observer import (
+        from memorch.strategies.memory_bank.observer import (
             observe_tool_output,
             MAX_OUTPUT_CHARS,
         )
@@ -538,7 +538,7 @@ class TestIngestion:
         ingest_tool_outputs() should store raw data in FactStore
         and summaries in InsightStore for each tool output.
         """
-        from src.strategies.memory_bank.ingestion import ingest_tool_outputs
+        from memorch.strategies.memory_bank.ingestion import ingest_tool_outputs
 
         mock_model = Mock()
         mock_model.encode = lambda texts: np.array([[1.0, 0.0] for _ in texts])
@@ -576,7 +576,7 @@ class TestIngestion:
         ingest_tool_outputs() should create separate records for each
         parallel tool call, as per spec requirement.
         """
-        from src.strategies.memory_bank.ingestion import ingest_tool_outputs
+        from memorch.strategies.memory_bank.ingestion import ingest_tool_outputs
 
         mock_model = Mock()
         mock_model.encode = lambda texts: np.array([[1.0, 0.0] for _ in texts])
@@ -645,7 +645,7 @@ class TestMemoryBankStrategy:
         On first step with no history, strategy should pass through
         messages unchanged. Per spec requirement.
         """
-        from src.strategies.memory_bank.memory_bank_strategy import (
+        from memorch.strategies.memory_bank.memory_bank_strategy import (
             MemoryBankState,
             apply_memory_bank_strategy,
         )
@@ -675,7 +675,7 @@ class TestMemoryBankStrategy:
         After first step, strategy should construct context as:
         user_query + retrieved_memory + last_tool_interaction
         """
-        from src.strategies.memory_bank.memory_bank_strategy import (
+        from memorch.strategies.memory_bank.memory_bank_strategy import (
             MemoryBankState,
             apply_memory_bank_strategy,
         )
@@ -728,7 +728,7 @@ class TestMemoryBankStrategy:
         mock_model = Mock()
         mock_model.encode = lambda texts: np.array([[1.0, 0.0] for _ in texts])
 
-        from src.strategies.memory_bank.memory_bank_strategy import MemoryBankState
+        from memorch.strategies.memory_bank.memory_bank_strategy import MemoryBankState
 
         state = MemoryBankState(_embedding_model=mock_model)
         state.insight_store = InsightStore(embedding_model=mock_model)
@@ -762,7 +762,7 @@ class TestMessageParsing:
         extract_tool_outputs() should parse assistant tool_calls and
         subsequent tool responses into (name, input, output) tuples.
         """
-        from src.strategies.memory_bank.ingestion import extract_tool_outputs
+        from memorch.strategies.memory_bank.ingestion import extract_tool_outputs
 
         messages = [
             {"role": "user", "content": "Find hotels"},
@@ -798,7 +798,7 @@ class TestMessageParsing:
         extract_tool_outputs() should handle multiple parallel tool calls
         in a single assistant message.
         """
-        from src.strategies.memory_bank.ingestion import extract_tool_outputs
+        from memorch.strategies.memory_bank.ingestion import extract_tool_outputs
 
         messages = [
             {"role": "user", "content": "Task"},
@@ -825,7 +825,7 @@ class TestMessageParsing:
         extract_tool_outputs() should return empty list if no tool
         interactions in messages.
         """
-        from src.strategies.memory_bank.ingestion import extract_tool_outputs
+        from memorch.strategies.memory_bank.ingestion import extract_tool_outputs
 
         messages = [
             {"role": "user", "content": "Hello"},

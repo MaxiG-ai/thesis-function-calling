@@ -7,7 +7,7 @@ and the last tool interaction, keeping only the essential context for the LLM.
 
 import pytest
 
-from src.strategies.truncation.truncation import truncate_messages
+from memorch.strategies.truncation.truncation import truncate_messages
 
 
 def _make_message(role: str, content: str, **extras) -> dict:

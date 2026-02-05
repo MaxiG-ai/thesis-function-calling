@@ -6,12 +6,12 @@ Maintains and improves the playbook.
 import os
 from typing import Dict, List, Tuple
 
-from src.strategies.ace.playbook_utils import (
+from memorch.strategies.ace.playbook_utils import (
     extract_json_from_text,
     apply_curator_operations,
 )
-from src.utils.llm_helpers import extract_content
-from src.utils.logger import get_logger
+from memorch.utils.llm_helpers import extract_content
+from memorch.utils.logger import get_logger
 
 logger = get_logger("ACE.Curator")
 

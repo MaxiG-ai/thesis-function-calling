@@ -6,17 +6,17 @@ Implements the apply_ace_strategy function and ACEState dataclass.
 from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
 
-from src.strategies.ace.playbook_utils import (
+from memorch.strategies.ace.playbook_utils import (
     EMPTY_PLAYBOOK_TEMPLATE,
     update_bullet_counts,
     get_playbook_stats,
     extract_playbook_bullets,
 )
-from src.strategies.ace.generator import Generator
-from src.strategies.ace.reflector import Reflector
-from src.strategies.ace.curator import Curator
-from src.utils.logger import get_logger
-from src.utils.token_count import get_token_count
+from memorch.strategies.ace.generator import Generator
+from memorch.strategies.ace.reflector import Reflector
+from memorch.strategies.ace.curator import Curator
+from memorch.utils.logger import get_logger
+from memorch.utils.token_count import get_token_count
 
 logger = get_logger("ACEStrategy")
 

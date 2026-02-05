@@ -1,4 +1,4 @@
-from src.utils.config import MemoryDef
+from memorch.utils.config import MemoryDef
 
 
 def test_memory_def_accepts_auto_compact_threshold():

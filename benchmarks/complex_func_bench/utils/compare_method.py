@@ -11,7 +11,7 @@ from benchmarks.complex_func_bench.utils.rapidapi import RapidAPICall
 from benchmarks.complex_func_bench.models.sap_gpt import SAPGPTModel
 from benchmarks.complex_func_bench.prompts.compare import system_prompt, user_prompt
 
-from src.llm_orchestrator import LLMOrchestrator
+from memorch.llm_orchestrator import LLMOrchestrator
 
 os.environ['TRANSFORMERS_NO_ADVISORY_WARNINGS'] = 'true'
 

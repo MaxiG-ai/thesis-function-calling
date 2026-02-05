@@ -8,7 +8,7 @@ This is the "reasoning" component of the dual-store architecture.
 from typing import Any, Dict, List, Optional
 import numpy as np
 
-from src.utils.logger import get_logger
+from memorch.utils.logger import get_logger
 
 logger = get_logger("InsightStore")
 

@@ -12,7 +12,7 @@ basic functionality similar to how the LLMOrchestrator uses the models.
 
 import pytest
 import litellm
-from src.utils.config import load_configs
+from memorch.utils.config import load_configs
 
 
 @pytest.fixture(scope="module")

@@ -9,8 +9,8 @@ import json
 from pathlib import Path
 from typing import Any, Dict
 
-from src.utils.llm_helpers import extract_content
-from src.utils.logger import get_logger
+from memorch.utils.llm_helpers import extract_content
+from memorch.utils.logger import get_logger
 
 logger = get_logger("Observer")
 

@@ -3,7 +3,7 @@ import weave
 from benchmarks.complex_func_bench.utils.utils import retry, decode_json
 from benchmarks.complex_func_bench.models.sap_gpt import SAPGPTModel
 
-from src.llm_orchestrator import LLMOrchestrator
+from memorch.llm_orchestrator import LLMOrchestrator
 
 
 from benchmarks.complex_func_bench.prompts.response import (

@@ -8,9 +8,9 @@ raw data from FactStore, and formats for context window injection.
 import json
 from typing import Any, Dict, List
 
-from src.strategies.memory_bank.fact_store import FactStore
-from src.strategies.memory_bank.insight_store import InsightStore
-from src.utils.logger import get_logger
+from memorch.strategies.memory_bank.fact_store import FactStore
+from memorch.strategies.memory_bank.insight_store import InsightStore
+from memorch.utils.logger import get_logger
 
 logger = get_logger("Retrieval")
 

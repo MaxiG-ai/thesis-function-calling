@@ -6,7 +6,7 @@ Tests playbook utilities, agents, and integration.
 import json
 from unittest.mock import Mock
 
-from src.strategies.ace.playbook_utils import (
+from memorch.strategies.ace.playbook_utils import (
     EMPTY_PLAYBOOK_TEMPLATE,
     parse_playbook_line,
     format_playbook_line,
@@ -17,10 +17,10 @@ from src.strategies.ace.playbook_utils import (
     extract_json_from_text,
     get_section_slug,
 )
-from src.strategies.ace.generator import Generator
-from src.strategies.ace.reflector import Reflector
-from src.strategies.ace.curator import Curator
-from src.strategies.ace.ace_strategy import ACEState, apply_ace_strategy
+from memorch.strategies.ace.generator import Generator
+from memorch.strategies.ace.reflector import Reflector
+from memorch.strategies.ace.curator import Curator
+from memorch.strategies.ace.ace_strategy import ACEState, apply_ace_strategy
 
 
 # ============================================================================
@@ -687,7 +687,7 @@ def test_apply_ace_strategy_respects_curator_frequency():
 def test_memory_processor_reset_clears_ace_state():
     """Verifies MemoryProcessor.reset_state() resets ACE state between tasks."""
     # Test the ACEState reset directly instead of through MemoryProcessor
-    from src.strategies.ace.ace_strategy import ACEState
+    from memorch.strategies.ace.ace_strategy import ACEState
 
     state = ACEState()
 
@@ -707,7 +707,7 @@ def test_memory_processor_reset_clears_ace_state():
 
 def test_memory_processor_apply_ace_delegates_correctly():
     """Verifies apply_ace_strategy() processes messages correctly."""
-    from src.strategies.ace.ace_strategy import apply_ace_strategy, ACEState
+    from memorch.strategies.ace.ace_strategy import apply_ace_strategy, ACEState
 
     mock_client = Mock()
     mock_settings = Mock()

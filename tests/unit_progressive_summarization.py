@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.strategies.progressive_summarization.prog_sum import (
+from memorch.strategies.progressive_summarization.prog_sum import (
     summarize_conv_history,
     _resolve_prompt_path,
 )
