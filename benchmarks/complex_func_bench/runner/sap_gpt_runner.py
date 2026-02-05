@@ -4,7 +4,7 @@ import json
 import weave
 from benchmarks.complex_func_bench.models.sap_gpt import FunctionCallSAPGPT
 from benchmarks.complex_func_bench.runner.base_runner import ModelRunner
-from src.llm_orchestrator import LLMOrchestrator
+from memorch.llm_orchestrator import LLMOrchestrator
 
 
 

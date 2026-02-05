@@ -8,7 +8,7 @@ import os
 
 # Import base logger from project's utils
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../..'))
-from src.utils.logger import get_logger as get_base_logger
+from memorch.utils.logger import get_logger as get_base_logger
 
 
 class Logger:

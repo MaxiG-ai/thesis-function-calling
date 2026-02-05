@@ -10,8 +10,8 @@ from datetime import datetime
 from typing import Dict, List, Optional
 from collections import defaultdict
 
-from src.utils.logger import get_logger
-from src.llm_orchestrator import LLMOrchestrator
+from memorch.utils.logger import get_logger
+from memorch.llm_orchestrator import LLMOrchestrator
 
 from benchmarks.complex_func_bench.runner.sap_gpt_runner import SAPGPTRunner
 from benchmarks.complex_func_bench.utils.logger import Logger as FileLogger

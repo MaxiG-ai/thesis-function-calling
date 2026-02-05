@@ -9,7 +9,7 @@ weave_deep_logging = false
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
 # Good samples: ["Car-Rental-131", "Cross-131"]
 # selected_test_cases = ["Car-Rental-131", "Cross-131", "Flights-91"]
-benchmark_sample_size = 25
+benchmark_sample_size = 2
 
 # setting for max. context before compression
 compact_threshold = 6000
@@ -18,19 +18,18 @@ compact_threshold = 6000
 enabled_models = [
     # "gpt-5",
     # "gpt-4-1",
-    # "gpt-4-1-mini", 
+    "gpt-4-1-mini", 
     # "gpt-5-mini",
-    "claude-sonnet-4-5",
-    # "glm-4-9b",
+    # "claude-sonnet-4-5",
     # "llama-31-7b",
 ]
 
 # 2. Define Memory Architectures to test
 enabled_memory_methods = [
     "no_strategy",
-    # "truncation",
-    # "progressive_summarization",
-    # "memory_bank",
+    "truncation",
+    "progressive_summarization",
+    "memory_bank",
     "ace",
 ]
 
