@@ -46,14 +46,6 @@ provider = "aicore"
 api_base = "http://10.237.89.124:3030/v1"
 api_key = "THINKTANK"
 
-
-[models.glm-4-9b]
-litellm_name = "ollama/glm4:9b"
-context_window = 128000
-provider = "ollama"
-api_base = "http://10.237.89.124:3030/v1"
-api_key = "THINKTANK"
-
 [models.llama-31-7b]
 litellm_name = "ollama/llama3.1"
 context_window = 128000
