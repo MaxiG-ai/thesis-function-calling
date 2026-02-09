@@ -1,6 +1,6 @@
 # Add A New Benchmark
 
-This repository evaluates memory architectures by running an external benchmark end-to-end, but routing *all* model calls through `src/llm_orchestrator.py` so that memory strategies can intercept and transform the conversation context.
+This repository evaluates memory architectures by running an benchmark end-to-end, but routing *all* model calls through `src/llm_orchestrator.py` so that memory strategies can intercept and transform the conversation context.
 
 This doc explains the minimal integration surface area needed to add a new benchmark under `benchmarks/` while:
 
@@ -78,7 +78,7 @@ If you add new config fields, update the Pydantic models in:
 
 ## Official Scoring
 
-If the benchmark provides an official scorer, integrate it when possible:
+If the benchmark provides an official scorer use that as it is.
 
 - generate outputs in the exact format the scorer expects
 - call the scorer after inference completes
@@ -113,14 +113,12 @@ Persist two artifacts per (model, memory, benchmark) run:
 
 Recommended file naming convention (match existing style):
 
-- `results/<experiment>/<timestamp>/<benchmark>/<memory>/<model>/<benchmark>_<model>_<memory>_<timestamp>.json`
-- `results/<experiment>/<timestamp>/<benchmark>/<memory>/<model>/metrics_<model>_<memory>_<timestamp>.json`
+- `results/<benchmark>/<experiment>/<timestamp>/<memory>/<model>/<benchmark>_<model>_<memory>_<timestamp>.json`
+- `results/<benchmark>/<experiment>/<timestamp>/<memory>/<model>/metrics_<model>_<memory>_<timestamp>.json`
 
 ## Common Pitfalls
 
-- Tool schema mismatch: benchmarks may use different tool/function formats. Normalize to OpenAI tool format (`ChatCompletionToolParam`) before calling the orchestrator.
-- Role mismatch: some benchmarks use custom roles (e.g., `observation`). Ensure your runner either:
-  - maps them to OpenAI-compatible roles, or
-  - keeps them benchmark-side and only passes compatible messages to the model.
+- Tool schema mismatch: benchmarks may use different tool/function formats.
+- Role mismatch: some benchmarks use custom roles (e.g., `observation`).
 - Session resets: call `orchestrator.reset_session()` per benchmark case to avoid cross-case leakage in memory strategies.
 - Scorer assumptions: official scorers often assume a specific output structure and deterministic ordering.
