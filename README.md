@@ -17,7 +17,34 @@ Currently integrated: **ComplexFuncBench** (CFB)
 │   └── complex_func_bench/      # CFB benchmark integration
 ├── docs/                        # Documentation
 ├── tests/                       # Test suite
+├── tools/                       # Development tools
+│   └── trace_viewer.py          # Local trace inspection UI
 ├── config.toml                  # Experiment configuration
 ├── cfb_run_eval.py              # Main evaluation entry point
-└── run_baseline.py                       # Run the evaluation multiple times to mitigate undeterministic results.
+└── run_baseline.py              # Run evaluation multiple times for statistical validity
 ```
+
+## Tools
+
+### Trace Viewer
+
+A privacy-friendly, local-first web interface for inspecting experiment traces. Replaces cloud-based solutions for offline trace analysis.
+
+```bash
+uv run python tools/trace_viewer.py
+```
+
+Then open http://localhost:8080 in your browser.
+
+**Features:**
+- Browse experiments and timestamps from results directory
+- View conversation traces as a chat interface
+- Side-by-side model/strategy comparison
+- Search cases by ID
+- JSON inspector for debugging individual messages
+
+**Environment variables:**
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `TRACE_VIEWER_PORT` | `8080` | Port to run the server on |
+| `TRACE_VIEWER_RESULTS_ROOT` | `results/cfb` | Path to results directory |
