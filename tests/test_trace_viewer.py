@@ -14,8 +14,6 @@ import json
 import sys
 from pathlib import Path
 
-import pytest
-
 # Add project root to path for importing tools module
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
