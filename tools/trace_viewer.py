@@ -17,15 +17,16 @@ Features:
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from nicegui import ui
 
-# === CONSTANTS ===
-RESULTS_ROOT = Path("results/cfb")
-PORT = 8080
+# === CONSTANTS (configurable via environment variables) ===
+RESULTS_ROOT = Path(os.environ.get("TRACE_VIEWER_RESULTS_ROOT", "results/cfb"))
+PORT = int(os.environ.get("TRACE_VIEWER_PORT", "8080"))
 
 
 # === DATA STRUCTURES ===
@@ -526,7 +527,9 @@ def render_trace_view(trace: LoadedTrace) -> None:
                     for err in messages:
                         error_type = err.get("error_type", "unknown")
                         content = err.get("content", "")
-                        with ui.row().classes("items-center gap-2 bg-red-50 p-2 rounded"):
+                        with ui.row().classes(
+                            "items-center gap-2 bg-red-50 p-2 rounded"
+                        ):
                             ui.badge(error_type, color="red").classes("text-xs")
                             ui.label(content).classes("text-sm text-red-700")
     # Render conversation
