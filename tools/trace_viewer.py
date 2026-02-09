@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from nicegui import ui
+from nicegui import app, ui
 from nicegui.events import KeyEventArguments
 
 # === CONSTANTS (configurable via environment variables) ===
@@ -176,7 +176,7 @@ def discover_configurations(
 
 
 # === DATA LAYER: File Loading ===
-def load_trace_file(path: Path) -> list[dict[str, Any]]:
+def load_trace_file(path: Path | None) -> list[dict[str, Any]]:
     """
     Load and parse a trace JSON file.
 
@@ -379,7 +379,7 @@ def render_user_message(content: str, idx: int, raw_msg: dict) -> None:
                 # Debug button
                 ui.button(
                     icon="bug_report",
-                    on_click=lambda m=raw_msg: show_json_inspector(m),
+                    on_click=lambda _, m=raw_msg: show_json_inspector(m),
                 ).props("flat dense size=sm")
             ui.markdown(content).classes("text-gray-800")
 
@@ -393,7 +393,7 @@ def render_assistant_message(msg: dict, idx: int) -> None:
                 ui.label("Assistant").classes("font-semibold text-gray-700")
                 ui.button(
                     icon="bug_report",
-                    on_click=lambda m=msg: show_json_inspector(m),
+                    on_click=lambda _, m=msg: show_json_inspector(m),
                 ).props("flat dense size=sm")
 
             # Content if present
@@ -426,7 +426,7 @@ def render_observation_message(msg: dict, idx: int) -> None:
                 ui.label("Tool Result").classes("font-semibold text-green-700")
                 ui.button(
                     icon="bug_report",
-                    on_click=lambda m=msg: show_json_inspector(m),
+                    on_click=lambda _, m=msg: show_json_inspector(m),
                 ).props("flat dense size=sm")
 
             content = msg.get("content", [])
@@ -600,7 +600,7 @@ def main_content() -> None:
                     with (
                         ui.card()
                         .classes(f"w-full cursor-pointer mb-1 {bg_class}")
-                        .on("click", lambda cid=case_id: select_case(state, cid))
+                        .on("click", lambda _, cid=case_id: select_case(state, cid))
                     ):
                         with ui.row().classes("items-center justify-between w-full"):
                             ui.label(case_id).classes("font-medium text-sm")
@@ -640,8 +640,11 @@ def main_content() -> None:
                                     on_click=lambda: toggle_compare(state),
                                 ).props("outline")
 
-                            # Render selected config
-                            render_trace_view(config_options[selected_config.value])
+                            # Render selected config (value is guaranteed non-None from initial value)
+                            config_key = (
+                                selected_config.value or list(config_options.keys())[0]
+                            )
+                            render_trace_view(config_options[config_key])
                         else:
                             render_trace_view(traces[0])
                 else:
