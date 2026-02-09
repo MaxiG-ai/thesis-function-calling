@@ -23,6 +23,7 @@ from pathlib import Path
 from typing import Any
 
 from nicegui import ui
+from nicegui.events import KeyEventArguments
 
 # === CONSTANTS (configurable via environment variables) ===
 RESULTS_ROOT = Path(os.environ.get("TRACE_VIEWER_RESULTS_ROOT", "results/cfb"))
@@ -708,7 +709,7 @@ def setup_keyboard_bindings() -> None:
     )
 
 
-def handle_keyboard(e) -> None:
+def handle_keyboard(e: KeyEventArguments) -> None:
     """Handle keyboard events."""
     # Esc to clear selection
     if e.key == "Escape":
