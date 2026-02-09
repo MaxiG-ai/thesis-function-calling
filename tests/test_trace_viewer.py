@@ -10,7 +10,6 @@ Test Strategy:
 - Verify edge cases like missing files, empty directories, malformed JSON
 """
 
-import json
 import sys
 from pathlib import Path
 
