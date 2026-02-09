@@ -30,8 +30,8 @@ This repo should be developed in Test-Driven-Development Style. Always begin by 
 
 ## Logging
 
-- `src/utils/logger.py` implements a logging module which is used for all logging.
-- The levels are set in `config.toml`.
+- Logging is provided by `memorch.utils.logger`. Use `get_logger(__name__)` to get a logger instance.
+- Log levels can be configured in `config.toml` under the `[logging]` section.
 
 ## Your Developer Agent Behaviour
 

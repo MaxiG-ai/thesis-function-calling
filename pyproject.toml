@@ -28,6 +28,7 @@ dependencies = [
     "urllib3>=2.5.0",
     "wandb",
     "weave",
+    "nicegui>=2.0.0",
 ]
 
 [tool.uv.sources]
