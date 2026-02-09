@@ -690,7 +690,7 @@ def render_comparison_view(state: AppState, traces: list[LoadedTrace]) -> None:
 def setup_keyboard_bindings() -> None:
     """Set up global keyboard shortcuts."""
     ui.keyboard(
-        on_key=lambda e: handle_keyboard(e),
+        on_key=handle_keyboard,
         ignore=["input", "textarea"],
     )
 
