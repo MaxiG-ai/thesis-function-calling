@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from nicegui import app, ui
+from nicegui import ui
 
 # === CONSTANTS ===
 RESULTS_ROOT = Path("results/cfb")
@@ -56,16 +56,16 @@ class AppState:
     search_filter: str = ""  # Filter for case list sidebar
 
 
-# Module-level state (works for local single-user app)
-_state: AppState | None = None
+# Per-user state via NiceGUI's user storage to avoid cross-session leakage
 
 
 def get_state() -> AppState:
-    """Get or create the application state."""
-    global _state
-    if _state is None:
-        _state = AppState()
-    return _state
+    """Get or create the application state for the current user/session."""
+    state = app.storage.user.get("trace_viewer_state")
+    if state is None:
+        state = AppState()
+        app.storage.user["trace_viewer_state"] = state
+    return state
 
 
 # === DATA LAYER: Directory Discovery ===
@@ -509,16 +509,26 @@ def render_trace_view(trace: LoadedTrace) -> None:
                 )
 
         # Error messages for failed cases
-        messages = case.get("message", [])
-        if messages and status.lower() == "failed":
-            with ui.column().classes("mt-2 gap-1 w-full"):
-                for err in messages:
-                    error_type = err.get("error_type", "unknown")
-                    content = err.get("content", "")
-                    with ui.row().classes("items-center gap-2 bg-red-50 p-2 rounded"):
-                        ui.badge(error_type, color="red").classes("text-xs")
-                        ui.label(content).classes("text-sm text-red-700")
+        raw_message = case.get("message")
+        if raw_message and status.lower() == "failed":
+            # Normalize message to a list of error dicts
+            if isinstance(raw_message, list):
+                messages = raw_message
+            elif isinstance(raw_message, dict):
+                messages = [raw_message]
+            elif isinstance(raw_message, str):
+                messages = [{"error_type": "error", "content": raw_message}]
+            else:
+                messages = []
 
+            if messages:
+                with ui.column().classes("mt-2 gap-1 w-full"):
+                    for err in messages:
+                        error_type = err.get("error_type", "unknown")
+                        content = err.get("content", "")
+                        with ui.row().classes("items-center gap-2 bg-red-50 p-2 rounded"):
+                            ui.badge(error_type, color="red").classes("text-xs")
+                            ui.label(content).classes("text-sm text-red-700")
     # Render conversation
     with ui.column().classes("w-full gap-2"):
         for idx, msg in enumerate(gen_convs):
