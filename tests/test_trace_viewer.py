@@ -10,6 +10,7 @@ Test Strategy:
 - Verify edge cases like missing files, empty directories, malformed JSON
 """
 
+import json
 from pathlib import Path
 
 import pytest
@@ -59,6 +60,20 @@ def sample_trace_path(sample_configs):
 def sample_case_index(sample_experiment, sample_timestamp):
     """Build case index from test_ace experiment."""
     return build_case_index(sample_experiment, sample_timestamp)
+
+
+@pytest.fixture
+def tmp_results_root(tmp_path):
+    """
+    Create a temporary results/cfb directory tree for isolated tests.
+
+    This fixture builds a dedicated, empty root directory that mirrors the
+    expected layout (results/cfb) so tests can create synthetic trace files
+    without relying on the repository's real data.
+    """
+    root = tmp_path / "results" / "cfb"
+    root.mkdir(parents=True, exist_ok=True)
+    return root
 
 
 # === DIRECTORY DISCOVERY TESTS ===
@@ -155,6 +170,7 @@ def test_discover_configurations_structure(sample_configs):
         for model, paths in models.items():
             assert isinstance(model, str)
             assert "trace_path" in paths
+            assert "compressed_path" in paths
             assert "metrics_path" in paths
 
 
@@ -306,6 +322,126 @@ def test_build_case_index_invalid_path_returns_empty():
     """Verify build_case_index() returns empty dict for invalid experiment/timestamp."""
     index = build_case_index("nonexistent", "invalid")
     assert index == {}
+
+
+def test_discover_configurations_includes_compressed_trace(tmp_results_root):
+    """
+    Verify discover_configurations() captures both cfb and compressed files.
+
+    The trace viewer should be able to switch between standard eval traces
+    (cfb_*.json) and compressed traces (compressed_*.json). This test creates
+    both files in a synthetic strategy/model directory and ensures their
+    paths are returned in the discovered configuration structure.
+    """
+    experiment = "demo"
+    timestamp = "20260210_1206"
+    strategy = "memory_bank"
+    model = "gpt-4-1-mini"
+
+    model_dir = tmp_results_root / experiment / timestamp / strategy / model
+    model_dir.mkdir(parents=True, exist_ok=True)
+
+    trace_path = model_dir / "cfb_demo.json"
+    compressed_path = model_dir / "compressed_demo.json"
+    trace_path.write_text("[]", encoding="utf-8")
+    compressed_path.write_text("[]", encoding="utf-8")
+
+    configs = discover_configurations(experiment, timestamp, root=tmp_results_root)
+    assert configs[strategy][model]["trace_path"] == trace_path
+    assert configs[strategy][model]["compressed_path"] == compressed_path
+
+
+def test_build_case_index_uses_eval_trace(tmp_results_root):
+    """
+    Verify build_case_index() loads eval conversations from cfb files.
+
+    When the conversation source is set to eval, the trace viewer should load
+    cases from cfb_*.json and preserve the gen_convs content without using
+    any compressed data, even if a compressed file is present.
+    """
+    experiment = "demo"
+    timestamp = "20260210_1206"
+    strategy = "memory_bank"
+    model = "gpt-4-1-mini"
+    model_dir = tmp_results_root / experiment / timestamp / strategy / model
+    model_dir.mkdir(parents=True, exist_ok=True)
+
+    eval_case = {
+        "id": "Case-1",
+        "gen_convs": [{"role": "user", "content": "eval message"}],
+        "status": "Success",
+        "memory_method": "memory_bank",
+    }
+    compressed_case = {
+        "id": "Case-1",
+        "memory_method": "memory_bank",
+        "compressed_trace": [
+            {
+                "step": 1,
+                "compressed_messages": [
+                    {"role": "user", "content": "compressed message"}
+                ],
+            }
+        ],
+    }
+
+    (model_dir / "cfb_demo.json").write_text(json.dumps([eval_case]), encoding="utf-8")
+    (model_dir / "compressed_demo.json").write_text(
+        json.dumps([compressed_case]), encoding="utf-8"
+    )
+
+    index = build_case_index(
+        experiment, timestamp, root=tmp_results_root, conversation_source="eval"
+    )
+    trace = index["Case-1"][0]
+    assert trace.case["gen_convs"][0]["content"] == "eval message"
+
+
+def test_build_case_index_uses_compressed_trace(tmp_results_root):
+    """
+    Verify build_case_index() loads real conversations from compressed files.
+
+    When the conversation source is set to real, the trace viewer should load
+    cases from compressed_*.json and expand compressed_trace into gen_convs
+    so the UI can render the actual messages sent to the model.
+    """
+    experiment = "demo"
+    timestamp = "20260210_1206"
+    strategy = "memory_bank"
+    model = "gpt-4-1-mini"
+    model_dir = tmp_results_root / experiment / timestamp / strategy / model
+    model_dir.mkdir(parents=True, exist_ok=True)
+
+    eval_case = {
+        "id": "Case-1",
+        "gen_convs": [{"role": "user", "content": "eval message"}],
+    }
+    compressed_case = {
+        "id": "Case-1",
+        "memory_method": "memory_bank",
+        "compressed_trace": [
+            {
+                "step": 1,
+                "compressed_messages": [
+                    {"role": "user", "content": "compressed message"}
+                ],
+            }
+        ],
+    }
+
+    (model_dir / "cfb_demo.json").write_text(json.dumps([eval_case]), encoding="utf-8")
+    (model_dir / "compressed_demo.json").write_text(
+        json.dumps([compressed_case]), encoding="utf-8"
+    )
+
+    index = build_case_index(
+        experiment, timestamp, root=tmp_results_root, conversation_source="real"
+    )
+    trace = index["Case-1"][0]
+    first_message = trace.case["gen_convs"][0]
+    assert first_message["role"] == "system"
+    assert "Compressed step" in first_message["content"]
+    assert trace.case["gen_convs"][1]["content"] == "compressed message"
 
 
 # === CONVERSATION PARSING TESTS ===

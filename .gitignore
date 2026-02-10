@@ -226,3 +226,6 @@ thesis_assets/
 .nicegui/*.json
 
 .nicegui/
+
+.env
+uv.lock

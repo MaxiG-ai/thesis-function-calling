@@ -56,6 +56,7 @@ class AppState:
         default_factory=dict
     )  # {strategy/model: metrics}
     search_filter: str = ""  # Filter for case list sidebar
+    conversation_source: str = "eval"  # eval (cfb_*) or real (compressed_*)
 
 
 # Module-level state (single-user local app)
@@ -131,7 +132,8 @@ def discover_configurations(
         root: Root directory (defaults to results/cfb)
 
     Returns:
-        Nested dict: {strategy: {model: {'trace_path': Path, 'metrics_path': Path|None}}}
+        Nested dict: {strategy: {model: {'trace_path': Path, 'compressed_path': Path|None,
+        'metrics_path': Path|None}}}
     """
     ts_path = root / experiment / timestamp
     if not ts_path.exists():
@@ -153,18 +155,22 @@ def discover_configurations(
 
             model = model_dir.name
             trace_path = None
+            compressed_path = None
             metrics_path = None
 
             # Find trace and metrics files
             for f in model_dir.iterdir():
                 if f.name.startswith("cfb_") and f.suffix == ".json":
                     trace_path = f
+                elif f.name.startswith("compressed_") and f.suffix == ".json":
+                    compressed_path = f
                 elif f.name.startswith("metrics_") and f.suffix == ".json":
                     metrics_path = f
 
-            if trace_path:  # Only include if we found a trace file
+            if trace_path or compressed_path:
                 configs[strategy][model] = {
                     "trace_path": trace_path,
+                    "compressed_path": compressed_path,
                     "metrics_path": metrics_path,
                 }
 
@@ -196,6 +202,75 @@ def load_trace_file(path: Path | None) -> list[dict[str, Any]]:
         return []
 
 
+def load_compressed_trace_file(path: Path | None) -> list[dict[str, Any]]:
+    """
+    Load and parse a compressed trace JSON file.
+
+    Args:
+        path: Path to the compressed trace JSON file
+
+    Returns:
+        List of case dictionaries, or empty list if file doesn't exist/is invalid
+    """
+    return load_trace_file(path)
+
+
+def normalize_tool_call_arguments(arguments: Any) -> Any:
+    """Normalize tool call arguments to a JSON object when possible."""
+    if isinstance(arguments, str):
+        try:
+            return json.loads(arguments)
+        except json.JSONDecodeError:
+            return arguments
+    return arguments
+
+
+def normalize_compressed_messages(
+    compressed_trace: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    """
+    Flatten compressed trace steps into a single gen_convs list.
+
+    The compressed trace stores per-step compressed_messages. This function
+    concatenates them and aligns tool call fields with the viewer renderer.
+    """
+    gen_convs: list[dict[str, Any]] = []
+    for step in compressed_trace:
+        step_number = step.get("step")
+        if step_number is not None:
+            gen_convs.append(
+                {
+                    "role": "system",
+                    "content": f"Compressed step {step_number}",
+                }
+            )
+        for msg in step.get("compressed_messages", []):
+            normalized = dict(msg)
+            if "tool_calls" in normalized and "function_call" not in normalized:
+                tool_calls = []
+                for call in normalized.get("tool_calls", []):
+                    function = call.get("function", {})
+                    tool_calls.append(
+                        {
+                            "name": function.get("name"),
+                            "arguments": normalize_tool_call_arguments(
+                                function.get("arguments")
+                            ),
+                        }
+                    )
+                normalized["function_call"] = tool_calls
+            if normalized.get("role") == "tool":
+                normalized["role"] = "observation"
+                content = normalized.get("content")
+                if isinstance(content, str):
+                    try:
+                        normalized["content"] = json.loads(content)
+                    except json.JSONDecodeError:
+                        normalized["content"] = content
+            gen_convs.append(normalized)
+    return gen_convs
+
+
 def load_metrics_file(path: Path | None) -> dict[str, Any] | None:
     """
     Load and parse a metrics JSON file.
@@ -217,7 +292,10 @@ def load_metrics_file(path: Path | None) -> dict[str, Any] | None:
 
 # === DATA LAYER: Indexing ===
 def build_case_index(
-    experiment: str, timestamp: str, root: Path = RESULTS_ROOT
+    experiment: str,
+    timestamp: str,
+    root: Path = RESULTS_ROOT,
+    conversation_source: str = "eval",
 ) -> dict[str, list[LoadedTrace]]:
     """
     Build an index mapping case_id to list of LoadedTrace objects.
@@ -229,6 +307,7 @@ def build_case_index(
         experiment: Experiment folder name
         timestamp: Timestamp folder name
         root: Root directory (defaults to results/cfb)
+        conversation_source: "eval" for cfb_*.json, "real" for compressed_*.json
 
     Returns:
         Dict mapping case_id (e.g., 'Hotels-104') to list of LoadedTrace objects
@@ -239,9 +318,16 @@ def build_case_index(
     for strategy, models in configs.items():
         for model, paths in models.items():
             trace_path = paths["trace_path"]
+            compressed_path = paths.get("compressed_path")
             metrics_path = paths["metrics_path"]
 
-            cases = load_trace_file(trace_path)
+            if conversation_source == "real":
+                cases = load_compressed_trace_file(compressed_path)
+                for case in cases:
+                    compressed_trace = case.get("compressed_trace", [])
+                    case["gen_convs"] = normalize_compressed_messages(compressed_trace)
+            else:
+                cases = load_trace_file(trace_path)
             metrics = load_metrics_file(metrics_path)
 
             for case in cases:
@@ -338,6 +424,12 @@ def show_nav_modal(state: AppState) -> None:
 
         ts_select = ui.select([], label="Timestamp").classes("w-full")
 
+        ui.label("Conversation Source").classes("text-sm text-gray-600 mt-2")
+        conv_select = ui.select(
+            {"eval": "Eval (cfb_*)", "real": "Real (compressed_*)"},
+            value=state.conversation_source,
+        ).classes("w-full")
+
         def update_timestamps():
             exp = exp_select.value
             if exp:
@@ -355,8 +447,11 @@ def show_nav_modal(state: AppState) -> None:
                 if exp_select.value and ts_select.value:
                     state.experiment = exp_select.value
                     state.timestamp = ts_select.value
+                    state.conversation_source = conv_select.value or "eval"
                     state.case_index = build_case_index(
-                        state.experiment, state.timestamp
+                        state.experiment,
+                        state.timestamp,
+                        conversation_source=state.conversation_source,
                     )
                     state.selected_case_id = ""
                     dialog.close()
@@ -633,6 +728,7 @@ def main_content() -> None:
                                 selected_config = ui.select(
                                     list(config_options.keys()),
                                     value=list(config_options.keys())[0],
+                                    on_change=lambda _: main_content.refresh(),
                                 ).classes("min-w-64")
 
                                 ui.button(
