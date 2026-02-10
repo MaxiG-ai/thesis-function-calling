@@ -27,7 +27,7 @@ from nicegui.events import KeyEventArguments
 
 # === CONSTANTS (configurable via environment variables) ===
 RESULTS_ROOT = Path(os.environ.get("TRACE_VIEWER_RESULTS_ROOT", "results/cfb"))
-PORT = int(os.environ.get("TRACE_VIEWER_PORT", "8080"))
+PORT = int(os.environ.get("TRACE_VIEWER_PORT", "3456"))
 
 
 # === DATA STRUCTURES ===
@@ -58,16 +58,16 @@ class AppState:
     search_filter: str = ""  # Filter for case list sidebar
 
 
-# Per-user state via NiceGUI's user storage to avoid cross-session leakage
+# Module-level state (single-user local app)
+_state: AppState | None = None
 
 
 def get_state() -> AppState:
-    """Get or create the application state for the current user/session."""
-    state = app.storage.user.get("trace_viewer_state")
-    if state is None:
-        state = AppState()
-        app.storage.user["trace_viewer_state"] = state
-    return state
+    """Get or create the application state."""
+    global _state
+    if _state is None:
+        _state = AppState()
+    return _state
 
 
 # === DATA LAYER: Directory Discovery ===
@@ -673,14 +673,32 @@ def render_comparison_view(state: AppState, traces: list[LoadedTrace]) -> None:
     config_dict = dict(configs)
     config_labels = list(config_dict.keys())
 
+    # Store selections in state for persistence across refreshes
+    if not state.model_a or state.model_a not in config_labels:
+        state.model_a = config_labels[0]
+    if not state.model_b or state.model_b not in config_labels:
+        state.model_b = config_labels[1] if len(config_labels) > 1 else config_labels[0]
+
+    def on_config_change(_):
+        """Refresh view when config selection changes."""
+        main_content.refresh()
+
     with ui.row().classes("w-full items-center gap-4 mb-4"):
         ui.label("Compare:").classes("font-semibold")
-        select_a = ui.select(config_labels, value=config_labels[0], label="Config A")
+        select_a = ui.select(
+            config_labels,
+            value=state.model_a,
+            label="Config A",
+            on_change=lambda e: setattr(state, "model_a", e.value)
+            or on_config_change(e),
+        )
         ui.label("vs").classes("text-gray-500")
         select_b = ui.select(
             config_labels,
-            value=config_labels[1] if len(config_labels) > 1 else config_labels[0],
+            value=state.model_b,
             label="Config B",
+            on_change=lambda e: setattr(state, "model_b", e.value)
+            or on_config_change(e),
         )
         ui.button("Exit Compare", on_click=lambda: toggle_compare(state)).props(
             "outline"
@@ -689,15 +707,14 @@ def render_comparison_view(state: AppState, traces: list[LoadedTrace]) -> None:
     # Side by side columns - ensure both have equal width
     with ui.row().classes("w-full gap-4"):
         with ui.column().classes("flex-1 min-w-0"):
-            label_a = select_a.value or config_labels[0]
-            ui.label(label_a).classes("font-bold text-lg mb-2")
+            ui.label(state.model_a).classes("font-bold text-lg mb-2")
             with ui.scroll_area().classes("h-[70vh]"):
-                render_trace_view(config_dict[label_a])
+                render_trace_view(config_dict[state.model_a])
 
         ui.separator().props("vertical")
 
         with ui.column().classes("flex-1 min-w-0"):
-            label_b = select_b.value or config_labels[1]
+            label_b = state.model_b
             ui.label(label_b).classes("font-bold text-lg mb-2")
             with ui.scroll_area().classes("h-[70vh]"):
                 render_trace_view(config_dict[label_b])

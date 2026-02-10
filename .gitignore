@@ -224,3 +224,5 @@ benchmarks/mcpbench/mcp_modules
 
 thesis_assets/
 .nicegui/*.json
+
+.nicegui/
