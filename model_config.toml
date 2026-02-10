@@ -58,26 +58,26 @@ api_key = "THINKTANK"
 litellm_name = "ollama/glm4:9b"
 context_window = 128000
 provider = "ollama"
-api_base = "http://10.237.89.124:3030/v1"
+api_base = "http://127.0.0.1:11434"
 api_key = "THINKTANK"
 
 [models.ministral-3-8b]
 litellm_name = "ollama/ministral-3:8b"
 context_window = 128000
 provider = "ollama"
-api_base = "http://10.237.89.124:3030/v1"
+api_base = "http://127.0.0.1:11434"
 api_key = "THINKTANK"
 
 [models.llama-31-7b]
 litellm_name = "ollama/llama3.1"
 context_window = 128000
 provider = "ollama"
-api_base = "http://10.237.89.124:3030/v1"
+api_base = "http://127.0.0.1:11434"
 api_key = "THINKTANK"
 
 [models.gpt-oss-20b]
 litellm_name = "ollama/gpt-oss:20b"
 context_window = 128000
 provider = "ollama"
-api_base = "http://10.237.89.124:3030/v1"
+api_base = "http://127.0.0.1:11434"
 api_key = "THINKTANK"
