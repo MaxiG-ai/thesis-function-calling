@@ -38,7 +38,9 @@ def setup_directories(
     experiment_name: str, run_timestamp: str, model: str, memory: str
 ) -> str:
     """Create directory structure for results."""
-    log_dir = os.path.join("results", experiment_name, run_timestamp, memory, model)
+    log_dir = os.path.join(
+        "results", "cfb", experiment_name, run_timestamp, memory, model
+    )
     os.makedirs(log_dir, exist_ok=True)
     return log_dir
 
@@ -593,7 +595,7 @@ def main(experiment_name=None):
 
     # Initialize response evaluator (shared across all configurations)
     temp_log_dir = os.path.join(
-        "results", orchestrator.cfg.experiment_name, run_timestamp, "temp"
+        "results", "cfb", orchestrator.cfg.experiment_name, run_timestamp, "temp"
     )
     os.makedirs(temp_log_dir, exist_ok=True)
     resp_eval_runner = initialize_response_evaluator(temp_log_dir)
