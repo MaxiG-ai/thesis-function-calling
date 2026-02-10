@@ -57,6 +57,7 @@ class AppState:
     )  # {strategy/model: metrics}
     search_filter: str = ""  # Filter for case list sidebar
     conversation_source: str = "eval"  # eval (cfb_*) or real (compressed_*)
+    selected_config_label: str = ""
 
 
 # Module-level state (single-user local app)
@@ -393,15 +394,13 @@ def header_breadcrumbs() -> None:
 def create_header(state: AppState) -> None:
     """Create the sticky header with breadcrumbs, search, and metrics."""
     with ui.header().classes("bg-white text-black shadow-md items-center px-4"):
-        # Left: Breadcrumbs (refreshable)
-        header_breadcrumbs()
-
-        ui.space()
-
-        # Right: Change source button
+        # Left: Change source button and breadcrumbs
         ui.button("Change Source", on_click=lambda: show_nav_modal(state)).props(
             "flat dense"
         )
+        header_breadcrumbs()
+
+        ui.space()
 
 
 def select_case(state: AppState, case_id: str) -> None:
@@ -476,7 +475,9 @@ def render_user_message(content: str, idx: int, raw_msg: dict) -> None:
                     icon="bug_report",
                     on_click=lambda _, m=raw_msg: show_json_inspector(m),
                 ).props("flat dense size=sm")
-            ui.markdown(content).classes("text-gray-800")
+            ui.markdown(content).classes(
+                "text-gray-800 whitespace-pre-wrap break-words"
+            )
 
 
 def render_assistant_message(msg: dict, idx: int) -> None:
@@ -494,7 +495,9 @@ def render_assistant_message(msg: dict, idx: int) -> None:
             # Content if present
             content = msg.get("content", "")
             if content:
-                ui.markdown(content).classes("text-gray-800")
+                ui.markdown(content).classes(
+                    "text-gray-800 whitespace-pre-wrap break-words"
+                )
 
             # Function calls
             func_calls = msg.get("function_call", [])
@@ -506,9 +509,43 @@ def render_assistant_message(msg: dict, idx: int) -> None:
                         with ui.expansion(f"Tool: {name}").classes(
                             "bg-purple-50 w-full"
                         ):
-                            ui.code(
-                                json.dumps(args, indent=2), language="json"
-                            ).classes("text-sm")
+                            ui.json_editor(args)
+
+
+def render_system_message(msg: dict, idx: int) -> None:
+    """Render a system message bubble (left-aligned)."""
+    try:
+        with ui.row().classes("w-full justify-start"):
+            with ui.card().classes("bg-orange-50 w-full"):
+                with ui.row().classes("items-center gap-2"):
+                    ui.label(f"#{idx}").classes("text-xs text-gray-400")
+                    ui.label("System").classes("font-semibold text-orange-700")
+                    ui.button(
+                        icon="bug_report",
+                        on_click=lambda _, m=msg: show_json_inspector(m),
+                    ).props("flat dense size=sm")
+                content = msg.get("content", "")
+                if content:
+                    ui.code(content).classes(
+                        "whitespace-pre-wrap break-words w-full text-sm"
+                    )
+
+    except Exception as e:
+        with ui.row().classes("w-full justify-start"):
+            with ui.card().classes("bg-red-50 w-full border-l-4 border-red-400"):
+                with ui.row().classes("items-center gap-2"):
+                    ui.label(f"#{idx}").classes("text-xs text-gray-400")
+                    ui.icon("error").classes("text-red-600")
+                    ui.label("System (Error Rendering)").classes(
+                        "font-semibold text-red-700"
+                    )
+                    ui.button(
+                        icon="bug_report",
+                        on_click=lambda _, m=msg: show_json_inspector(m),
+                    ).props("flat dense size=sm")
+                ui.label(f"Error rendering system message: {str(e)}").classes(
+                    "text-sm text-red-700"
+                )
 
 
 def render_observation_message(msg: dict, idx: int) -> None:
@@ -540,28 +577,42 @@ def render_observation_message(msg: dict, idx: int) -> None:
                             ui.label(message).classes("text-sm text-gray-600")
                         data = result.get("data")
                         if data:
-                            ui.code(
-                                json.dumps(data, indent=2, default=str)[:500] + "...",
-                                language="json",
-                            ).classes("text-xs max-h-40 overflow-auto")
+                            ui.json_editor({'content': {'json': content[i]}})
             else:
-                ui.code(str(content)[:500], language="text")
+                status = content.get("status", False)
+                status_text = "Success" if status else "Failed"
+                status_color = "green" if status else "red"
+                with ui.expansion(f"Result: {status_text}").classes(
+                        "w-full"
+                    ):
+                        ui.badge(status_text, color=status_color)
+                        message = content.get("message", "")
+                        if message:
+                            ui.label(message).classes("text-sm text-gray-600")
+                        data = content.get("data")
+                        if data:
+                            ui.json_editor({'content': {'json': content}})
 
 
 def render_message(msg: dict, idx: int) -> None:
     """Render a single message based on its role."""
     role = msg.get("role", "unknown")
-    if role == "user":
+    normalized_role = str(role).strip().lower()
+    if normalized_role == "user":
         render_user_message(msg.get("content", ""), idx, msg)
-    elif role == "assistant":
+    elif normalized_role == "assistant":
         render_assistant_message(msg, idx)
-    elif role == "observation":
+    elif normalized_role == "system":
+        render_system_message(msg, idx)
+    elif normalized_role == "observation":
         render_observation_message(msg, idx)
     else:
         # Unknown role - render generically
         with ui.card().classes("bg-yellow-50 max-w-[70%]"):
             ui.label(f"#{idx} - {role}").classes("font-semibold")
-            ui.code(json.dumps(msg, indent=2, default=str), language="json")
+            ui.code(json.dumps(msg, indent=2, default=str), language="json").classes(
+                "whitespace-pre-wrap break-words"
+            )
 
 
 def show_json_inspector(data: dict) -> None:
@@ -570,7 +621,7 @@ def show_json_inspector(data: dict) -> None:
         ui.label("JSON Inspector").classes("text-xl font-bold")
         ui.separator()
         with ui.scroll_area().classes("h-[60vh]"):
-            ui.code(json.dumps(data, indent=2, default=str), language="json").classes(
+            ui.json_editor({'content': {'json': data}}).classes(
                 "text-sm"
             )
         ui.button("Close", on_click=dialog.close).classes("mt-4")
@@ -725,10 +776,20 @@ def main_content() -> None:
                                 config_options = {
                                     format_config_label(s, m): t for s, m, t in configs
                                 }
+                                if (
+                                    not state.selected_config_label
+                                    or state.selected_config_label not in config_options
+                                ):
+                                    state.selected_config_label = list(
+                                        config_options.keys()
+                                    )[0]
                                 selected_config = ui.select(
                                     list(config_options.keys()),
-                                    value=list(config_options.keys())[0],
-                                    on_change=lambda _: main_content.refresh(),
+                                    value=state.selected_config_label,
+                                    on_change=lambda e: setattr(
+                                        state, "selected_config_label", e.value
+                                    )
+                                    or main_content.refresh(),
                                 ).classes("min-w-64")
 
                                 ui.button(
@@ -738,7 +799,7 @@ def main_content() -> None:
 
                             # Render selected config (value is guaranteed non-None from initial value)
                             config_key = (
-                                selected_config.value or list(config_options.keys())[0]
+                                selected_config.value or state.selected_config_label
                             )
                             render_trace_view(config_options[config_key])
                         else:
