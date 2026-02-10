@@ -41,7 +41,7 @@ api_key = "THINKTANK"
 
 # only got it working with setup through litellm
 # see https://docs.litellm.ai/docs/providers/sap#step-2-set-your-credentials for info
-[models.gemini-2-5]
+[models.gemini-2-5-pro]
 litellm_name = "sap/gemini-2.5-pro"
 context_window = 128000
 temperature = 0
@@ -54,9 +54,15 @@ provider = "aicore"
 api_base = "http://10.237.89.124:3030/v1"
 api_key = "THINKTANK"
 
-
 [models.glm-4-9b]
 litellm_name = "ollama/glm4:9b"
+context_window = 128000
+provider = "ollama"
+api_base = "http://10.237.89.124:3030/v1"
+api_key = "THINKTANK"
+
+[models.ministral-3-8b]
+litellm_name = "ollama/ministral-3:8b"
 context_window = 128000
 provider = "ollama"
 api_base = "http://10.237.89.124:3030/v1"
