@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import pytest
 
-import thesis_graphics as tg
+import tools.thesis_graphics as tg
 
 
 def test_load_metrics_long_extracts_domains():
