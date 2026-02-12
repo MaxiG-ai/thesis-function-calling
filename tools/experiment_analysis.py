@@ -7,7 +7,7 @@
 
 import marimo
 
-__generated_with = "0.19.9"
+__generated_with = "0.19.10"
 app = marimo.App(width="full")
 
 
@@ -17,7 +17,7 @@ def _():
     import marimo as mo
     import pandas as pd
     import altair as alt
-    import tools.thesis_graphics as tg
+    import thesis_graphics as tg
     import seaborn as sns
     import matplotlib.pyplot as plt
 
@@ -59,6 +59,8 @@ def _(BASE_DIR):
 def _(mo):
     mo.md("""
     # Experiment Analysis
+
+    Choose the Project below
     """)
     return
 
@@ -493,6 +495,102 @@ def _(
             if tables
             else mo.md("No tables available"),
         ])
+    return
+
+
+@app.cell
+def _(turn_count_df):
+    turn_count_df["domain"] = [val.split("-")[0] for val in turn_count_df.task_id]
+    turn_count_df.domain.value_counts()
+    return
+
+
+@app.cell
+def _(turn_count_df):
+    turn_count_df.dtypes
+    return
+
+
+@app.cell
+def _(turn_count_df):
+    turn_count_domain_grouped = turn_count_df.groupby(
+        ["model", "timestamp", "memory_strategy", "domain"], 
+        )["response_llm_judge_correct_score"].value_counts(dropna=False).unstack(fill_value=0)
+    turn_count_domain_grouped
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### LLM-as-a-Judge Correctness Evaluation
+    """)
+    return
+
+
+@app.cell
+def _(plt, sns, turn_count_df):
+    sns.set_theme(style="whitegrid")
+
+    correctness_plot = sns.catplot(
+        data=turn_count_df, 
+        x='response_llm_judge_correct_score', 
+        hue='memory_strategy', 
+        col='model',
+        kind='count',
+        palette='viridis',
+        height=7, 
+        aspect=0.8,
+    )
+
+    # 3. Refine labels using LaTeX formatting for scientific clarity
+    correctness_plot.set_axis_labels("LLM-as-a-Judge Correctness Evaluation", "Count of Correctness")
+    correctness_plot.set_titles(col_template="{col_name}")
+
+    # Prevent label overlapping
+    plt.tight_layout()
+    plt.show()
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## LLM-as-a-Judge Completeness Evaluation
+    """)
+    return
+
+
+@app.cell
+def _(plt, sns, turn_count_df):
+    sns.set_theme(style="whitegrid")
+
+    completeness_plot = sns.catplot(
+        data=turn_count_df, 
+        x='response_llm_judge_complete_score', 
+        hue='memory_strategy', 
+        col='model',
+        kind='count',
+        palette='viridis',
+        height=7, 
+        aspect=0.8,
+    )
+
+    # 3. Refine labels using LaTeX formatting for scientific clarity
+    completeness_plot.set_axis_labels("LLM-as-a-Judge Completeness Evaluation", "Count of Completeness")
+    completeness_plot.set_titles(col_template="{col_name}")
+
+    # Prevent label overlapping
+    plt.tight_layout()
+    plt.show()
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Further Eval
+    """)
     return
 
 
