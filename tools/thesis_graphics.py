@@ -9,8 +9,6 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Iterable
-
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
