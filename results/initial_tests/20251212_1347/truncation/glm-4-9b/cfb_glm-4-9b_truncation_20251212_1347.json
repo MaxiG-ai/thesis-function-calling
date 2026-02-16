@@ -1,0 +1,160 @@
+[
+  {
+    "id": "Hotels-104",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "My friends are planning to visit Berlin from December 10th to December 15th, 2024. Find a hotel near the Museumsinsel that has a 24-hour front desk. Then find other nearby cities around hotel where they can continue their travel plans."
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Hotel_Destination",
+            "arguments": {
+              "query": "Museumsinsel, Berlin"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": [
+              {
+                "dest_id": "11684764",
+                "search_type": "hotel",
+                "region": "Berlin Federal State",
+                "nr_hotels": 1,
+                "name": "Great Central City Apartments Mitte Museumsinsel",
+                "label": "Great Central City Apartments Mitte Museumsinsel, Berlin, Berlin Federal State, Germany",
+                "country": "Germany",
+                "hotels": 1,
+                "city_name": "Berlin",
+                "dest_type": "hotel",
+                "lc": "en",
+                "cc1": "de",
+                "roundtrip": "GgEwIAAoATICZW46FE11c2V1bXNpbnNlbCwgQmVybGluQABKAFAA",
+                "latitude": 52.51292,
+                "city_ufi": -1746443,
+                "type": "ho",
+                "longitude": 13.402804
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": "{\"type\": \"function\", \"function\": {\"name\": \"Get_Nearby_Cities\", \"arguments\": {\"longitude\": \"13.402804\", \"latitude\": \"52.51292\"}}}"
+      }
+    ],
+    "message": {
+      "error_type": "stop_early",
+      "content": "Stop early."
+    },
+    "count_dict": {
+      "success_turn_num": 1,
+      "total_turn_num": 4,
+      "correct_call_num": 1,
+      "total_call_num": 4,
+      "real_turn_num": 1
+    },
+    "resp_eval": {
+      "complete": {
+        "score": 1,
+        "reason": "The response only addresses the part about finding nearby cities around the hotel location, but does not provide information about a hotel near Museumsinsel with a 24-hour front desk."
+      },
+      "correct": {
+        "score": 2,
+        "reason": "The response correctly calls the function to get nearby cities using the coordinates of the originally requested hotel near Museumsinsel (latitude: 52.51292, longitude: 13.402804), which matches the user's request to find nearby cities around the hotel. All information in the response is correct."
+      }
+    },
+    "status": "Failed",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Car-Rental-114",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "My friend Lily is going to rent a car at Dallas-Fort Worth International Airport at 7 AM on November 20th, 2024, and return it at George Bush Intercontinental Airport in Houston at 1 PM nine days later. Provide detailed information about two different car types."
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Get_Room_List_With_Availability",
+            "arguments": {
+              "hotel_id": "DFW-IAD",
+              "departure_date": "2024-11-20",
+              "arrival_date": "2024-11-28"
+            }
+          }
+        ]
+      }
+    ],
+    "message": [
+      {
+        "error_type": "func_error",
+        "content": "Do not call the correct function."
+      }
+    ],
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 3,
+      "correct_call_num": 0,
+      "total_call_num": 5,
+      "real_turn_num": 1
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Car-Rental-25",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I want to rent a car at Newark Liberty International Airport at 11 am on November 25th, 2024, and return it in Newark at 4 pm on November 30th."
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Car_Rentals",
+            "arguments": {
+              "pick_up_longitude": -74.1745,
+              "drop_off_time": "16:00",
+              "drop_off_latitude": 40.6912,
+              "drop_off_date": "2024-11-30",
+              "pick_up_time": "11:00",
+              "pick_up_latitude": 40.6912,
+              "pick_up_date": "2024-11-25",
+              "drop_off_longitude": -74.1745
+            }
+          }
+        ]
+      }
+    ],
+    "message": [
+      {
+        "error_type": "value_error",
+        "content": "Parameter drop_off_latitude value is not correct in prediction."
+      }
+    ],
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 2,
+      "correct_call_num": 0,
+      "total_call_num": 3,
+      "real_turn_num": 1
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  }
+]

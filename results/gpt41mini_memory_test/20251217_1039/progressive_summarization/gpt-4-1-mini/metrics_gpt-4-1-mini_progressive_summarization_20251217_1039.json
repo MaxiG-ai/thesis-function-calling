@@ -1,0 +1,26 @@
+{
+  "domain_success_rate": {
+    "Hotels": 1.3333333333333335,
+    "Attraction": 1.3333333333333335,
+    "Cross": 1.0,
+    "Car-Rental": 0.6666666666666667
+  },
+  "domain_turn_acc": {
+    "Hotels": 69.23076923076923,
+    "Car-Rental": 54.54545454545454,
+    "Attraction": 77.77777777777779,
+    "Cross": 100.0,
+    "Flights": 66.66666666666666
+  },
+  "domain_call_acc": {
+    "Hotels": 64.28571428571429,
+    "Car-Rental": 51.35135135135135,
+    "Attraction": 75.0,
+    "Cross": 95.83333333333334,
+    "Flights": 66.66666666666666
+  },
+  "overall_success": 45.0,
+  "overall_call_acc": 68.81720430107528,
+  "complete_score_avg": 1.8333333333333333,
+  "correct_score_avg": 2.0
+}

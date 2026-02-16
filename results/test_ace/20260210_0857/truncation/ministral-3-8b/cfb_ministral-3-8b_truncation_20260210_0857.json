@@ -1,0 +1,149 @@
+[
+  {
+    "id": "Hotels-104",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "My friends are planning to visit Berlin from December 10th to December 15th, 2024. Find a hotel near the Museumsinsel that has a 24-hour front desk. Then find other nearby cities around hotel where they can continue their travel plans."
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Hotel_Destination",
+            "arguments": {
+              "query": "Museumsinsel, Berlin, Germany"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": [
+              {
+                "dest_id": "11684764",
+                "search_type": "hotel",
+                "region": "Berlin Federal State",
+                "nr_hotels": 1,
+                "name": "Great Central City Apartments Mitte Museumsinsel",
+                "label": "Great Central City Apartments Mitte Museumsinsel, Berlin, Berlin Federal State, Germany",
+                "country": "Germany",
+                "hotels": 1,
+                "city_name": "Berlin",
+                "dest_type": "hotel",
+                "lc": "en",
+                "cc1": "de",
+                "roundtrip": "GgEwIAAoATICZW46FE11c2V1bXNpbnNlbCwgQmVybGluQABKAFAA",
+                "latitude": 52.51292,
+                "city_ufi": -1746443,
+                "type": "ho",
+                "longitude": 13.402804
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Get_Filter",
+            "arguments": {
+              "search_type": "hotel",
+              "dest_id": "11684764"
+            }
+          }
+        ]
+      }
+    ],
+    "message": [
+      {
+        "error_type": "param_missing",
+        "content": "Missing parameter arrival_date in prediction."
+      }
+    ],
+    "count_dict": {
+      "success_turn_num": 1,
+      "total_turn_num": 4,
+      "correct_call_num": 1,
+      "total_call_num": 4,
+      "real_turn_num": 2
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Car-Rental-114",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "My friend Lily is going to rent a car at Dallas-Fort Worth International Airport at 7 AM on November 20th, 2024, and return it at George Bush Intercontinental Airport in Houston at 1 PM nine days later. Provide detailed information about two different car types."
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Car_Location",
+            "arguments": {
+              "query": "Dallas-Fort Worth International Airport, DFW"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": [
+              {
+                "coordinates": {
+                  "latitude": 32.8967018127441,
+                  "longitude": -97.0421981811523
+                },
+                "type": "airport",
+                "iata_code": "DFW",
+                "city": "Dallas",
+                "name": "Dallas-Fort Worth International Airport",
+                "country": "United States"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Car_Location",
+            "arguments": {
+              "query": "George Bush Intercontinental Airport, Houston"
+            }
+          }
+        ]
+      }
+    ],
+    "message": [
+      {
+        "error_type": "value_error",
+        "content": "Parameter query value do not equal to golden."
+      }
+    ],
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 3,
+      "correct_call_num": 1,
+      "total_call_num": 5,
+      "real_turn_num": 2
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  }
+]
