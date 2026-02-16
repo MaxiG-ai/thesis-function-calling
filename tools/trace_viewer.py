@@ -626,9 +626,15 @@ def render_system_message(msg: dict, idx: int) -> None:
                 ).props("flat dense size=sm")
             content = msg.get("content", "")
             if content:
-                ui.code(content).classes(
-                    "whitespace-pre-wrap break-words text-sm w-full"
-                )
+                # get the first line of string content
+                first_line = content.splitlines()[0].strip("#") if isinstance(content, str) else "System Message Content"
+                with ui.expansion(first_line).classes("bg-purple-50 w-full"):
+                    # clean content by removing markdown header
+                    clean_content = content.replace(first_line, "").strip() if isinstance(content, str) else content
+                    ui.label(clean_content).classes(
+                        "w-full text-sm font-mono bg-gray-100 p-2 rounded "
+                        "whitespace-pre-wrap break-all" # forcing the wrap
+                    )
 
     except Exception as e:
         with ui.card().classes("w-full bg-red-50 border-l-4 border-red-400"):
