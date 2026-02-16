@@ -1,0 +1,232 @@
+[
+  {
+    "id": "Hotels-131",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "Our family is planning a trip to Los Angeles from December 5th to December 10th, 2024. There will be two adults and a seven-year-old child. We hope to find the two cheapest hotels that provide airport shuttle services and to learn about their child policies."
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "Error code: 404 - {'error': {'message': \"Model 'gpt-5' not found in configuration. Available models: gpt-4-1, gpt-4-1-mini, gpt-4o-2024-08-06, gpt-5-mini\", 'type': 'invalid_request_error', 'code': 'model_not_found'}}"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 4,
+      "correct_call_num": 0,
+      "total_call_num": 5,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Hotels-95",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "My friends and I are planning to go on vacation to Sydney in November 2024. We hope to find two accessible hotels that are suitable for wheelchair users throughout the month. Could you compare the policies of these two hotels?"
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "Error code: 404 - {'error': {'message': \"Model 'gpt-5' not found in configuration. Available models: gpt-4-1, gpt-4-1-mini, gpt-4o-2024-08-06, gpt-5-mini\", 'type': 'invalid_request_error', 'code': 'model_not_found'}}"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 4,
+      "correct_call_num": 0,
+      "total_call_num": 5,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Cross-262",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I'm traveling to Sydney on December 10, 2024. Find the cheapest flight from Singapore. Besides that, arrange a taxi to pick me up from the airport two hours after my flight lands and take me to the Sydney Opera House for a visit."
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "Error code: 404 - {'error': {'message': \"Model 'gpt-5' not found in configuration. Available models: gpt-4-1, gpt-4-1-mini, gpt-4o-2024-08-06, gpt-5-mini\", 'type': 'invalid_request_error', 'code': 'model_not_found'}}"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 4,
+      "correct_call_num": 0,
+      "total_call_num": 6,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Cross-195",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "My colleagues and I from the testing team plan to spend the last day of 2024 at the SureStay Plus Hotel by Best Western Chicago Lombard in Chicago (Hotel ID: 28785) for a team event to welcome the New Year together. Book a taxi to take us to a nearby attraction at 11 AM on New Year's Day."
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "Error code: 404 - {'error': {'message': \"Model 'gpt-5' not found in configuration. Available models: gpt-4-1, gpt-4-1-mini, gpt-4o-2024-08-06, gpt-5-mini\", 'type': 'invalid_request_error', 'code': 'model_not_found'}}"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 3,
+      "correct_call_num": 0,
+      "total_call_num": 4,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Hotels-70",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I plan to take a family vacation to Canberra from November 15th to November 22nd, 2024. Find a few hotels with family rooms that allow pets and are suitable for two adults and two children aged 4 and 9."
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "Error code: 404 - {'error': {'message': \"Model 'gpt-5' not found in configuration. Available models: gpt-4-1, gpt-4-1-mini, gpt-4o-2024-08-06, gpt-5-mini\", 'type': 'invalid_request_error', 'code': 'model_not_found'}}"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 3,
+      "correct_call_num": 0,
+      "total_call_num": 3,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Car-Rental-103",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I'm going to rent a car at Adelaide Airport at 11 AM on December 1st, 2024, and return it at Canberra Airport at 5 PM on the 7th. Provide the detailed information about the vehicle and the supplier, along with the booking summary."
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "Error code: 404 - {'error': {'message': \"Model 'gpt-5' not found in configuration. Available models: gpt-4-1, gpt-4-1-mini, gpt-4o-2024-08-06, gpt-5-mini\", 'type': 'invalid_request_error', 'code': 'model_not_found'}}"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 3,
+      "correct_call_num": 0,
+      "total_call_num": 6,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Car-Rental-127",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "My friends are planning a self-driving trip in Norway from November 30th to December 7th, 2024. They'll pick up the car at Oslo Airport at 10 AM and return it at Bergen Airport, Flesland at 6 PM. Could you provide details of the vehicle, the supplier's ratings, and user comments?"
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "Error code: 404 - {'error': {'message': \"Model 'gpt-5' not found in configuration. Available models: gpt-4-1, gpt-4-1-mini, gpt-4o-2024-08-06, gpt-5-mini\", 'type': 'invalid_request_error', 'code': 'model_not_found'}}"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 3,
+      "correct_call_num": 0,
+      "total_call_num": 6,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Hotels-23",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I'm planning to stay at the Days Inn by Wyndham Saint John from November 5, 2024 to November 10, 2024. I want to know the user reviews for the hotel."
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "Error code: 404 - {'error': {'message': \"Model 'gpt-5' not found in configuration. Available models: gpt-4-1, gpt-4-1-mini, gpt-4o-2024-08-06, gpt-5-mini\", 'type': 'invalid_request_error', 'code': 'model_not_found'}}"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 3,
+      "correct_call_num": 0,
+      "total_call_num": 3,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Cross-301",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I want to spend Thanksgiving of 2024 in New York. Could you book a hotel within 30 kilometers of the Statue of Liberty for me? I'll check in on Thanksgiving (November 28th) and check out on Christmas (December 25th). Additionally, book a taxi for me from the hotel to Grand Central Terminal, New York at 8 o'clock in the morning on Christmas."
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "Error code: 404 - {'error': {'message': \"Model 'gpt-5' not found in configuration. Available models: gpt-4-1, gpt-4-1-mini, gpt-4o-2024-08-06, gpt-5-mini\", 'type': 'invalid_request_error', 'code': 'model_not_found'}}"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 4,
+      "correct_call_num": 0,
+      "total_call_num": 5,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Car-Rental-90",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I'll rent a car at Canberra Airport at 11 AM on November 26th, 2024, and return it at Adelaide Airport at 5 PM on November 28th, 2024. Provide detailed information about the vehicle and the supplier."
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "Error code: 404 - {'error': {'message': \"Model 'gpt-5' not found in configuration. Available models: gpt-4-1, gpt-4-1-mini, gpt-4o-2024-08-06, gpt-5-mini\", 'type': 'invalid_request_error', 'code': 'model_not_found'}}"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 3,
+      "correct_call_num": 0,
+      "total_call_num": 5,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  }
+]

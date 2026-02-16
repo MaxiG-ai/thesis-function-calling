@@ -1,0 +1,520 @@
+[
+  {
+    "id": "Hotels-124",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "Find a hotel under $600 near the Colosseum in Rome for the dates November 20, 2024, to November 30, 2024. I want to know the user comments about these hotels, with the latest reviews first."
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Hotel_Destination",
+            "arguments": {
+              "query": "Colosseum, Rome"
+            }
+          },
+          {
+            "name": "Search_Hotels",
+            "arguments": {
+              "search_type": "Colosseum, Rome",
+              "price_max": 600,
+              "arrival_date": "2024-11-20",
+              "departure_date": "2024-11-30"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": [
+              {
+                "dest_id": "1506",
+                "search_type": "landmark",
+                "roundtrip": "GgEwIAAoATICeHU6CUNvbG9zc2V1bUAASgBQAA==",
+                "dest_type": "landmark",
+                "label": "The Colosseum, Rome, Lazio, Italy",
+                "region": "Lazio",
+                "city_name": "Rome",
+                "cc1": "it",
+                "city_ufi": -126693,
+                "longitude": 12.492268,
+                "nr_hotels": 306,
+                "landmark_type": 4,
+                "latitude": 41.89022,
+                "lc": "xu",
+                "name": "The Colosseum",
+                "hotels": 306,
+                "country": "Italy",
+                "type": "la"
+              }
+            ]
+          },
+          {
+            "api_status": true,
+            "content": "There is a problem with your api call, please double-check for possible problems."
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Hotels",
+            "arguments": {
+              "search_type": "landmark",
+              "dest_id": 1506,
+              "price_max": 600,
+              "arrival_date": "2024-11-20",
+              "departure_date": "2024-11-30"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": {
+              "hotels": [
+                {
+                  "hotel_id": 4945540,
+                  "accessibilityLabel": "Villa Luzzatti.\n5.3 Passable 2740 reviews.\n\u200eCentral Station, Rome\u202c \u2022 \u200e1.5 km from Coliseum\u202c.\n Bed in dormitory : 1\u00a0bed.\nOriginal price 288 USD. Current price 263 USD..\nIncludes taxes and charges.\nFree cancellation.",
+                  "property": {
+                    "currency": "EUR",
+                    "blockIds": [
+                      "494554022_377423436_0_32_0"
+                    ],
+                    "checkinDate": "2024-11-20",
+                    "isFirstPage": true,
+                    "mainPhotoId": 607833106,
+                    "ufi": -126693,
+                    "position": 0,
+                    "priceBreakdown": {
+                      "grossPrice": {
+                        "value": 262.999652222197,
+                        "currency": "USD"
+                      },
+                      "benefitBadges": [
+                        {
+                          "identifier": "Mobile Rate",
+                          "explanation": "Mobile-only price",
+                          "text": "Mobile-only price",
+                          "variant": "constructive"
+                        }
+                      ],
+                      "strikethroughPrice": {
+                        "currency": "USD",
+                        "value": 288.009585790874
+                      }
+                    },
+                    "accuratePropertyClass": 0,
+                    "name": "Villa Luzzatti",
+                    "checkoutDate": "2024-11-30",
+                    "reviewScore": 5.3,
+                    "wishlistName": "Rome",
+                    "qualityClass": 0,
+                    "reviewScoreWord": "Passable",
+                    "propertyClass": 0,
+                    "checkout": {
+                      "untilTime": "11:00",
+                      "fromTime": "04:00"
+                    },
+                    "rankingPosition": 0,
+                    "longitude": 12.510629,
+                    "countryCode": "it",
+                    "optOutFromGalleryChanges": 1,
+                    "reviewCount": 2740,
+                    "checkin": {
+                      "untilTime": "23:30",
+                      "fromTime": "15:00"
+                    },
+                    "latitude": 41.891595,
+                    "id": 4945540
+                  }
+                }
+              ],
+              "meta": [
+                {
+                  "title": "34 properties"
+                }
+              ],
+              "appear": [
+                {
+                  "component": {
+                    "props": {
+                      "fill": true,
+                      "content": {
+                        "props": {
+                          "fitContentWidth": true,
+                          "items": [
+                            {
+                              "props": {
+                                "component": {
+                                  "props": {
+                                    "items": [
+                                      {
+                                        "props": {
+                                          "text": [
+                                            {
+                                              "text": "Commission paid and other benefits may affect an accommodation's ranking.",
+                                              "font": "body_2"
+                                            },
+                                            {
+                                              "text": "  ",
+                                              "color": "foreground",
+                                              "font": "strong_2"
+                                            },
+                                            {
+                                              "font": "body_2",
+                                              "color": "action_foreground",
+                                              "text": "Find out more",
+                                              "linkActions": [
+                                                {}
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      }
+                                    ],
+                                    "spacing": "spacing_half"
+                                  }
+                                }
+                              }
+                            },
+                            {},
+                            {
+                              "props": {
+                                "component": {
+                                  "props": {
+                                    "tertiaryTintedColor": "foreground",
+                                    "variant": "tertiary_tinted",
+                                    "accessibilityLabel": "Close",
+                                    "icon": "close"
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  },
+                  "id": "cma"
+                },
+                {},
+                {
+                  "id": "signin_now",
+                  "component": {
+                    "props": {
+                      "title": "Sign in and save money",
+                      "text": "Get instant access to our Genius loyalty programme and enjoy discounts at properties worldwide."
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Get_Hotel_Reviews(Tips)_Sort_Option",
+            "arguments": {
+              "hotel_id": "4945540"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "timestamp": 1730123624401,
+            "data": [
+              {
+                "title": "Most relevant",
+                "sort_option_default": 1,
+                "sort_option_id": "sort_most_relevant"
+              },
+              {
+                "sort_option_default": 0,
+                "sort_option_id": "sort_recent_desc",
+                "title": "Date (newer to older)"
+              },
+              {
+                "sort_option_default": 0,
+                "sort_option_id": "proximity_to_hotel_average",
+                "title": "Close to property score"
+              },
+              {
+                "sort_option_default": 0,
+                "sort_option_id": "sort_score_desc",
+                "title": "Review score (high to low)"
+              },
+              {
+                "title": "From your country",
+                "sort_option_default": 0,
+                "sort_option_id": "user_country"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Get_Hotel_Reviews(Tips)",
+            "arguments": {
+              "hotel_id": "4945540",
+              "sort_option_id": "sort_recent_desc"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": {
+              "count": 25,
+              "sort_options": [
+                {
+                  "sort_option_default": 1,
+                  "title": "Most relevant",
+                  "sort_option_id": "sort_most_relevant"
+                },
+                {
+                  "sort_option_id": "sort_recent_desc",
+                  "title": "Date (newer to older)",
+                  "sort_option_default": 0
+                },
+                {
+                  "sort_option_default": 0,
+                  "sort_option_id": "proximity_to_hotel_average",
+                  "title": "Close to property score"
+                },
+                {
+                  "sort_option_default": 0,
+                  "sort_option_id": "sort_score_desc",
+                  "title": "Review score (high to low)"
+                },
+                {
+                  "sort_option_id": "user_country",
+                  "title": "From your country",
+                  "sort_option_default": 0
+                }
+              ],
+              "result": [
+                {
+                  "countrycode": "au",
+                  "review_id": 5098504107,
+                  "languagecode": "en-gb",
+                  "is_moderated": 0,
+                  "author": {
+                    "name": "Shibu",
+                    "type_string": "Solo traveller",
+                    "helpful_vote_count": 0,
+                    "user_id": 132000232,
+                    "countrycode": "au",
+                    "nr_reviews": 0,
+                    "type": "solo_traveller"
+                  },
+                  "travel_purpose": "leisure",
+                  "stayed_room_info": {
+                    "checkin": "2024-10-25",
+                    "checkout": "2024-10-27",
+                    "num_nights": 2,
+                    "room_id": 494554031,
+                    "room_name": "Bed in 6-Bed Mixed Dormitory Room with Shared Bathroom and Terrace"
+                  },
+                  "date": "2024-10-28 06:41:37",
+                  "average_score": 0.400000005960464,
+                  "reviewng": 1,
+                  "no_user_title": 1,
+                  "hotel_id": 4945540,
+                  "helpful_vote_count": 0,
+                  "is_incentivised": 0,
+                  "title": "Bad",
+                  "review_hash": "dc2d4cb21ea0dbd3"
+                },
+                {
+                  "is_moderated": 0,
+                  "cons": "el ambiente",
+                  "travel_purpose": "other",
+                  "stayed_room_info": {
+                    "room_name": "Bed in 8-Bed Mixed Dormitory Room with Private Bathroom and Terrace",
+                    "room_id": 494554022,
+                    "checkout": "2024-09-28",
+                    "checkin": "2024-09-25",
+                    "num_nights": 3
+                  },
+                  "author": {
+                    "name": "Marcela",
+                    "user_id": 0,
+                    "type_string": "Family",
+                    "helpful_vote_count": 0,
+                    "countrycode": "es",
+                    "type": "family_with_children",
+                    "nr_reviews": 0
+                  },
+                  "review_id": 5098420203,
+                  "languagecode": "es",
+                  "countrycode": "es",
+                  "is_incentivised": 0,
+                  "review_hash": "de1c1429654b5c70",
+                  "title": "ninguna",
+                  "average_score": 2.40000009536743,
+                  "pros": "el lugar , y el precio muy alto",
+                  "date": "2024-10-27 23:10:33",
+                  "helpful_vote_count": 0,
+                  "no_user_title": 0,
+                  "hotel_id": 4945540,
+                  "reviewng": 1
+                },
+                {
+                  "average_score": 0.400000005960464,
+                  "date": "2024-10-27 21:14:53",
+                  "helpful_vote_count": 0,
+                  "hotel_id": 4945540,
+                  "no_user_title": 1,
+                  "reviewng": 1,
+                  "is_incentivised": 0,
+                  "review_hash": "9a9b95e755f55401",
+                  "title": "Bad",
+                  "languagecode": "en-us",
+                  "review_id": 5098352148,
+                  "countrycode": "us",
+                  "is_moderated": 0,
+                  "stayed_room_info": {
+                    "checkout": "2024-10-27",
+                    "checkin": "2024-10-24",
+                    "num_nights": 3,
+                    "room_id": 494554033,
+                    "room_name": "Bed in 4-Bed Mixed Dormitory Room"
+                  },
+                  "travel_purpose": "leisure",
+                  "author": {
+                    "countrycode": "us",
+                    "type": "review_category_group_of_friends",
+                    "nr_reviews": 0,
+                    "user_id": 869163433,
+                    "helpful_vote_count": 0,
+                    "type_string": "Group of friends",
+                    "name": "Arif"
+                  }
+                },
+                {
+                  "average_score": 1.20000004768372,
+                  "pros": "\u0426\u0435\u043d\u0430",
+                  "date": "2024-10-27 14:46:29",
+                  "helpful_vote_count": 0,
+                  "hotel_id": 4945540,
+                  "no_user_title": 1,
+                  "reviewng": 1,
+                  "is_incentivised": 0,
+                  "review_hash": "8f97c4d474389e9e",
+                  "title": "Poor",
+                  "review_id": 5098224710,
+                  "languagecode": "bg",
+                  "countrycode": "bg",
+                  "is_moderated": 0,
+                  "cons": "\u041d\u044f\u043c\u0430\u0448\u0435 \u0442\u043e\u043f\u043b\u0430 \u0432\u043e\u0434\u0430 \u0438 \u0447\u0430\u0440\u0448\u0430\u0444\u0438.",
+                  "travel_purpose": "leisure",
+                  "stayed_room_info": {
+                    "room_name": "Bed in 8-Bed Mixed Dormitory Room with Private Bathroom and Terrace",
+                    "room_id": 494554022,
+                    "checkout": "2024-10-26",
+                    "checkin": "2024-10-23",
+                    "num_nights": 3
+                  },
+                  "author": {
+                    "name": "Dimov",
+                    "type": "couple",
+                    "nr_reviews": 0,
+                    "countrycode": "bg",
+                    "user_id": 495501961,
+                    "type_string": "Couple",
+                    "helpful_vote_count": 0
+                  }
+                },
+                {
+                  "countrycode": "tn",
+                  "review_id": 5098164492,
+                  "languagecode": "fr",
+                  "author": {
+                    "countrycode": "tn",
+                    "type": "review_category_group_of_friends",
+                    "nr_reviews": 0,
+                    "user_id": 713656334,
+                    "type_string": "Group of friends",
+                    "helpful_vote_count": 0,
+                    "name": "Safa"
+                  },
+                  "travel_purpose": "leisure",
+                  "stayed_room_info": {
+                    "num_nights": 4,
+                    "checkout": "2024-10-23",
+                    "checkin": "2024-10-19",
+                    "room_name": "Bed in 8-Bed Mixed Dormitory Room with Private Bathroom and Terrace",
+                    "room_id": 494554022
+                  },
+                  "cons": "Tout",
+                  "is_moderated": 0,
+                  "reviewng": 1,
+                  "no_user_title": 0,
+                  "hotel_id": 4945540,
+                  "helpful_vote_count": 0,
+                  "pros": "Rien",
+                  "date": "2024-10-27 11:45:12",
+                  "average_score": 0.800000011920929,
+                  "title": "Mauvais choix",
+                  "review_hash": "f8f6ab6b18b680b5",
+                  "is_incentivised": 0
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": "I found a hotel under $600 near the Colosseum in Rome for your dates November 20, 2024, to November 30, 2024:\n\nHotel: Villa Luzzatti\n- Price: Approximately $263 USD for the stay\n- Location: Central Station, Rome, about 1.5 km from the Colosseum\n- Review Score: 5.3 (Passable)\n- Number of Reviews: 2740\n- Free cancellation available\n\nHere are some of the latest user reviews for Villa Luzzatti (newest first):\n\n1. Title: \"Bad\"\n   - Date: October 28, 2024\n   - Reviewer: Shibu (Solo traveller from Australia)\n   - Score: 0.4\n   - Comment: No additional details provided.\n\n2. Title: \"ninguna\"\n   - Date: October 27, 2024\n   - Reviewer: Marcela (Family from Spain)\n   - Score: 2.4\n   - Pros: The place and the price are very high.\n   - Cons: The atmosphere.\n\n3. Title: \"Bad\"\n   - Date: October 27, 2024\n   - Reviewer: Arif (Group of friends from the US)\n   - Score: 0.4\n   - Comment: No additional details provided.\n\n4. Title: \"Poor\"\n   - Date: October 27, 2024\n   - Reviewer: Dimov (Couple from Bulgaria)\n   - Score: 1.2\n   - Pros: Price\n   - Cons: No hot water and sheets.\n\n5. Title: \"Mauvais choix\" (Bad choice)\n   - Date: October 27, 2024\n   - Reviewer: Safa (Group of friends from Tunisia)\n   - Score: 0.8\n   - Pros: Nothing\n   - Cons: Everything\n\nIf you want more options or details, please let me know!"
+      }
+    ],
+    "message": "Success.",
+    "count_dict": {
+      "success_turn_num": 4,
+      "total_turn_num": 4,
+      "correct_call_num": 4,
+      "total_call_num": 4,
+      "real_turn_num": 4
+    },
+    "resp_eval": {
+      "complete": {
+        "score": 2,
+        "reason": "The response provides a hotel option under $600 near the Colosseum for the specified dates, along with user comments and the latest reviews first, fully addressing all parts of the query."
+      },
+      "correct": {
+        "score": 2,
+        "reason": "All mentioned information is correct."
+      }
+    },
+    "status": "Success",
+    "memory_method": "no_strategy"
+  }
+]

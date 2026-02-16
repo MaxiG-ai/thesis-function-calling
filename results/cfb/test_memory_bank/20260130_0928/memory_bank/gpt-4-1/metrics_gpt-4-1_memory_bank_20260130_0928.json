@@ -1,0 +1,17 @@
+{
+  "domain_success_rate": {
+    "Car-Rental": 1.3333333333333335
+  },
+  "domain_turn_acc": {
+    "Hotels": 75.0,
+    "Car-Rental": 100.0
+  },
+  "domain_call_acc": {
+    "Hotels": 75.0,
+    "Car-Rental": 150.0
+  },
+  "overall_success": 66.66666666666666,
+  "overall_call_acc": 125.0,
+  "complete_score_avg": 2.0,
+  "correct_score_avg": 1.5
+}

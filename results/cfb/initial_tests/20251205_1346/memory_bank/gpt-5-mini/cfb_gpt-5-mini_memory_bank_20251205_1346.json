@@ -1,0 +1,71 @@
+[
+  {
+    "id": "Hotels-104",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "My friends are planning to visit Berlin from December 10th to December 15th, 2024. Find a hotel near the Museumsinsel that has a 24-hour front desk. Then find other nearby cities around hotel where they can continue their travel plans."
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "You must call wandb.init() before wandb.log()"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 4,
+      "correct_call_num": 0,
+      "total_call_num": 4,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "memory_bank"
+  },
+  {
+    "id": "Car-Rental-114",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "My friend Lily is going to rent a car at Dallas-Fort Worth International Airport at 7 AM on November 20th, 2024, and return it at George Bush Intercontinental Airport in Houston at 1 PM nine days later. Provide detailed information about two different car types."
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "You must call wandb.init() before wandb.log()"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 3,
+      "correct_call_num": 0,
+      "total_call_num": 5,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "memory_bank"
+  },
+  {
+    "id": "Car-Rental-25",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I want to rent a car at Newark Liberty International Airport at 11 am on November 25th, 2024, and return it in Newark at 4 pm on November 30th."
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "You must call wandb.init() before wandb.log()"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 2,
+      "correct_call_num": 0,
+      "total_call_num": 3,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "memory_bank"
+  }
+]

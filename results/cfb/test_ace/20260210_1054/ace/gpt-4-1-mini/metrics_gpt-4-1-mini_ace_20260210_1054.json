@@ -1,0 +1,13 @@
+{
+  "domain_success_rate": {},
+  "domain_turn_acc": {
+    "Car-Rental": 25.0
+  },
+  "domain_call_acc": {
+    "Car-Rental": 33.33333333333333
+  },
+  "overall_success": 0.0,
+  "overall_call_acc": 33.33333333333333,
+  "complete_score_avg": 2.0,
+  "correct_score_avg": 0.0
+}

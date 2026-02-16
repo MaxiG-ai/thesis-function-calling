@@ -1,0 +1,101 @@
+[
+  {
+    "id": "Attraction-137",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "Our family is planning a vacation from November 25 to December 20, 2024, and we're trying to choose between Tokyo and Osaka. Can you check the ticket availability for attractions that offer free entry for our ten-year-old on December 11 in both places?"
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_Y12tgzvssNOOavSiOOssrDt9",
+            "function": {
+              "arguments": "{\"query\": \"Tokyo, Japan\"}",
+              "name": "Search_Attraction_Location"
+            },
+            "type": "function"
+          },
+          {
+            "id": "call_RMn5t5NkbfPHgCbl2WTnDoc4",
+            "function": {
+              "arguments": "{\"query\": \"Osaka, Japan\"}",
+              "name": "Search_Attraction_Location"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      },
+      {
+        "tool_call_id": "call_Y12tgzvssNOOavSiOOssrDt9",
+        "role": "tool",
+        "name": "Search_Attraction_Location",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": {\"destinations\": [{\"id\": \"eyJ1ZmkiOi0yNDYyMjd9\", \"__typename\": \"AttractionsSearchDestinationSuggestion\", \"ufi\": -246227, \"country\": \"Japan\", \"cityName\": \"Tokyo\", \"productCount\": 1434, \"cc1\": \"jp\"}, {\"id\": \"eyJ1ZmkiOi0yMzU0MDJ9\", \"__typename\": \"AttractionsSearchDestinationSuggestion\", \"ufi\": -235402, \"country\": \"Japan\", \"cityName\": \"Kyoto\", \"productCount\": 571, \"cc1\": \"jp\"}]}}"
+      },
+      {
+        "tool_call_id": "call_RMn5t5NkbfPHgCbl2WTnDoc4",
+        "role": "tool",
+        "name": "Search_Attraction_Location",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": {\"destinations\": [{\"id\": \"eyJ1ZmkiOi0yNDA5MDV9\", \"__typename\": \"AttractionsSearchDestinationSuggestion\", \"ufi\": -240905, \"country\": \"Japan\", \"cityName\": \"Osaka\", \"productCount\": 468, \"cc1\": \"jp\"}, {\"id\": \"eyJ1ZmkiOi0yMzU0MDJ9\", \"__typename\": \"AttractionsSearchDestinationSuggestion\", \"ufi\": -235402, \"country\": \"Japan\", \"cityName\": \"Kyoto\", \"productCount\": 571, \"cc1\": \"jp\"}, {\"id\": \"eyJ1ZmkiOi0yMjkwMTd9\", \"__typename\": \"AttractionsSearchDestinationSuggestion\", \"ufi\": -229017, \"country\": \"Japan\", \"cityName\": \"Higashi-osaka\", \"productCount\": 887, \"cc1\": \"jp\"}, {\"id\": \"eyJ1ZmkiOjkwMDA1Njk1OX0=\", \"__typename\": \"AttractionsSearchDestinationSuggestion\", \"ufi\": 900056959, \"country\": \"Japan\", \"cityName\": \"Osakasayama\", \"productCount\": 420, \"cc1\": \"jp\"}]}}"
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_y8RdW7KFBQlIaAvA8qRgvgkF",
+            "function": {
+              "arguments": "{\"id\": \"eyJ1ZmkiOi0yNDYyMjd9\", \"sortBy\": \"lowest_price\"}",
+              "name": "Search_Attractions"
+            },
+            "type": "function"
+          },
+          {
+            "id": "call_6hUoOJd9qqXPJnPCBylL4DAU",
+            "function": {
+              "arguments": "{\"id\": \"eyJ1ZmkiOi0yNDA5MDV9\", \"sortBy\": \"lowest_price\"}",
+              "name": "Search_Attractions"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      }
+    ],
+    "message": [
+      {
+        "error_type": "param_hallucination",
+        "content": "Parameter sortBy is hallucinated."
+      },
+      {
+        "error_type": "param_hallucination",
+        "content": "Parameter sortBy is hallucinated."
+      }
+    ],
+    "count_dict": {
+      "success_turn_num": 1,
+      "total_turn_num": 4,
+      "correct_call_num": 2,
+      "total_call_num": 7,
+      "real_turn_num": 2
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "no_strategy"
+  }
+]

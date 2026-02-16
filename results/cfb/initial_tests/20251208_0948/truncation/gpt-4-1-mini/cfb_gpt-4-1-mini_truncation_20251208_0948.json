@@ -1,0 +1,3862 @@
+[
+  {
+    "id": "Hotels-104",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "My friends are planning to visit Berlin from December 10th to December 15th, 2024. Find a hotel near the Museumsinsel that has a 24-hour front desk. Then find other nearby cities around hotel where they can continue their travel plans."
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Hotel_Destination",
+            "arguments": {
+              "query": "Museumsinsel Berlin"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": [
+              {
+                "dest_id": "11684764",
+                "search_type": "hotel",
+                "region": "Berlin Federal State",
+                "nr_hotels": 1,
+                "name": "Great Central City Apartments Mitte Museumsinsel",
+                "label": "Great Central City Apartments Mitte Museumsinsel, Berlin, Berlin Federal State, Germany",
+                "country": "Germany",
+                "hotels": 1,
+                "city_name": "Berlin",
+                "dest_type": "hotel",
+                "lc": "en",
+                "cc1": "de",
+                "roundtrip": "GgEwIAAoATICZW46FE11c2V1bXNpbnNlbCwgQmVybGluQABKAFAA",
+                "latitude": 52.51292,
+                "city_ufi": -1746443,
+                "type": "ho",
+                "longitude": 13.402804
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Hotel_Destination",
+            "arguments": {
+              "query": "Museum Island Berlin"
+            }
+          },
+          {
+            "name": "Search_Hotel_Destination",
+            "arguments": {
+              "query": "Museumsinsel"
+            }
+          }
+        ]
+      }
+    ],
+    "message": [
+      {
+        "error_type": "func_error",
+        "content": "Do not call the correct function."
+      },
+      {
+        "error_type": "func_error",
+        "content": "Do not call the correct function."
+      }
+    ],
+    "count_dict": {
+      "success_turn_num": 1,
+      "total_turn_num": 4,
+      "correct_call_num": 1,
+      "total_call_num": 4,
+      "real_turn_num": 2
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Car-Rental-114",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "My friend Lily is going to rent a car at Dallas-Fort Worth International Airport at 7 AM on November 20th, 2024, and return it at George Bush Intercontinental Airport in Houston at 1 PM nine days later. Provide detailed information about two different car types."
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Car_Location",
+            "arguments": {
+              "query": "Dallas-Fort Worth International Airport"
+            }
+          },
+          {
+            "name": "Search_Car_Location",
+            "arguments": {
+              "query": "George Bush Intercontinental Airport"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": [
+              {
+                "coordinates": {
+                  "latitude": 32.8967018127441,
+                  "longitude": -97.0421981811523
+                },
+                "type": "airport",
+                "iata_code": "DFW",
+                "city": "Dallas",
+                "name": "Dallas-Fort Worth International Airport",
+                "country": "United States"
+              }
+            ]
+          },
+          {
+            "status": true,
+            "message": "Success",
+            "data": [
+              {
+                "name": "George Bush Intercontinental Airport",
+                "type": "airport",
+                "iata_code": "IAH",
+                "city": "Houston",
+                "country": "United States",
+                "coordinates": {
+                  "longitude": -95.3394012451172,
+                  "latitude": 29.9803009033203
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Car_Rentals",
+            "arguments": {
+              "pick_up_longitude": -97.0421981811523,
+              "drop_off_time": "13:00",
+              "drop_off_latitude": 29.9803009033203,
+              "drop_off_date": "2024-11-29",
+              "pick_up_time": "07:00",
+              "pick_up_latitude": 32.8967018127441,
+              "pick_up_date": "2024-11-20",
+              "drop_off_longitude": -95.3394012451172
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": {
+              "title": "Car rentals",
+              "count": 2,
+              "search_results": [
+                {
+                  "vehicle_id": "370879416",
+                  "supplier_info": {
+                    "may_require_credit_card_guarantee": false,
+                    "pickup_instructions": "-",
+                    "logo_url": "https://cdn.rcstatic.com/sp/images/suppliers/82_logo_200.png",
+                    "location_type": "Shuttle Bus",
+                    "latitude": "32.899806",
+                    "longitude": "-97.040341",
+                    "address": "2424, East 38th Street, Dallas, TX, USA, 75261",
+                    "name": "Dollar"
+                  },
+                  "vehicle_info": {
+                    "aircon": 1,
+                    "airbags": 1,
+                    "free_cancellation": 1,
+                    "unlimited_mileage": 1,
+                    "label": "Standard car with:",
+                    "cma_compliant": -1,
+                    "seats": "5",
+                    "fuel_policy": "Like for like",
+                    "transmission": "Automatic",
+                    "doors": "2",
+                    "mileage": "Unlimited mileage",
+                    "suitcases": {
+                      "big": "0",
+                      "small": "4"
+                    },
+                    "group": "Standard",
+                    "fuel_type": "N/A",
+                    "v_id": "370879416",
+                    "v_name": "Volkswagen Jetta  "
+                  },
+                  "content": {
+                    "badges": [
+                      {
+                        "type": "CONSTRUCTIVE",
+                        "variation": "DEFAULT",
+                        "text": "Free cancellation"
+                      }
+                    ],
+                    "supplier": {
+                      "name": "Dollar",
+                      "rating": {
+                        "title": "OK",
+                        "average": "6.7",
+                        "localisedRating": {
+                          "rawValue": 6.7,
+                          "displayValue": "6.7"
+                        },
+                        "subtitle": "1,688 reviews"
+                      }
+                    }
+                  },
+                  "route_info": {
+                    "pickup": {
+                      "country_code": "US",
+                      "address": "2424, East 38th Street, Dallas, TX, USA, 75261",
+                      "longitude": "-97.040341",
+                      "name": "Dallas-Fort Worth International Airport",
+                      "location_hash": "RGFsbGFzLUZvcnQgV29ydGggSW50ZXJuYXRpb25hbCBBaXJwb3J0",
+                      "location_id": "820018",
+                      "latitude": "32.899806",
+                      "location_type": "SHUTTLE_BUS"
+                    },
+                    "dropoff": {
+                      "country_code": "US",
+                      "address": "17330 PALMETTO PINES, Houston, TX, USA, 77032",
+                      "longitude": "-95.33179782",
+                      "name": "George Bush Intercontinental Airport",
+                      "location_id": "820083",
+                      "latitude": "29.96975707",
+                      "location_type": "SHUTTLE_BUS"
+                    }
+                  },
+                  "pricing_info": {
+                    "discount": 0,
+                    "base_currency": "INR",
+                    "drive_away_price_is_approx": true,
+                    "deposit": 413,
+                    "base_price": 34734.84,
+                    "currency": "USD",
+                    "price": 413,
+                    "pay_when": "PAY_NOW",
+                    "fee_breakdown": {
+                      "known_fees": [
+                        {
+                          "max_amount": 0,
+                          "min_amount": 0,
+                          "amount": 0,
+                          "type": "THEFT_EXCESS",
+                          "currency": "USD",
+                          "is_tax_included": 1,
+                          "is_always_payable": 0
+                        },
+                        {
+                          "is_always_payable": 1,
+                          "is_tax_included": 0,
+                          "currency": "USD",
+                          "amount": 8.33,
+                          "type": "AP CONC FEE RECOV",
+                          "min_amount": 8.33,
+                          "max_amount": 8.33
+                        },
+                        {
+                          "max_amount": 4.17,
+                          "min_amount": 4.17,
+                          "type": "STATE SALES TAX",
+                          "amount": 4.17,
+                          "is_always_payable": 1,
+                          "is_tax_included": 0,
+                          "currency": "USD"
+                        },
+                        {
+                          "type": "DEPOSIT",
+                          "amount": 684.96,
+                          "is_always_payable": 0,
+                          "currency": "USD",
+                          "is_tax_included": 1,
+                          "max_amount": 684.96,
+                          "min_amount": 273.98
+                        },
+                        {
+                          "type": "CITY MVR TAX",
+                          "amount": 4.17,
+                          "currency": "USD",
+                          "is_tax_included": 0,
+                          "is_always_payable": 1,
+                          "max_amount": 4.17,
+                          "min_amount": 4.17
+                        }
+                      ],
+                      "fuel_policy": {
+                        "type": "RETURN_SAME",
+                        "amount": 0
+                      }
+                    },
+                    "drive_away_price": 512.59,
+                    "base_deposit": 34734.84,
+                    "quote_allowed": 1
+                  },
+                  "freebies": [
+                    "Amendments"
+                  ],
+                  "rating_info": {
+                    "cleanliness": 7,
+                    "location": 7.4,
+                    "pickup_time": 5.6,
+                    "efficiency": 6.3,
+                    "average": 6.7,
+                    "average_text": "Good",
+                    "value_for_money": 6.2,
+                    "condition": 7.1,
+                    "no_of_ratings": 1688,
+                    "dropoff_time": 8.5
+                  },
+                  "accessibility": {
+                    "supplier_rating": "At this location, our customers have rated Dollar as 6.7 out of 10, OK.",
+                    "fuel_policy": "Fuel policy is: Like for like",
+                    "pick_up_location": "Pick-up information: Shuttle Bus",
+                    "transmission": "Automatic gearbox"
+                  },
+                  "fee_info": {
+                    "fee": 0,
+                    "tax": 0
+                  }
+                },
+                {
+                  "vehicle_id": "370879356",
+                  "supplier_info": {
+                    "may_require_credit_card_guarantee": false,
+                    "latitude": "32.899806",
+                    "location_type": "Shuttle Bus",
+                    "logo_url": "https://cdn.rcstatic.com/sp/images/suppliers/82_logo_200.png",
+                    "pickup_instructions": "-",
+                    "longitude": "-97.040341",
+                    "address": "2424, East 38th Street, Dallas, TX, USA, 75261",
+                    "name": "Dollar"
+                  },
+                  "vehicle_info": {
+                    "v_id": "370879356",
+                    "fuel_type": "N/A",
+                    "v_name": "Chevrolet Spark  ",
+                    "transmission": "Automatic",
+                    "doors": "2",
+                    "mileage": "Unlimited mileage",
+                    "cma_compliant": -1,
+                    "seats": "4",
+                    "fuel_policy": "Like for like",
+                    "suitcases": {
+                      "big": "0",
+                      "small": "2"
+                    },
+                    "group": "Economy",
+                    "free_cancellation": 1,
+                    "unlimited_mileage": 1,
+                    "label": "Economy car with:",
+                    "aircon": 1,
+                    "airbags": 1
+                  },
+                  "content": {
+                    "badges": [
+                      {
+                        "variation": "DEFAULT",
+                        "type": "CONSTRUCTIVE",
+                        "text": "Free cancellation"
+                      }
+                    ],
+                    "supplier": {
+                      "rating": {
+                        "localisedRating": {
+                          "displayValue": "6.7",
+                          "rawValue": 6.7
+                        },
+                        "subtitle": "1,688 reviews",
+                        "title": "OK",
+                        "average": "6.7"
+                      },
+                      "name": "Dollar"
+                    }
+                  },
+                  "route_info": {
+                    "dropoff": {
+                      "country_code": "US",
+                      "longitude": "-95.33179782",
+                      "address": "17330 PALMETTO PINES, Houston, TX, USA, 77032",
+                      "name": "George Bush Intercontinental Airport",
+                      "location_id": "820083",
+                      "location_type": "SHUTTLE_BUS",
+                      "latitude": "29.96975707"
+                    },
+                    "pickup": {
+                      "location_type": "SHUTTLE_BUS",
+                      "latitude": "32.899806",
+                      "location_id": "820018",
+                      "location_hash": "RGFsbGFzLUZvcnQgV29ydGggSW50ZXJuYXRpb25hbCBBaXJwb3J0",
+                      "name": "Dallas-Fort Worth International Airport",
+                      "address": "2424, East 38th Street, Dallas, TX, USA, 75261",
+                      "longitude": "-97.040341",
+                      "country_code": "US"
+                    }
+                  },
+                  "pricing_info": {
+                    "drive_away_price_is_approx": true,
+                    "discount": 0,
+                    "base_currency": "INR",
+                    "fee_breakdown": {
+                      "fuel_policy": {
+                        "amount": 0,
+                        "type": "RETURN_SAME"
+                      },
+                      "known_fees": [
+                        {
+                          "currency": "USD",
+                          "is_tax_included": 1,
+                          "is_always_payable": 0,
+                          "type": "THEFT_EXCESS",
+                          "amount": 0,
+                          "min_amount": 0,
+                          "max_amount": 0
+                        },
+                        {
+                          "max_amount": 8.33,
+                          "min_amount": 8.33,
+                          "amount": 8.33,
+                          "type": "AP CONC FEE RECOV",
+                          "is_always_payable": 1,
+                          "is_tax_included": 0,
+                          "currency": "USD"
+                        },
+                        {
+                          "min_amount": 4.17,
+                          "max_amount": 4.17,
+                          "currency": "USD",
+                          "is_tax_included": 0,
+                          "is_always_payable": 1,
+                          "type": "STATE SALES TAX",
+                          "amount": 4.17
+                        },
+                        {
+                          "min_amount": 273.98,
+                          "max_amount": 684.96,
+                          "currency": "USD",
+                          "is_tax_included": 1,
+                          "is_always_payable": 0,
+                          "amount": 684.96,
+                          "type": "DEPOSIT"
+                        },
+                        {
+                          "amount": 4.17,
+                          "type": "CITY MVR TAX",
+                          "currency": "USD",
+                          "is_tax_included": 0,
+                          "is_always_payable": 1,
+                          "max_amount": 4.17,
+                          "min_amount": 4.17
+                        }
+                      ]
+                    },
+                    "pay_when": "PAY_NOW",
+                    "price": 408.32,
+                    "drive_away_price": 507.91,
+                    "base_deposit": 34341.42,
+                    "quote_allowed": 1,
+                    "deposit": 408.32,
+                    "base_price": 34341.42,
+                    "currency": "USD"
+                  },
+                  "freebies": [
+                    "Amendments"
+                  ],
+                  "accessibility": {
+                    "supplier_rating": "At this location, our customers have rated Dollar as 6.7 out of 10, OK.",
+                    "fuel_policy": "Fuel policy is: Like for like",
+                    "pick_up_location": "Pick-up information: Shuttle Bus",
+                    "transmission": "Automatic gearbox"
+                  },
+                  "fee_info": {
+                    "fee": 0,
+                    "tax": 0
+                  },
+                  "rating_info": {
+                    "average_text": "Good",
+                    "condition": 7.1,
+                    "value_for_money": 6.2,
+                    "efficiency": 6.3,
+                    "pickup_time": 5.6,
+                    "cleanliness": 7,
+                    "location": 7.4,
+                    "average": 6.7,
+                    "no_of_ratings": 1688,
+                    "dropoff_time": 8.5
+                  }
+                }
+              ],
+              "is_genius_location": false,
+              "filter": [
+                {
+                  "id": "depotLocationType",
+                  "type": "multiple_union",
+                  "layout": {
+                    "is_collapsed": "false",
+                    "layout_type": "list",
+                    "collapsed_count": 3,
+                    "is_collapsable": "false"
+                  },
+                  "categories": [
+                    {
+                      "count": 30,
+                      "name": "Airport (shuttle)",
+                      "id": "depotLocationType::SHUTTLE_BUS",
+                      "nameWithCount": "Airport (shuttle) (30)"
+                    },
+                    {
+                      "id": "depotLocationType::IN_TERMINAL",
+                      "nameWithCount": "Airport (in terminal) (9)",
+                      "name": "Airport (in terminal)",
+                      "count": 9
+                    },
+                    {
+                      "count": 23,
+                      "name": "Airport (car rental centre)",
+                      "nameWithCount": "Airport (car rental centre) (23)",
+                      "id": "depotLocationType::CAR_RENTAL_CENTRE"
+                    }
+                  ],
+                  "title": "Location"
+                },
+                {
+                  "id": "carCategory",
+                  "type": "multiple_union",
+                  "categories": [
+                    {
+                      "id": "carCategory::small",
+                      "nameWithCount": "Small (5)",
+                      "name": "Small",
+                      "count": 5
+                    },
+                    {
+                      "id": "carCategory::medium",
+                      "nameWithCount": "Medium (20)",
+                      "count": 20,
+                      "name": "Medium"
+                    },
+                    {
+                      "count": 40,
+                      "name": "Large",
+                      "id": "carCategory::large",
+                      "nameWithCount": "Large (40)"
+                    },
+                    {
+                      "name": "Premium",
+                      "count": 9,
+                      "id": "carCategory::premium",
+                      "nameWithCount": "Premium (9)"
+                    },
+                    {
+                      "nameWithCount": "People carriers (5)",
+                      "id": "carCategory::carriers",
+                      "name": "People carriers",
+                      "count": 5
+                    }
+                  ],
+                  "layout": {
+                    "is_collapsed": "true",
+                    "collapsed_count": 5,
+                    "layout_type": "list",
+                    "is_collapsable": "true"
+                  },
+                  "title": "Car Type"
+                },
+                {
+                  "categories": [
+                    {
+                      "count": 0,
+                      "name": "US$0 - US$50",
+                      "id": "pricePerDayBuckets::BUCKET_1",
+                      "nameWithCount": "US$0 - US$50 (0)"
+                    },
+                    {
+                      "count": 41,
+                      "name": "US$50 - US$100",
+                      "nameWithCount": "US$50 - US$100 (41)",
+                      "id": "pricePerDayBuckets::BUCKET_2"
+                    },
+                    {
+                      "name": "US$100 - US$150",
+                      "count": 18,
+                      "id": "pricePerDayBuckets::BUCKET_3",
+                      "nameWithCount": "US$100 - US$150 (18)"
+                    },
+                    {
+                      "id": "pricePerDayBuckets::BUCKET_4",
+                      "nameWithCount": "US$150 - US$200 (1)",
+                      "count": 1,
+                      "name": "US$150 - US$200"
+                    },
+                    {
+                      "count": 2,
+                      "name": "US$200+",
+                      "nameWithCount": "US$200+ (2)",
+                      "id": "pricePerDayBuckets::BUCKET_5"
+                    }
+                  ],
+                  "layout": {
+                    "is_collapsable": "false",
+                    "collapsed_count": 5,
+                    "layout_type": "list",
+                    "is_collapsed": "false"
+                  },
+                  "title": "Price per day",
+                  "id": "pricePerDayBuckets",
+                  "type": "multiple_union"
+                },
+                {
+                  "layout": {
+                    "layout_type": "list",
+                    "collapsed_count": 5,
+                    "is_collapsed": "true",
+                    "is_collapsable": "true"
+                  },
+                  "categories": [
+                    {
+                      "nameWithCount": "Avis (9)",
+                      "id": "supplier::Avis",
+                      "count": 9,
+                      "name": "Avis"
+                    },
+                    {
+                      "id": "supplier::Budget",
+                      "nameWithCount": "Budget (12)",
+                      "count": 12,
+                      "name": "Budget"
+                    },
+                    {
+                      "name": "Dollar",
+                      "count": 30,
+                      "nameWithCount": "Dollar (30)",
+                      "id": "supplier::Dollar"
+                    },
+                    {
+                      "name": "Hertz",
+                      "count": 11,
+                      "id": "supplier::Hertz",
+                      "nameWithCount": "Hertz (11)"
+                    }
+                  ],
+                  "title": "Supplier",
+                  "id": "supplier",
+                  "type": "multiple_union"
+                },
+                {
+                  "layout": {
+                    "layout_type": "list",
+                    "collapsed_count": 5,
+                    "is_collapsed": "true",
+                    "is_collapsable": "true"
+                  },
+                  "categories": [
+                    {
+                      "id": "transmission::AUTOMATIC",
+                      "nameWithCount": "Automatic (62)",
+                      "count": 62,
+                      "name": "Automatic"
+                    }
+                  ],
+                  "title": "Transmission",
+                  "id": "transmission",
+                  "type": "multiple_union"
+                }
+              ],
+              "sort": [
+                {
+                  "title_tag": "tr.searchresults.sortBy.recommended",
+                  "identifier": "recommended",
+                  "name": "Recommended \u2013 best first"
+                },
+                {
+                  "title_tag": "tr.searchresults.sortBy.price.lowHigh",
+                  "name": "Price - lowest first",
+                  "identifier": "price_low_to_high"
+                },
+                {
+                  "name": "Review score - highest first",
+                  "identifier": "review_score",
+                  "title_tag": "tr.searchresults.sortBy.reviews.highLow"
+                }
+              ],
+              "search_context": {
+                "recommendationsSearchUniqueId": "d88f778a-bbd5-4814-94b2-ca676b66742a",
+                "searchId": "0576e553-4f3e-4dc7-b660-2c6b8f23acda",
+                "searchKey": "eyJkcml2ZXJzQWdlIjozMCwiZHJvcE9mZkRhdGVUaW1lIjoiMjAyNC0xMS0yOVQxMzowMDowMCIsImRyb3BPZmZMb2NhdGlvbiI6IjI5Ljk4MDMwMDkwMzMyMDMsLTk1LjMzOTQwMTI0NTExNzIiLCJkcm9wT2ZmTG9jYXRpb25UeXBlIjoiTEFUTE9ORyIsInBpY2tVcERhdGVUaW1lIjoiMjAyNC0xMS0yMFQwNzowMDowMCIsInBpY2tVcExvY2F0aW9uIjoiMzIuODk2NzAxODEyNzQ0MSwtOTcuMDQyMTk4MTgxMTUyMyIsInBpY2tVcExvY2F0aW9uVHlwZSI6IkxBVExPTkciLCJyZW50YWxEdXJhdGlvbkluRGF5cyI6MTAsInNlcnZpY2VGZWF0dXJlcyI6WyJOT19PUEFRVUVTIiwiU1VQUkVTU19GSVhFRF9QUklDRV9WRUhJQ0xFUyIsIklOQ0xVREVfUFJPRFVDVF9SRUxBVElPTlNISVBTIiwiSU5DTFVERV9FWFRSQVNfQ09OVEFJTklOR19GRUVTIl19"
+              },
+              "provider": "rentalcars",
+              "meta": {
+                "response_code": 200
+              },
+              "search_key": "eyJkcml2ZXJzQWdlIjozMCwiZHJvcE9mZkRhdGVUaW1lIjoiMjAyNC0xMS0yOVQxMzowMDowMCIsImRyb3BPZmZMb2NhdGlvbiI6IjI5Ljk4MDMwMDkwMzMyMDMsLTk1LjMzOTQwMTI0NTExNzIiLCJkcm9wT2ZmTG9jYXRpb25UeXBlIjoiTEFUTE9ORyIsInBpY2tVcERhdGVUaW1lIjoiMjAyNC0xMS0yMFQwNzowMDowMCIsInBpY2tVcExvY2F0aW9uIjoiMzIuODk2NzAxODEyNzQ0MSwtOTcuMDQyMTk4MTgxMTUyMyIsInBpY2tVcExvY2F0aW9uVHlwZSI6IkxBVExPTkciLCJyZW50YWxEdXJhdGlvbkluRGF5cyI6MTAsInNlcnZpY2VGZWF0dXJlcyI6WyJOT19PUEFRVUVTIiwiU1VQUkVTU19GSVhFRF9QUklDRV9WRUhJQ0xFUyIsIklOQ0xVREVfUFJPRFVDVF9SRUxBVElPTlNISVBTIiwiSU5DTFVERV9FWFRSQVNfQ09OVEFJTklOR19GRUVTIl19",
+              "content": {
+                "filters": {
+                  "countLabel": "2 results"
+                },
+                "items": [
+                  {
+                    "positionInList": 3,
+                    "content": {
+                      "contentType": "carsSearchResultsSecondaryPromotional"
+                    },
+                    "type": "SHELL_REGION_VIEW"
+                  }
+                ]
+              },
+              "type": "cars"
+            }
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Vehicle_Details",
+            "arguments": {
+              "vehicle_id": "370879416",
+              "search_key": "eyJkcml2ZXJzQWdlIjozMCwiZHJvcE9mZkRhdGVUaW1lIjoiMjAyNC0xMS0yOVQxMzowMDowMCIsImRyb3BPZmZMb2NhdGlvbiI6IjI5Ljk4MDMwMDkwMzMyMDMsLTk1LjMzOTQwMTI0NTExNzIiLCJkcm9wT2ZmTG9jYXRpb25UeXBlIjoiTEFUTE9ORyIsInBpY2tVcERhdGVUaW1lIjoiMjAyNC0xMS0yMFQwNzowMDowMCIsInBpY2tVcExvY2F0aW9uIjoiMzIuODk2NzAxODEyNzQ0MSwtOTcuMDQyMTk4MTgxMTUyMyIsInBpY2tVcExvY2F0aW9uVHlwZSI6IkxBVExPTkciLCJyZW50YWxEdXJhdGlvbkluRGF5cyI6MTAsInNlcnZpY2VGZWF0dXJlcyI6WyJOT19PUEFRVUVTIiwiU1VQUkVTU19GSVhFRF9QUklDRV9WRUhJQ0xFUyIsIklOQ0xVREVfUFJPRFVDVF9SRUxBVElPTlNISVBTIiwiSU5DTFVERV9FWFRSQVNfQ09OVEFJTklOR19GRUVTIl19"
+            }
+          },
+          {
+            "name": "Vehicle_Details",
+            "arguments": {
+              "vehicle_id": "370879356",
+              "search_key": "eyJkcml2ZXJzQWdlIjozMCwiZHJvcE9mZkRhdGVUaW1lIjoiMjAyNC0xMS0yOVQxMzowMDowMCIsImRyb3BPZmZMb2NhdGlvbiI6IjI5Ljk4MDMwMDkwMzMyMDMsLTk1LjMzOTQwMTI0NTExNzIiLCJkcm9wT2ZmTG9jYXRpb25UeXBlIjoiTEFUTE9ORyIsInBpY2tVcERhdGVUaW1lIjoiMjAyNC0xMS0yMFQwNzowMDowMCIsInBpY2tVcExvY2F0aW9uIjoiMzIuODk2NzAxODEyNzQ0MSwtOTcuMDQyMTk4MTgxMTUyMyIsInBpY2tVcExvY2F0aW9uVHlwZSI6IkxBVExPTkciLCJyZW50YWxEdXJhdGlvbkluRGF5cyI6MTAsInNlcnZpY2VGZWF0dXJlcyI6WyJOT19PUEFRVUVTIiwiU1VQUkVTU19GSVhFRF9QUklDRV9WRUhJQ0xFUyIsIklOQ0xVREVfUFJPRFVDVF9SRUxBVElPTlNISVBTIiwiSU5DTFVERV9FWFRSQVNfQ09OVEFJTklOR19GRUVTIl19"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": {
+              "whatsIncluded": {
+                "title": "What's included",
+                "items": [
+                  {
+                    "text": "<b>Free cancellation</b> up to 48 hours before pick-up",
+                    "icon": "TICK"
+                  },
+                  {
+                    "icon": "TICK",
+                    "text": "Collision Damage Waiver (CDW)"
+                  },
+                  {
+                    "icon": "TICK",
+                    "text": "Theft Cover"
+                  },
+                  {
+                    "icon": "TICK",
+                    "text": "Third-Party Liability (TPL)"
+                  }
+                ]
+              },
+              "content": {
+                "reviews": {
+                  "supplier": {
+                    "name": "Dollar",
+                    "rating": {
+                      "title": "OK",
+                      "subtitle": "1,688 reviews",
+                      "localisedRating": {
+                        "rawValue": 6.7,
+                        "displayValue": "6.7"
+                      },
+                      "average": "6.7"
+                    }
+                  },
+                  "title": "Reviews"
+                },
+                "carCard": {
+                  "accessibility": {
+                    "transmission": "Automatic gearbox",
+                    "pick_up_location": "Pick-up information: Shuttle Bus",
+                    "fuel_policy": "Fuel policy is: Like for like",
+                    "supplier_rating": "At this location, our customers have rated Dollar as 6.7 out of 10, OK."
+                  },
+                  "supplier": {
+                    "rating": {
+                      "average": "6.7",
+                      "localisedRating": {
+                        "displayValue": "6.7",
+                        "rawValue": 6.7
+                      },
+                      "title": "OK",
+                      "subtitle": "1,688 reviews"
+                    },
+                    "name": "Dollar"
+                  },
+                  "badges": [
+                    {
+                      "variation": "DEFAULT",
+                      "text": "Free cancellation",
+                      "type": "CONSTRUCTIVE"
+                    }
+                  ]
+                }
+              },
+              "meta": {
+                "response_code": 200
+              },
+              "links": {
+                "fullRentalTerms": {
+                  "label": "Rental terms"
+                }
+              },
+              "metadata": {
+                "navigation": {
+                  "showExtrasStep": true
+                }
+              },
+              "depots": {
+                "pickup": {
+                  "country": "USA - Other",
+                  "city": "Dallas, TX",
+                  "latitude": "32.899806",
+                  "longitude": "-97.040341",
+                  "country_code": "US",
+                  "id": "820018",
+                  "address": "2424, East 38th Street, Dallas, TX, USA, 75261",
+                  "location_id": "820018",
+                  "iataCode": "DFW",
+                  "name": "Dallas-Fort Worth International Airport",
+                  "location_type": "SHUTTLE_BUS"
+                },
+                "dropoff": {
+                  "latitude": "29.96975707",
+                  "longitude": "-95.33179782",
+                  "country_code": "US",
+                  "id": "820083",
+                  "address": "17330 PALMETTO PINES, Houston, TX, USA, 77032",
+                  "location_id": "820083",
+                  "iataCode": "IAH",
+                  "name": "George Bush Intercontinental Airport",
+                  "location_type": "SHUTTLE_BUS"
+                }
+              },
+              "vehicle": {
+                "label": "Standard car with:",
+                "price": {
+                  "display": {
+                    "currency": "USD",
+                    "value": 413
+                  },
+                  "driveAwayPriceIsApprox": true,
+                  "driveAway": {
+                    "currency": "USD",
+                    "value": 512.59
+                  },
+                  "payWhen": "PAY_NOW",
+                  "base": {
+                    "currency": "INR",
+                    "value": 34734.84
+                  }
+                },
+                "makeAndModel": "Volkswagen Jetta",
+                "specification": {
+                  "bigSuitcases": 1,
+                  "fuelPolicy": "Like for like",
+                  "airConditioning": true,
+                  "numberOfSeats": "5",
+                  "numberOfDoors": "2",
+                  "transmission": "Automatic",
+                  "mileage": "Unlimited",
+                  "smallSuitcases": 1
+                },
+                "carClass": "Standard",
+                "rentalDurationInDays": 10,
+                "fees": {
+                  "otherFees": [
+                    {
+                      "distanceUnit": "M",
+                      "unlimited": false,
+                      "displayPrice": {
+                        "currency": "USD",
+                        "taxIncluded": true,
+                        "minimumAmount": 0,
+                        "maximumAmount": 0,
+                        "amount": 0
+                      },
+                      "alwaysPayable": true,
+                      "name": "DAMAGE_EXCESS",
+                      "includedInPrice": false,
+                      "price": {
+                        "currency": "USD",
+                        "taxIncluded": true,
+                        "minimumAmount": 0,
+                        "maximumAmount": 0,
+                        "amount": 0
+                      }
+                    },
+                    {
+                      "includedInPrice": false,
+                      "price": {
+                        "amount": 684.96,
+                        "maximumAmount": 684.96,
+                        "minimumAmount": 273.98,
+                        "taxIncluded": true,
+                        "currency": "USD"
+                      },
+                      "unlimited": false,
+                      "displayPrice": {
+                        "minimumAmount": 273.98,
+                        "amount": 684.96,
+                        "maximumAmount": 684.96,
+                        "currency": "USD",
+                        "taxIncluded": true
+                      },
+                      "name": "DEPOSIT",
+                      "alwaysPayable": true,
+                      "distanceUnit": "M"
+                    },
+                    {
+                      "distanceUnit": "M",
+                      "alwaysPayable": false,
+                      "name": "MILEAGE",
+                      "unlimited": true,
+                      "displayPrice": {
+                        "taxIncluded": false,
+                        "currency": "USD",
+                        "amount": 0
+                      },
+                      "includedInPrice": false,
+                      "price": {
+                        "taxIncluded": false,
+                        "currency": "USD",
+                        "amount": 0
+                      }
+                    },
+                    {
+                      "alwaysPayable": true,
+                      "name": "THEFT_EXCESS",
+                      "unlimited": false,
+                      "displayPrice": {
+                        "amount": 0,
+                        "maximumAmount": 0,
+                        "minimumAmount": 0,
+                        "taxIncluded": true,
+                        "currency": "USD"
+                      },
+                      "distanceUnit": "M",
+                      "includedInPrice": false,
+                      "price": {
+                        "maximumAmount": 0,
+                        "amount": 0,
+                        "minimumAmount": 0,
+                        "taxIncluded": true,
+                        "currency": "USD"
+                      }
+                    }
+                  ],
+                  "payableFees": [
+                    {
+                      "price": {
+                        "taxIncluded": true,
+                        "currency": "USD",
+                        "amount": 8.33,
+                        "maximumAmount": 8.33,
+                        "minimumAmount": 8.33
+                      },
+                      "includedInPrice": true,
+                      "distanceUnit": "M",
+                      "type": "AP CONC FEE RECOV",
+                      "displayPrice": {
+                        "taxIncluded": true,
+                        "currency": "USD",
+                        "maximumAmount": 8.33,
+                        "amount": 8.33,
+                        "minimumAmount": 8.33
+                      },
+                      "unlimited": false,
+                      "name": "AP CONC FEE RECOV",
+                      "alwaysPayable": true
+                    },
+                    {
+                      "distanceUnit": "M",
+                      "name": "CITY MVR TAX",
+                      "alwaysPayable": true,
+                      "type": "CITY MVR TAX",
+                      "displayPrice": {
+                        "taxIncluded": true,
+                        "currency": "USD",
+                        "amount": 4.17,
+                        "maximumAmount": 4.17,
+                        "minimumAmount": 4.17
+                      },
+                      "unlimited": false,
+                      "includedInPrice": true,
+                      "price": {
+                        "currency": "USD",
+                        "taxIncluded": true,
+                        "minimumAmount": 4.17,
+                        "amount": 4.17,
+                        "maximumAmount": 4.17
+                      }
+                    },
+                    {
+                      "includedInPrice": true,
+                      "price": {
+                        "currency": "USD",
+                        "taxIncluded": true,
+                        "minimumAmount": 78.75,
+                        "maximumAmount": 78.75,
+                        "amount": 78.75
+                      },
+                      "name": "One way fee",
+                      "alwaysPayable": true,
+                      "unlimited": false,
+                      "displayPrice": {
+                        "currency": "USD",
+                        "taxIncluded": true,
+                        "minimumAmount": 78.75,
+                        "amount": 78.75,
+                        "maximumAmount": 78.75
+                      },
+                      "distanceUnit": "M"
+                    },
+                    {
+                      "includedInPrice": true,
+                      "price": {
+                        "minimumAmount": 4.17,
+                        "maximumAmount": 4.17,
+                        "amount": 4.17,
+                        "currency": "USD",
+                        "taxIncluded": true
+                      },
+                      "alwaysPayable": true,
+                      "name": "STATE MVR TAX",
+                      "unlimited": false,
+                      "displayPrice": {
+                        "minimumAmount": 4.17,
+                        "amount": 4.17,
+                        "maximumAmount": 4.17,
+                        "currency": "USD",
+                        "taxIncluded": true
+                      },
+                      "type": "STATE MVR TAX",
+                      "distanceUnit": "M"
+                    },
+                    {
+                      "distanceUnit": "M",
+                      "unlimited": false,
+                      "type": "STATE SALES TAX",
+                      "displayPrice": {
+                        "taxIncluded": true,
+                        "currency": "USD",
+                        "amount": 4.17,
+                        "maximumAmount": 4.17,
+                        "minimumAmount": 4.17
+                      },
+                      "alwaysPayable": true,
+                      "name": "STATE SALES TAX",
+                      "includedInPrice": true,
+                      "price": {
+                        "taxIncluded": true,
+                        "currency": "USD",
+                        "maximumAmount": 4.17,
+                        "amount": 4.17,
+                        "minimumAmount": 4.17
+                      }
+                    }
+                  ]
+                },
+                "freeCancellation": true,
+                "id": "370879416"
+              },
+              "extras": [
+                {
+                  "price": {
+                    "perRental": {
+                      "display": {
+                        "value": 135,
+                        "currency": "USD"
+                      },
+                      "base": {
+                        "value": 135,
+                        "currency": "USD"
+                      }
+                    },
+                    "prePayable": false
+                  },
+                  "id": "12174600901010",
+                  "detail": "If you want other people to drive as well",
+                  "name": "Additional driver",
+                  "type": "ADDITIONAL_DRIVER",
+                  "maxQuantityAvailable": 3
+                },
+                {
+                  "type": "BABY_SEAT",
+                  "maxQuantityAvailable": 2,
+                  "name": "Baby seat",
+                  "detail": "For babies: up to 9 kg / 20 lbs (about 1 year old)",
+                  "id": "12174600906010",
+                  "price": {
+                    "prePayable": false,
+                    "perRental": {
+                      "base": {
+                        "value": 98,
+                        "currency": "USD"
+                      },
+                      "display": {
+                        "value": 98,
+                        "currency": "USD"
+                      }
+                    }
+                  }
+                },
+                {
+                  "price": {
+                    "perRental": {
+                      "display": {
+                        "currency": "USD",
+                        "value": 98
+                      },
+                      "base": {
+                        "currency": "USD",
+                        "value": 98
+                      }
+                    },
+                    "prePayable": false
+                  },
+                  "id": "12174600911010",
+                  "detail": "For bigger children: 18-45 kg / 40-100 lbs (about 4-11 years old)",
+                  "name": "Booster seat",
+                  "maxQuantityAvailable": 2,
+                  "type": "CHILD_BOOSTER_SEAT"
+                },
+                {
+                  "name": "Child seat",
+                  "maxQuantityAvailable": 2,
+                  "type": "CHILD_SEAT",
+                  "id": "12174600916010",
+                  "detail": "For small children: 9-18 kg / 20-40 lbs (about 1-3 years old)",
+                  "price": {
+                    "perRental": {
+                      "base": {
+                        "value": 98,
+                        "currency": "USD"
+                      },
+                      "display": {
+                        "currency": "USD",
+                        "value": 98
+                      }
+                    },
+                    "prePayable": false
+                  }
+                }
+              ],
+              "importantInfo": {
+                "items": [
+                  {
+                    "icon": "CREDIT_CARD",
+                    "text": "<b>Payment card at pick-up:</b> Credit card<br/>The main driver <b>must</b> have a credit card in their own name when picking the car up."
+                  }
+                ],
+                "cta": {
+                  "text": "More details",
+                  "title": "Rental terms"
+                },
+                "title": "Important information",
+                "subtitle": "Security deposit, damage excess, what you'll need at pick-up, and more"
+              },
+              "packages": [
+                {
+                  "content": {
+                    "description": "Your car's zero-excess policy doesn't cover every kind of damage, or the other costs you might incur if something goes wrong. Why not add \u20b9\u00a0235,400 of Extra Cover - from RentalCover.com?",
+                    "title": "Add insurance...",
+                    "included": "Extra Cover included",
+                    "price": {
+                      "label": "Total protection price",
+                      "displayPrice": "US$82.47",
+                      "priceAnnotation": {
+                        "text": "Free cancellation"
+                      }
+                    },
+                    "cta": {
+                      "attach": "Read more",
+                      "remove": "Remove Extra Cover"
+                    },
+                    "subtitle": "for peace of mind"
+                  },
+                  "id": "RC_EC_USA"
+                }
+              ],
+              "supplier": {
+                "locationType": "Shuttle Bus",
+                "rating": 6.7
+              }
+            }
+          },
+          {
+            "status": true,
+            "message": "Success",
+            "data": {
+              "metadata": {
+                "navigation": {
+                  "showExtrasStep": true
+                }
+              },
+              "extras": [
+                {
+                  "maxQuantityAvailable": 3,
+                  "type": "ADDITIONAL_DRIVER",
+                  "price": {
+                    "prePayable": false,
+                    "perRental": {
+                      "display": {
+                        "value": 135,
+                        "currency": "USD"
+                      },
+                      "base": {
+                        "value": 135,
+                        "currency": "USD"
+                      }
+                    }
+                  },
+                  "detail": "If you want other people to drive as well",
+                  "id": "12174600661010",
+                  "name": "Additional driver"
+                },
+                {
+                  "type": "BABY_SEAT",
+                  "maxQuantityAvailable": 2,
+                  "price": {
+                    "prePayable": false,
+                    "perRental": {
+                      "base": {
+                        "currency": "USD",
+                        "value": 98
+                      },
+                      "display": {
+                        "value": 98,
+                        "currency": "USD"
+                      }
+                    }
+                  },
+                  "id": "12174600666010",
+                  "detail": "For babies: up to 9 kg / 20 lbs (about 1 year old)",
+                  "name": "Baby seat"
+                },
+                {
+                  "name": "Booster seat",
+                  "id": "12174600671010",
+                  "detail": "For bigger children: 18-45 kg / 40-100 lbs (about 4-11 years old)",
+                  "type": "CHILD_BOOSTER_SEAT",
+                  "maxQuantityAvailable": 2,
+                  "price": {
+                    "perRental": {
+                      "base": {
+                        "value": 98,
+                        "currency": "USD"
+                      },
+                      "display": {
+                        "value": 98,
+                        "currency": "USD"
+                      }
+                    },
+                    "prePayable": false
+                  }
+                },
+                {
+                  "maxQuantityAvailable": 2,
+                  "type": "CHILD_SEAT",
+                  "price": {
+                    "prePayable": false,
+                    "perRental": {
+                      "display": {
+                        "value": 98,
+                        "currency": "USD"
+                      },
+                      "base": {
+                        "value": 98,
+                        "currency": "USD"
+                      }
+                    }
+                  },
+                  "id": "12174600676010",
+                  "detail": "For small children: 9-18 kg / 20-40 lbs (about 1-3 years old)",
+                  "name": "Child seat"
+                }
+              ],
+              "whatsIncluded": {
+                "title": "What's included",
+                "items": [
+                  {
+                    "icon": "TICK",
+                    "text": "<b>Free cancellation</b> up to 48 hours before pick-up"
+                  },
+                  {
+                    "text": "Collision Damage Waiver (CDW)",
+                    "icon": "TICK"
+                  },
+                  {
+                    "text": "Theft Cover",
+                    "icon": "TICK"
+                  },
+                  {
+                    "icon": "TICK",
+                    "text": "Third-Party Liability (TPL)"
+                  }
+                ]
+              },
+              "meta": {
+                "response_code": 200
+              },
+              "links": {
+                "fullRentalTerms": {
+                  "label": "Rental terms"
+                }
+              },
+              "content": {
+                "reviews": {
+                  "supplier": {
+                    "name": "Dollar",
+                    "rating": {
+                      "average": "6.7",
+                      "title": "OK",
+                      "localisedRating": {
+                        "rawValue": 6.7,
+                        "displayValue": "6.7"
+                      },
+                      "subtitle": "1,688 reviews"
+                    }
+                  },
+                  "title": "Reviews"
+                },
+                "carCard": {
+                  "supplier": {
+                    "rating": {
+                      "average": "6.7",
+                      "title": "OK",
+                      "localisedRating": {
+                        "rawValue": 6.7,
+                        "displayValue": "6.7"
+                      },
+                      "subtitle": "1,688 reviews"
+                    },
+                    "name": "Dollar"
+                  },
+                  "accessibility": {
+                    "transmission": "Automatic gearbox",
+                    "supplier_rating": "At this location, our customers have rated Dollar as 6.7 out of 10, OK.",
+                    "fuel_policy": "Fuel policy is: Like for like",
+                    "pick_up_location": "Pick-up information: Shuttle Bus"
+                  },
+                  "badges": [
+                    {
+                      "text": "Free cancellation",
+                      "variation": "DEFAULT",
+                      "type": "CONSTRUCTIVE"
+                    }
+                  ]
+                }
+              },
+              "supplier": {
+                "rating": 6.7,
+                "locationType": "Shuttle Bus"
+              },
+              "depots": {
+                "pickup": {
+                  "iataCode": "DFW",
+                  "location_id": "820018",
+                  "location_type": "SHUTTLE_BUS",
+                  "id": "820018",
+                  "longitude": "-97.040341",
+                  "name": "Dallas-Fort Worth International Airport",
+                  "city": "Dallas, TX",
+                  "country": "USA - Other",
+                  "address": "2424, East 38th Street, Dallas, TX, USA, 75261",
+                  "country_code": "US",
+                  "latitude": "32.899806"
+                },
+                "dropoff": {
+                  "name": "George Bush Intercontinental Airport",
+                  "longitude": "-95.33179782",
+                  "latitude": "29.96975707",
+                  "address": "17330 PALMETTO PINES, Houston, TX, USA, 77032",
+                  "country_code": "US",
+                  "location_type": "SHUTTLE_BUS",
+                  "id": "820083",
+                  "iataCode": "IAH",
+                  "location_id": "820083"
+                }
+              },
+              "vehicle": {
+                "carClass": "Economy",
+                "specification": {
+                  "fuelPolicy": "Like for like",
+                  "smallSuitcases": 1,
+                  "bigSuitcases": 1,
+                  "transmission": "Automatic",
+                  "mileage": "Unlimited",
+                  "numberOfDoors": "2",
+                  "numberOfSeats": "4",
+                  "airConditioning": true
+                },
+                "price": {
+                  "payWhen": "PAY_NOW",
+                  "driveAway": {
+                    "currency": "USD",
+                    "value": 507.91
+                  },
+                  "driveAwayPriceIsApprox": true,
+                  "display": {
+                    "value": 408.32,
+                    "currency": "USD"
+                  },
+                  "base": {
+                    "currency": "INR",
+                    "value": 34341.42
+                  }
+                },
+                "id": "370879356",
+                "fees": {
+                  "otherFees": [
+                    {
+                      "includedInPrice": false,
+                      "alwaysPayable": true,
+                      "distanceUnit": "M",
+                      "name": "DAMAGE_EXCESS",
+                      "displayPrice": {
+                        "amount": 0,
+                        "currency": "USD",
+                        "minimumAmount": 0,
+                        "maximumAmount": 0,
+                        "taxIncluded": true
+                      },
+                      "unlimited": false,
+                      "price": {
+                        "minimumAmount": 0,
+                        "currency": "USD",
+                        "amount": 0,
+                        "maximumAmount": 0,
+                        "taxIncluded": true
+                      }
+                    },
+                    {
+                      "displayPrice": {
+                        "minimumAmount": 273.98,
+                        "currency": "USD",
+                        "amount": 684.96,
+                        "taxIncluded": true,
+                        "maximumAmount": 684.96
+                      },
+                      "unlimited": false,
+                      "price": {
+                        "minimumAmount": 273.98,
+                        "currency": "USD",
+                        "amount": 684.96,
+                        "maximumAmount": 684.96,
+                        "taxIncluded": true
+                      },
+                      "name": "DEPOSIT",
+                      "distanceUnit": "M",
+                      "alwaysPayable": true,
+                      "includedInPrice": false
+                    },
+                    {
+                      "includedInPrice": false,
+                      "alwaysPayable": false,
+                      "distanceUnit": "M",
+                      "name": "MILEAGE",
+                      "price": {
+                        "taxIncluded": false,
+                        "currency": "USD",
+                        "amount": 0
+                      },
+                      "displayPrice": {
+                        "taxIncluded": false,
+                        "currency": "USD",
+                        "amount": 0
+                      },
+                      "unlimited": true
+                    },
+                    {
+                      "distanceUnit": "M",
+                      "name": "THEFT_EXCESS",
+                      "includedInPrice": false,
+                      "alwaysPayable": true,
+                      "unlimited": false,
+                      "displayPrice": {
+                        "taxIncluded": true,
+                        "maximumAmount": 0,
+                        "amount": 0,
+                        "minimumAmount": 0,
+                        "currency": "USD"
+                      },
+                      "price": {
+                        "maximumAmount": 0,
+                        "taxIncluded": true,
+                        "amount": 0,
+                        "minimumAmount": 0,
+                        "currency": "USD"
+                      }
+                    }
+                  ],
+                  "payableFees": [
+                    {
+                      "type": "AP CONC FEE RECOV",
+                      "price": {
+                        "taxIncluded": true,
+                        "maximumAmount": 8.33,
+                        "minimumAmount": 8.33,
+                        "currency": "USD",
+                        "amount": 8.33
+                      },
+                      "displayPrice": {
+                        "minimumAmount": 8.33,
+                        "currency": "USD",
+                        "amount": 8.33,
+                        "taxIncluded": true,
+                        "maximumAmount": 8.33
+                      },
+                      "unlimited": false,
+                      "distanceUnit": "M",
+                      "name": "AP CONC FEE RECOV",
+                      "includedInPrice": true,
+                      "alwaysPayable": true
+                    },
+                    {
+                      "price": {
+                        "minimumAmount": 4.17,
+                        "currency": "USD",
+                        "amount": 4.17,
+                        "maximumAmount": 4.17,
+                        "taxIncluded": true
+                      },
+                      "type": "CITY MVR TAX",
+                      "unlimited": false,
+                      "displayPrice": {
+                        "currency": "USD",
+                        "minimumAmount": 4.17,
+                        "amount": 4.17,
+                        "taxIncluded": true,
+                        "maximumAmount": 4.17
+                      },
+                      "alwaysPayable": true,
+                      "includedInPrice": true,
+                      "distanceUnit": "M",
+                      "name": "CITY MVR TAX"
+                    },
+                    {
+                      "price": {
+                        "currency": "USD",
+                        "minimumAmount": 78.75,
+                        "amount": 78.75,
+                        "taxIncluded": true,
+                        "maximumAmount": 78.75
+                      },
+                      "unlimited": false,
+                      "displayPrice": {
+                        "minimumAmount": 78.75,
+                        "currency": "USD",
+                        "amount": 78.75,
+                        "maximumAmount": 78.75,
+                        "taxIncluded": true
+                      },
+                      "distanceUnit": "M",
+                      "name": "One way fee",
+                      "includedInPrice": true,
+                      "alwaysPayable": true
+                    },
+                    {
+                      "price": {
+                        "minimumAmount": 4.17,
+                        "currency": "USD",
+                        "amount": 4.17,
+                        "maximumAmount": 4.17,
+                        "taxIncluded": true
+                      },
+                      "type": "STATE MVR TAX",
+                      "displayPrice": {
+                        "amount": 4.17,
+                        "currency": "USD",
+                        "minimumAmount": 4.17,
+                        "maximumAmount": 4.17,
+                        "taxIncluded": true
+                      },
+                      "unlimited": false,
+                      "alwaysPayable": true,
+                      "includedInPrice": true,
+                      "distanceUnit": "M",
+                      "name": "STATE MVR TAX"
+                    },
+                    {
+                      "price": {
+                        "minimumAmount": 4.17,
+                        "currency": "USD",
+                        "amount": 4.17,
+                        "taxIncluded": true,
+                        "maximumAmount": 4.17
+                      },
+                      "type": "STATE SALES TAX",
+                      "displayPrice": {
+                        "maximumAmount": 4.17,
+                        "taxIncluded": true,
+                        "amount": 4.17,
+                        "currency": "USD",
+                        "minimumAmount": 4.17
+                      },
+                      "unlimited": false,
+                      "includedInPrice": true,
+                      "alwaysPayable": true,
+                      "distanceUnit": "M",
+                      "name": "STATE SALES TAX"
+                    }
+                  ]
+                },
+                "freeCancellation": true,
+                "label": "Economy car with:",
+                "rentalDurationInDays": 10,
+                "makeAndModel": "Chevrolet Spark"
+              },
+              "importantInfo": {
+                "cta": {
+                  "text": "More details",
+                  "title": "Rental terms"
+                },
+                "title": "Important information",
+                "subtitle": "Security deposit, damage excess, what you'll need at pick-up, and more",
+                "items": [
+                  {
+                    "text": "<b>Payment card at pick-up:</b> Credit card<br/>The main driver <b>must</b> have a credit card in their own name when picking the car up.",
+                    "icon": "CREDIT_CARD"
+                  }
+                ]
+              },
+              "packages": [
+                {
+                  "id": "RC_EC_USA",
+                  "content": {
+                    "included": "Extra Cover included",
+                    "price": {
+                      "displayPrice": "US$82.47",
+                      "priceAnnotation": {
+                        "text": "Free cancellation"
+                      },
+                      "label": "Total protection price"
+                    },
+                    "subtitle": "for peace of mind",
+                    "title": "Add insurance...",
+                    "description": "Your car's zero-excess policy doesn't cover every kind of damage, or the other costs you might incur if something goes wrong. Why not add \u20b9\u00a0235,400 of Extra Cover - from RentalCover.com?",
+                    "cta": {
+                      "attach": "Read more",
+                      "remove": "Remove Extra Cover"
+                    }
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": ""
+      }
+    ],
+    "message": "Success.",
+    "count_dict": {
+      "success_turn_num": 3,
+      "total_turn_num": 3,
+      "correct_call_num": 5,
+      "total_call_num": 5,
+      "real_turn_num": 3
+    },
+    "resp_eval": null,
+    "status": "Success",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Car-Rental-25",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I want to rent a car at Newark Liberty International Airport at 11 am on November 25th, 2024, and return it in Newark at 4 pm on November 30th."
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Car_Location",
+            "arguments": {
+              "query": "Newark Liberty International Airport"
+            }
+          },
+          {
+            "name": "Search_Car_Location",
+            "arguments": {
+              "query": "Newark, New Jersey"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": [
+              {
+                "name": "Newark Liberty International Airport",
+                "iata_code": "EWR",
+                "coordinates": {
+                  "latitude": 40.6916999816895,
+                  "longitude": -74.1800994873047
+                },
+                "type": "airport",
+                "city": "New York",
+                "country": "United States"
+              }
+            ]
+          },
+          {
+            "status": true,
+            "message": "Success",
+            "data": [
+              {
+                "type": "city",
+                "country": "United States",
+                "name": "Newark",
+                "city": "Newark",
+                "coordinates": {
+                  "latitude": 40.7355995178223,
+                  "longitude": -74.1727981567383
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Car_Rentals",
+            "arguments": {
+              "pick_up_longitude": -74.1800994873047,
+              "drop_off_time": "16:00",
+              "drop_off_latitude": 40.7355995178223,
+              "drop_off_date": "2024-11-30",
+              "pick_up_time": "11:00",
+              "pick_up_latitude": 40.6916999816895,
+              "pick_up_date": "2024-11-25",
+              "drop_off_longitude": -74.1727981567383
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": {
+              "meta": {
+                "response_code": 200
+              },
+              "provider": "rentalcars",
+              "search_results": [
+                {
+                  "vehicle_id": "370883401",
+                  "pricing_info": {
+                    "drive_away_price": 426.56,
+                    "base_price": 35996.52,
+                    "fee_breakdown": {
+                      "known_fees": [
+                        {
+                          "max_amount": 0,
+                          "currency": "USD",
+                          "amount": 0,
+                          "is_tax_included": 1,
+                          "type": "THEFT_EXCESS",
+                          "min_amount": 0,
+                          "is_always_payable": 0
+                        },
+                        {
+                          "is_always_payable": 0,
+                          "min_amount": 273.98,
+                          "type": "DEPOSIT",
+                          "is_tax_included": 1,
+                          "amount": 684.96,
+                          "currency": "USD",
+                          "max_amount": 684.96
+                        },
+                        {
+                          "currency": "USD",
+                          "is_tax_included": 1,
+                          "amount": 0,
+                          "max_amount": 0,
+                          "min_amount": 0,
+                          "is_always_payable": 0,
+                          "type": "DAMAGE_EXCESS"
+                        },
+                        {
+                          "is_always_payable": 0,
+                          "type": "MILEAGE",
+                          "distance_allowed": {
+                            "is_unlimited": 1,
+                            "is_km": 0
+                          }
+                        }
+                      ],
+                      "fuel_policy": {
+                        "type": "RETURN_SAME",
+                        "amount": 0
+                      }
+                    },
+                    "pay_when": "PAY_NOW",
+                    "drive_away_price_is_approx": true,
+                    "base_currency": "INR",
+                    "deposit": 426.56,
+                    "base_deposit": 35996.52,
+                    "discount": 0,
+                    "price": 426.56,
+                    "currency": "USD",
+                    "quote_allowed": 1
+                  },
+                  "supplier_info": {
+                    "latitude": "40.68988438",
+                    "address": "132 Carson Rd, Airtrain P2, Newark, NJ, USA, 07114",
+                    "logo_url": "https://cdn.rcstatic.com/sp/images/suppliers/82_logo_200.png",
+                    "pickup_instructions": "Please take the \"AirTrain\" to station P2.",
+                    "name": "Dollar",
+                    "may_require_credit_card_guarantee": false,
+                    "dropoff_instructions": "Please take the \"AirTrain\" to station P2.",
+                    "longitude": "-74.18516971",
+                    "location_type": "Shuttle Bus"
+                  },
+                  "freebies": [
+                    "Amendments"
+                  ],
+                  "route_info": {
+                    "pickup": {
+                      "location_hash": "TmV3YXJrIExpYmVydHkgSW50ZXJuYXRpb25hbCBBaXJwb3J0",
+                      "location_type": "SHUTTLE_BUS",
+                      "longitude": "-74.18516971",
+                      "country_code": "US",
+                      "latitude": "40.68988438",
+                      "name": "Newark Liberty International Airport",
+                      "address": "132 Carson Rd, Airtrain P2, Newark, NJ, USA, 07114",
+                      "location_id": "820488"
+                    },
+                    "dropoff": {
+                      "name": "Newark Liberty International Airport",
+                      "location_id": "820488",
+                      "address": "132 Carson Rd, Airtrain P2, Newark, NJ, USA, 07114",
+                      "country_code": "US",
+                      "latitude": "40.68988438",
+                      "location_type": "SHUTTLE_BUS",
+                      "longitude": "-74.18516971",
+                      "location_hash": "TmV3YXJrIExpYmVydHkgSW50ZXJuYXRpb25hbCBBaXJwb3J0"
+                    }
+                  },
+                  "content": {
+                    "badges": [
+                      {
+                        "type": "CONSTRUCTIVE",
+                        "text": "Free cancellation",
+                        "variation": "DEFAULT"
+                      }
+                    ],
+                    "supplier": {
+                      "rating": {
+                        "title": "Good",
+                        "average": "7.2",
+                        "subtitle": "1,362 reviews",
+                        "localisedRating": {
+                          "rawValue": 7.2,
+                          "displayValue": "7.2"
+                        }
+                      },
+                      "name": "Dollar"
+                    }
+                  },
+                  "accessibility": {
+                    "pick_up_location": "Pick-up information: Shuttle Bus",
+                    "fuel_policy": "Fuel policy is: Like for like",
+                    "transmission": "Automatic gearbox",
+                    "supplier_rating": "At this location, our customers have rated Dollar as 7.2 out of 10, Good."
+                  },
+                  "vehicle_info": {
+                    "cma_compliant": -1,
+                    "v_name": "Nissan Sentra  ",
+                    "doors": "4",
+                    "transmission": "Automatic",
+                    "v_id": "370883401",
+                    "airbags": 1,
+                    "fuel_type": "N/A",
+                    "mileage": "Unlimited mileage",
+                    "unlimited_mileage": 1,
+                    "aircon": 1,
+                    "label": "Intermediate car with:",
+                    "suitcases": {
+                      "big": "0",
+                      "small": "3"
+                    },
+                    "group": "Intermediate",
+                    "free_cancellation": 1,
+                    "seats": "5",
+                    "fuel_policy": "Like for like"
+                  },
+                  "fee_info": {
+                    "fee": 0,
+                    "tax": 0
+                  },
+                  "rating_info": {
+                    "location": 7.7,
+                    "cleanliness": 7.9,
+                    "efficiency": 6.8,
+                    "pickup_time": 5.9,
+                    "condition": 7.7,
+                    "average": 7.2,
+                    "no_of_ratings": 1362,
+                    "average_text": "Very good",
+                    "dropoff_time": 8.9,
+                    "value_for_money": 6.7
+                  }
+                },
+                {
+                  "vehicle_id": "370883441",
+                  "vehicle_info": {
+                    "fuel_policy": "Like for like",
+                    "seats": "4",
+                    "free_cancellation": 1,
+                    "group": "Economy",
+                    "suitcases": {
+                      "small": "2",
+                      "big": "0"
+                    },
+                    "label": "Economy car with:",
+                    "aircon": 1,
+                    "mileage": "Unlimited mileage",
+                    "fuel_type": "N/A",
+                    "unlimited_mileage": 1,
+                    "v_id": "370883441",
+                    "transmission": "Automatic",
+                    "airbags": 1,
+                    "cma_compliant": -1,
+                    "doors": "4",
+                    "v_name": "Chevrolet Spark  "
+                  },
+                  "accessibility": {
+                    "supplier_rating": "At this location, our customers have rated Dollar as 7.2 out of 10, Good.",
+                    "transmission": "Automatic gearbox",
+                    "pick_up_location": "Pick-up information: Shuttle Bus",
+                    "fuel_policy": "Fuel policy is: Like for like"
+                  },
+                  "route_info": {
+                    "pickup": {
+                      "location_id": "820488",
+                      "address": "132 Carson Rd, Airtrain P2, Newark, NJ, USA, 07114",
+                      "name": "Newark Liberty International Airport",
+                      "latitude": "40.68988438",
+                      "country_code": "US",
+                      "longitude": "-74.18516971",
+                      "location_type": "SHUTTLE_BUS",
+                      "location_hash": "TmV3YXJrIExpYmVydHkgSW50ZXJuYXRpb25hbCBBaXJwb3J0"
+                    },
+                    "dropoff": {
+                      "name": "Newark Liberty International Airport",
+                      "location_id": "820488",
+                      "address": "132 Carson Rd, Airtrain P2, Newark, NJ, USA, 07114",
+                      "country_code": "US",
+                      "latitude": "40.68988438",
+                      "location_type": "SHUTTLE_BUS",
+                      "longitude": "-74.18516971",
+                      "location_hash": "TmV3YXJrIExpYmVydHkgSW50ZXJuYXRpb25hbCBBaXJwb3J0"
+                    }
+                  },
+                  "content": {
+                    "badges": [
+                      {
+                        "text": "Free cancellation",
+                        "variation": "DEFAULT",
+                        "type": "CONSTRUCTIVE"
+                      }
+                    ],
+                    "supplier": {
+                      "name": "Dollar",
+                      "rating": {
+                        "title": "Good",
+                        "subtitle": "1,362 reviews",
+                        "average": "7.2",
+                        "localisedRating": {
+                          "rawValue": 7.2,
+                          "displayValue": "7.2"
+                        }
+                      }
+                    }
+                  },
+                  "rating_info": {
+                    "efficiency": 6.8,
+                    "cleanliness": 7.9,
+                    "location": 7.7,
+                    "condition": 7.7,
+                    "pickup_time": 5.9,
+                    "average_text": "Very good",
+                    "no_of_ratings": 1362,
+                    "dropoff_time": 8.9,
+                    "average": 7.2,
+                    "value_for_money": 6.7
+                  },
+                  "fee_info": {
+                    "fee": 0,
+                    "tax": 0
+                  },
+                  "freebies": [
+                    "Amendments"
+                  ],
+                  "supplier_info": {
+                    "name": "Dollar",
+                    "pickup_instructions": "Please take the \"AirTrain\" to station P2.",
+                    "logo_url": "https://cdn.rcstatic.com/sp/images/suppliers/82_logo_200.png",
+                    "address": "132 Carson Rd, Airtrain P2, Newark, NJ, USA, 07114",
+                    "latitude": "40.68988438",
+                    "longitude": "-74.18516971",
+                    "location_type": "Shuttle Bus",
+                    "dropoff_instructions": "Please take the \"AirTrain\" to station P2.",
+                    "may_require_credit_card_guarantee": false
+                  },
+                  "pricing_info": {
+                    "quote_allowed": 1,
+                    "price": 404.54,
+                    "discount": 0,
+                    "currency": "USD",
+                    "deposit": 404.54,
+                    "base_deposit": 34138.26,
+                    "base_currency": "INR",
+                    "drive_away_price_is_approx": true,
+                    "fee_breakdown": {
+                      "known_fees": [
+                        {
+                          "max_amount": 0,
+                          "is_tax_included": 1,
+                          "amount": 0,
+                          "currency": "USD",
+                          "type": "THEFT_EXCESS",
+                          "is_always_payable": 0,
+                          "min_amount": 0
+                        },
+                        {
+                          "max_amount": 684.96,
+                          "is_tax_included": 1,
+                          "amount": 684.96,
+                          "currency": "USD",
+                          "type": "DEPOSIT",
+                          "is_always_payable": 0,
+                          "min_amount": 273.98
+                        },
+                        {
+                          "min_amount": 0,
+                          "is_always_payable": 0,
+                          "type": "DAMAGE_EXCESS",
+                          "currency": "USD",
+                          "is_tax_included": 1,
+                          "amount": 0,
+                          "max_amount": 0
+                        },
+                        {
+                          "is_always_payable": 0,
+                          "type": "MILEAGE",
+                          "distance_allowed": {
+                            "is_unlimited": 1,
+                            "is_km": 0
+                          }
+                        }
+                      ],
+                      "fuel_policy": {
+                        "type": "RETURN_SAME",
+                        "amount": 0
+                      }
+                    },
+                    "base_price": 34138.26,
+                    "pay_when": "PAY_NOW",
+                    "drive_away_price": 404.54
+                  }
+                },
+                {
+                  "vehicle_id": "370883411",
+                  "fee_info": {
+                    "fee": 0,
+                    "tax": 0
+                  },
+                  "rating_info": {
+                    "location": 7.7,
+                    "cleanliness": 7.9,
+                    "efficiency": 6.8,
+                    "pickup_time": 5.9,
+                    "condition": 7.7,
+                    "average": 7.2,
+                    "dropoff_time": 8.9,
+                    "average_text": "Very good",
+                    "no_of_ratings": 1362,
+                    "value_for_money": 6.7
+                  },
+                  "vehicle_info": {
+                    "group": "Full-size",
+                    "seats": "5",
+                    "free_cancellation": 1,
+                    "fuel_policy": "Like for like",
+                    "cma_compliant": -1,
+                    "doors": "4",
+                    "v_name": "Nissan Altima  ",
+                    "v_id": "370883411",
+                    "transmission": "Automatic",
+                    "airbags": 1,
+                    "mileage": "Unlimited mileage",
+                    "fuel_type": "N/A",
+                    "unlimited_mileage": 1,
+                    "suitcases": {
+                      "small": "4",
+                      "big": "0"
+                    },
+                    "aircon": 1,
+                    "label": "Full-size car with:"
+                  },
+                  "accessibility": {
+                    "fuel_policy": "Fuel policy is: Like for like",
+                    "pick_up_location": "Pick-up information: Shuttle Bus",
+                    "transmission": "Automatic gearbox",
+                    "supplier_rating": "At this location, our customers have rated Dollar as 7.2 out of 10, Good."
+                  },
+                  "route_info": {
+                    "pickup": {
+                      "address": "132 Carson Rd, Airtrain P2, Newark, NJ, USA, 07114",
+                      "location_id": "820488",
+                      "name": "Newark Liberty International Airport",
+                      "location_hash": "TmV3YXJrIExpYmVydHkgSW50ZXJuYXRpb25hbCBBaXJwb3J0",
+                      "longitude": "-74.18516971",
+                      "location_type": "SHUTTLE_BUS",
+                      "latitude": "40.68988438",
+                      "country_code": "US"
+                    },
+                    "dropoff": {
+                      "location_id": "820488",
+                      "address": "132 Carson Rd, Airtrain P2, Newark, NJ, USA, 07114",
+                      "name": "Newark Liberty International Airport",
+                      "latitude": "40.68988438",
+                      "country_code": "US",
+                      "longitude": "-74.18516971",
+                      "location_type": "SHUTTLE_BUS",
+                      "location_hash": "TmV3YXJrIExpYmVydHkgSW50ZXJuYXRpb25hbCBBaXJwb3J0"
+                    }
+                  },
+                  "content": {
+                    "supplier": {
+                      "name": "Dollar",
+                      "rating": {
+                        "localisedRating": {
+                          "displayValue": "7.2",
+                          "rawValue": 7.2
+                        },
+                        "subtitle": "1,362 reviews",
+                        "average": "7.2",
+                        "title": "Good"
+                      }
+                    },
+                    "badges": [
+                      {
+                        "text": "Free cancellation",
+                        "variation": "DEFAULT",
+                        "type": "CONSTRUCTIVE"
+                      }
+                    ]
+                  },
+                  "supplier_info": {
+                    "dropoff_instructions": "Please take the \"AirTrain\" to station P2.",
+                    "may_require_credit_card_guarantee": false,
+                    "longitude": "-74.18516971",
+                    "location_type": "Shuttle Bus",
+                    "logo_url": "https://cdn.rcstatic.com/sp/images/suppliers/82_logo_200.png",
+                    "latitude": "40.68988438",
+                    "address": "132 Carson Rd, Airtrain P2, Newark, NJ, USA, 07114",
+                    "name": "Dollar",
+                    "pickup_instructions": "Please take the \"AirTrain\" to station P2."
+                  },
+                  "freebies": [
+                    "Amendments"
+                  ],
+                  "pricing_info": {
+                    "drive_away_price": 458.86,
+                    "drive_away_price_is_approx": true,
+                    "base_currency": "INR",
+                    "fee_breakdown": {
+                      "known_fees": [
+                        {
+                          "type": "THEFT_EXCESS",
+                          "min_amount": 0,
+                          "is_always_payable": 0,
+                          "max_amount": 0,
+                          "currency": "USD",
+                          "is_tax_included": 1,
+                          "amount": 0
+                        },
+                        {
+                          "max_amount": 684.96,
+                          "currency": "USD",
+                          "is_tax_included": 1,
+                          "amount": 684.96,
+                          "type": "DEPOSIT",
+                          "min_amount": 273.98,
+                          "is_always_payable": 0
+                        },
+                        {
+                          "amount": 0,
+                          "is_tax_included": 1,
+                          "currency": "USD",
+                          "max_amount": 0,
+                          "is_always_payable": 0,
+                          "min_amount": 0,
+                          "type": "DAMAGE_EXCESS"
+                        },
+                        {
+                          "is_always_payable": 0,
+                          "type": "MILEAGE",
+                          "distance_allowed": {
+                            "is_unlimited": 1,
+                            "is_km": 0
+                          }
+                        }
+                      ],
+                      "fuel_policy": {
+                        "type": "RETURN_SAME",
+                        "amount": 0
+                      }
+                    },
+                    "base_price": 38722.61,
+                    "pay_when": "PAY_NOW",
+                    "discount": 0,
+                    "price": 458.86,
+                    "currency": "USD",
+                    "deposit": 458.86,
+                    "base_deposit": 38722.61,
+                    "quote_allowed": 1
+                  }
+                },
+                {
+                  "vehicle_id": "744740441",
+                  "route_info": {
+                    "dropoff": {
+                      "country_code": "US",
+                      "latitude": "40.68988438",
+                      "location_type": "SHUTTLE_BUS",
+                      "longitude": "-74.18516971",
+                      "location_hash": "TmV3YXJrIExpYmVydHkgSW50ZXJuYXRpb25hbCBBaXJwb3J0",
+                      "name": "Newark Liberty International Airport",
+                      "location_id": "820488",
+                      "address": "132 Carson Rd, Airtrain P2, Newark, NJ, USA, 07114"
+                    },
+                    "pickup": {
+                      "country_code": "US",
+                      "latitude": "40.68988438",
+                      "location_hash": "TmV3YXJrIExpYmVydHkgSW50ZXJuYXRpb25hbCBBaXJwb3J0",
+                      "longitude": "-74.18516971",
+                      "location_type": "SHUTTLE_BUS",
+                      "name": "Newark Liberty International Airport",
+                      "address": "132 Carson Rd, Airtrain P2, Newark, NJ, USA, 07114",
+                      "location_id": "820488"
+                    }
+                  },
+                  "content": {
+                    "badges": [
+                      {
+                        "type": "CONSTRUCTIVE",
+                        "variation": "DEFAULT",
+                        "text": "Free cancellation"
+                      },
+                      {
+                        "text": "Fully electric",
+                        "variation": "DEFAULT",
+                        "type": "ACCENT"
+                      }
+                    ],
+                    "supplier": {
+                      "name": "Dollar",
+                      "rating": {
+                        "localisedRating": {
+                          "rawValue": 7.2,
+                          "displayValue": "7.2"
+                        },
+                        "subtitle": "1,362 reviews",
+                        "average": "7.2",
+                        "title": "Good"
+                      }
+                    }
+                  },
+                  "accessibility": {
+                    "pick_up_location": "Pick-up information: Shuttle Bus",
+                    "fuel_policy": "Fuel policy is: Like for like",
+                    "transmission": "Automatic gearbox",
+                    "supplier_rating": "At this location, our customers have rated Dollar as 7.2 out of 10, Good."
+                  },
+                  "vehicle_info": {
+                    "free_cancellation": 1,
+                    "seats": "5",
+                    "group": "Compact",
+                    "fuel_policy": "Like for like",
+                    "transmission": "Automatic",
+                    "badges": {
+                      "greenVehicle": "Fully electric"
+                    },
+                    "v_id": "744740441",
+                    "airbags": 1,
+                    "cma_compliant": -1,
+                    "v_name": "Kia e-Niro",
+                    "doors": "5",
+                    "suitcases": {
+                      "big": "0",
+                      "small": "2"
+                    },
+                    "aircon": 1,
+                    "label": "Compact car with:",
+                    "mileage": "Unlimited mileage",
+                    "fuel_type": "N/A",
+                    "unlimited_mileage": 1
+                  },
+                  "fee_info": {
+                    "fee": 0,
+                    "tax": 0
+                  },
+                  "rating_info": {
+                    "average": 7.2,
+                    "dropoff_time": 8.9,
+                    "no_of_ratings": 1362,
+                    "average_text": "Very good",
+                    "value_for_money": 6.7,
+                    "location": 7.7,
+                    "cleanliness": 7.9,
+                    "efficiency": 6.8,
+                    "pickup_time": 5.9,
+                    "condition": 7.7
+                  },
+                  "pricing_info": {
+                    "drive_away_price": 417.28,
+                    "pay_when": "PAY_NOW",
+                    "base_price": 35213.91,
+                    "fee_breakdown": {
+                      "known_fees": [
+                        {
+                          "max_amount": 0,
+                          "amount": 0,
+                          "is_tax_included": 1,
+                          "currency": "USD",
+                          "type": "THEFT_EXCESS",
+                          "is_always_payable": 0,
+                          "min_amount": 0
+                        },
+                        {
+                          "max_amount": 684.96,
+                          "amount": 684.96,
+                          "is_tax_included": 1,
+                          "currency": "USD",
+                          "type": "DEPOSIT",
+                          "is_always_payable": 0,
+                          "min_amount": 273.98
+                        },
+                        {
+                          "min_amount": 0,
+                          "is_always_payable": 0,
+                          "type": "DAMAGE_EXCESS",
+                          "currency": "USD",
+                          "amount": 0,
+                          "is_tax_included": 1,
+                          "max_amount": 0
+                        },
+                        {
+                          "type": "MILEAGE",
+                          "distance_allowed": {
+                            "is_km": 0,
+                            "is_unlimited": 1
+                          },
+                          "is_always_payable": 0
+                        }
+                      ],
+                      "fuel_policy": {
+                        "type": "RETURN_SAME",
+                        "amount": 0
+                      }
+                    },
+                    "drive_away_price_is_approx": true,
+                    "base_currency": "INR",
+                    "base_deposit": 35213.91,
+                    "deposit": 417.28,
+                    "currency": "USD",
+                    "price": 417.28,
+                    "discount": 0,
+                    "quote_allowed": 1
+                  },
+                  "supplier_info": {
+                    "address": "132 Carson Rd, Airtrain P2, Newark, NJ, USA, 07114",
+                    "latitude": "40.68988438",
+                    "logo_url": "https://cdn.rcstatic.com/sp/images/suppliers/82_logo_200.png",
+                    "pickup_instructions": "Please take the \"AirTrain\" to station P2.",
+                    "name": "Dollar",
+                    "may_require_credit_card_guarantee": false,
+                    "dropoff_instructions": "Please take the \"AirTrain\" to station P2.",
+                    "longitude": "-74.18516971",
+                    "location_type": "Shuttle Bus"
+                  },
+                  "freebies": [
+                    "Amendments"
+                  ]
+                },
+                {
+                  "vehicle_id": "370883451",
+                  "content": {
+                    "badges": [
+                      {
+                        "type": "CONSTRUCTIVE",
+                        "text": "Free cancellation",
+                        "variation": "DEFAULT"
+                      }
+                    ],
+                    "supplier": {
+                      "name": "Dollar",
+                      "rating": {
+                        "subtitle": "1,362 reviews",
+                        "average": "7.2",
+                        "localisedRating": {
+                          "displayValue": "7.2",
+                          "rawValue": 7.2
+                        },
+                        "title": "Good"
+                      }
+                    }
+                  },
+                  "route_info": {
+                    "dropoff": {
+                      "country_code": "US",
+                      "latitude": "40.68988438",
+                      "location_type": "SHUTTLE_BUS",
+                      "longitude": "-74.18516971",
+                      "location_hash": "TmV3YXJrIExpYmVydHkgSW50ZXJuYXRpb25hbCBBaXJwb3J0",
+                      "name": "Newark Liberty International Airport",
+                      "location_id": "820488",
+                      "address": "132 Carson Rd, Airtrain P2, Newark, NJ, USA, 07114"
+                    },
+                    "pickup": {
+                      "name": "Newark Liberty International Airport",
+                      "address": "132 Carson Rd, Airtrain P2, Newark, NJ, USA, 07114",
+                      "location_id": "820488",
+                      "location_hash": "TmV3YXJrIExpYmVydHkgSW50ZXJuYXRpb25hbCBBaXJwb3J0",
+                      "location_type": "SHUTTLE_BUS",
+                      "longitude": "-74.18516971",
+                      "country_code": "US",
+                      "latitude": "40.68988438"
+                    }
+                  },
+                  "vehicle_info": {
+                    "seats": "5",
+                    "free_cancellation": 1,
+                    "group": "Compact",
+                    "fuel_policy": "Like for like",
+                    "airbags": 1,
+                    "v_id": "370883451",
+                    "transmission": "Automatic",
+                    "doors": "4",
+                    "v_name": "Hyundai Accent  ",
+                    "cma_compliant": -1,
+                    "aircon": 1,
+                    "label": "Compact car with:",
+                    "suitcases": {
+                      "small": "3",
+                      "big": "0"
+                    },
+                    "unlimited_mileage": 1,
+                    "fuel_type": "N/A",
+                    "mileage": "Unlimited mileage"
+                  },
+                  "accessibility": {
+                    "transmission": "Automatic gearbox",
+                    "fuel_policy": "Fuel policy is: Like for like",
+                    "pick_up_location": "Pick-up information: Shuttle Bus",
+                    "supplier_rating": "At this location, our customers have rated Dollar as 7.2 out of 10, Good."
+                  },
+                  "rating_info": {
+                    "pickup_time": 5.9,
+                    "condition": 7.7,
+                    "location": 7.7,
+                    "cleanliness": 7.9,
+                    "efficiency": 6.8,
+                    "value_for_money": 6.7,
+                    "average": 7.2,
+                    "no_of_ratings": 1362,
+                    "average_text": "Very good",
+                    "dropoff_time": 8.9
+                  },
+                  "fee_info": {
+                    "tax": 0,
+                    "fee": 0
+                  },
+                  "pricing_info": {
+                    "base_price": 34757.39,
+                    "fee_breakdown": {
+                      "known_fees": [
+                        {
+                          "amount": 0,
+                          "is_tax_included": 1,
+                          "currency": "USD",
+                          "max_amount": 0,
+                          "is_always_payable": 0,
+                          "min_amount": 0,
+                          "type": "THEFT_EXCESS"
+                        },
+                        {
+                          "max_amount": 684.96,
+                          "is_tax_included": 1,
+                          "amount": 684.96,
+                          "currency": "USD",
+                          "type": "DEPOSIT",
+                          "is_always_payable": 0,
+                          "min_amount": 273.98
+                        },
+                        {
+                          "is_tax_included": 1,
+                          "amount": 0,
+                          "currency": "USD",
+                          "max_amount": 0,
+                          "is_always_payable": 0,
+                          "min_amount": 0,
+                          "type": "DAMAGE_EXCESS"
+                        },
+                        {
+                          "is_always_payable": 0,
+                          "type": "MILEAGE",
+                          "distance_allowed": {
+                            "is_km": 0,
+                            "is_unlimited": 1
+                          }
+                        }
+                      ],
+                      "fuel_policy": {
+                        "type": "RETURN_SAME",
+                        "amount": 0
+                      }
+                    },
+                    "pay_when": "PAY_NOW",
+                    "drive_away_price_is_approx": true,
+                    "base_currency": "INR",
+                    "drive_away_price": 411.88,
+                    "quote_allowed": 1,
+                    "base_deposit": 34757.39,
+                    "deposit": 411.88,
+                    "currency": "USD",
+                    "price": 411.88,
+                    "discount": 0
+                  },
+                  "supplier_info": {
+                    "may_require_credit_card_guarantee": false,
+                    "dropoff_instructions": "Please take the \"AirTrain\" to station P2.",
+                    "longitude": "-74.18516971",
+                    "location_type": "Shuttle Bus",
+                    "latitude": "40.68988438",
+                    "address": "132 Carson Rd, Airtrain P2, Newark, NJ, USA, 07114",
+                    "logo_url": "https://cdn.rcstatic.com/sp/images/suppliers/82_logo_200.png",
+                    "pickup_instructions": "Please take the \"AirTrain\" to station P2.",
+                    "name": "Dollar"
+                  },
+                  "freebies": [
+                    "Amendments"
+                  ]
+                }
+              ],
+              "count": 10,
+              "title": "Car rentals",
+              "type": "cars",
+              "filter": [
+                {
+                  "type": "multiple_union",
+                  "layout": {
+                    "is_collapsed": "false",
+                    "collapsed_count": 3,
+                    "layout_type": "list",
+                    "is_collapsable": "false"
+                  },
+                  "categories": [
+                    {
+                      "id": "depotLocationType::OUTSIDE_TERMINAL",
+                      "count": 14,
+                      "name": "Airport (outside terminal)",
+                      "nameWithCount": "Airport (outside terminal) (14)"
+                    },
+                    {
+                      "name": "Airport (shuttle)",
+                      "nameWithCount": "Airport (shuttle) (28)",
+                      "count": 28,
+                      "id": "depotLocationType::SHUTTLE_BUS"
+                    },
+                    {
+                      "nameWithCount": "Airport (car rental centre) (46)",
+                      "name": "Airport (car rental centre)",
+                      "count": 46,
+                      "id": "depotLocationType::CAR_RENTAL_CENTRE"
+                    }
+                  ],
+                  "id": "depotLocationType",
+                  "title": "Location"
+                },
+                {
+                  "title": "Car Type",
+                  "layout": {
+                    "collapsed_count": 5,
+                    "is_collapsed": "true",
+                    "layout_type": "list",
+                    "is_collapsable": "true"
+                  },
+                  "type": "multiple_union",
+                  "categories": [
+                    {
+                      "nameWithCount": "Small (8)",
+                      "name": "Small",
+                      "count": 8,
+                      "id": "carCategory::small"
+                    },
+                    {
+                      "count": 28,
+                      "id": "carCategory::medium",
+                      "name": "Medium",
+                      "nameWithCount": "Medium (28)"
+                    },
+                    {
+                      "id": "carCategory::large",
+                      "count": 58,
+                      "name": "Large",
+                      "nameWithCount": "Large (58)"
+                    },
+                    {
+                      "nameWithCount": "Premium (14)",
+                      "name": "Premium",
+                      "id": "carCategory::premium",
+                      "count": 14
+                    },
+                    {
+                      "nameWithCount": "People carriers (5)",
+                      "name": "People carriers",
+                      "id": "carCategory::carriers",
+                      "count": 5
+                    }
+                  ],
+                  "id": "carCategory"
+                },
+                {
+                  "id": "pricePerDayBuckets",
+                  "categories": [
+                    {
+                      "name": "US$0 - US$50",
+                      "nameWithCount": "US$0 - US$50 (0)",
+                      "count": 0,
+                      "id": "pricePerDayBuckets::BUCKET_1"
+                    },
+                    {
+                      "nameWithCount": "US$50 - US$100 (46)",
+                      "name": "US$50 - US$100",
+                      "count": 46,
+                      "id": "pricePerDayBuckets::BUCKET_2"
+                    },
+                    {
+                      "name": "US$100 - US$150",
+                      "nameWithCount": "US$100 - US$150 (27)",
+                      "id": "pricePerDayBuckets::BUCKET_3",
+                      "count": 27
+                    },
+                    {
+                      "nameWithCount": "US$150 - US$200 (8)",
+                      "name": "US$150 - US$200",
+                      "count": 8,
+                      "id": "pricePerDayBuckets::BUCKET_4"
+                    },
+                    {
+                      "name": "US$200+",
+                      "nameWithCount": "US$200+ (7)",
+                      "count": 7,
+                      "id": "pricePerDayBuckets::BUCKET_5"
+                    }
+                  ],
+                  "layout": {
+                    "is_collapsable": "false",
+                    "layout_type": "list",
+                    "collapsed_count": 5,
+                    "is_collapsed": "false"
+                  },
+                  "type": "multiple_union",
+                  "title": "Price per day"
+                },
+                {
+                  "categories": [
+                    {
+                      "count": 20,
+                      "id": "supplier::Avis",
+                      "nameWithCount": "Avis (20)",
+                      "name": "Avis"
+                    },
+                    {
+                      "nameWithCount": "Budget (14)",
+                      "name": "Budget",
+                      "id": "supplier::Budget",
+                      "count": 14
+                    },
+                    {
+                      "id": "supplier::Dollar",
+                      "count": 28,
+                      "nameWithCount": "Dollar (28)",
+                      "name": "Dollar"
+                    },
+                    {
+                      "id": "supplier::Hertz",
+                      "count": 9,
+                      "nameWithCount": "Hertz (9)",
+                      "name": "Hertz"
+                    },
+                    {
+                      "count": 17,
+                      "id": "supplier::Sixt",
+                      "name": "Sixt",
+                      "nameWithCount": "Sixt (17)"
+                    }
+                  ],
+                  "id": "supplier",
+                  "layout": {
+                    "is_collapsed": "true",
+                    "collapsed_count": 5,
+                    "is_collapsable": "true",
+                    "layout_type": "list"
+                  },
+                  "type": "multiple_union",
+                  "title": "Supplier"
+                },
+                {
+                  "title": "Transmission",
+                  "categories": [
+                    {
+                      "id": "transmission::AUTOMATIC",
+                      "count": 88,
+                      "nameWithCount": "Automatic (88)",
+                      "name": "Automatic"
+                    }
+                  ],
+                  "id": "transmission",
+                  "type": "multiple_union",
+                  "layout": {
+                    "layout_type": "list",
+                    "is_collapsable": "true",
+                    "is_collapsed": "true",
+                    "collapsed_count": 5
+                  }
+                }
+              ],
+              "content": {
+                "filters": {
+                  "countLabel": "88 results"
+                },
+                "items": [
+                  {
+                    "content": {
+                      "contentType": "carsSearchResultsSecondaryPromotional"
+                    },
+                    "positionInList": 3,
+                    "type": "SHELL_REGION_VIEW"
+                  }
+                ]
+              },
+              "sort": [
+                {
+                  "name": "Recommended \u2013 best first",
+                  "identifier": "recommended",
+                  "title_tag": "tr.searchresults.sortBy.recommended"
+                },
+                {
+                  "identifier": "price_low_to_high",
+                  "title_tag": "tr.searchresults.sortBy.price.lowHigh",
+                  "name": "Price - lowest first"
+                },
+                {
+                  "identifier": "review_score",
+                  "title_tag": "tr.searchresults.sortBy.reviews.highLow",
+                  "name": "Review score - highest first"
+                }
+              ],
+              "is_genius_location": false,
+              "search_context": {
+                "searchId": "8944af66-519b-4b25-a9b0-dff49711d4ad",
+                "searchKey": "eyJkcml2ZXJzQWdlIjozMCwiZHJvcE9mZkRhdGVUaW1lIjoiMjAyNC0xMS0zMFQxNjowMDowMCIsImRyb3BPZmZMb2NhdGlvbiI6IjQwLjczNTU5OTUxNzgyMjMsLTc0LjE3Mjc5ODE1NjczODMiLCJkcm9wT2ZmTG9jYXRpb25UeXBlIjoiTEFUTE9ORyIsInBpY2tVcERhdGVUaW1lIjoiMjAyNC0xMS0yNVQxMTowMDowMCIsInBpY2tVcExvY2F0aW9uIjoiNDAuNjkxNjk5OTgxNjg5NSwtNzQuMTgwMDk5NDg3MzA0NyIsInBpY2tVcExvY2F0aW9uVHlwZSI6IkxBVExPTkciLCJyZW50YWxEdXJhdGlvbkluRGF5cyI6Niwic2VydmljZUZlYXR1cmVzIjpbIk5PX09QQVFVRVMiLCJTVVBSRVNTX0ZJWEVEX1BSSUNFX1ZFSElDTEVTIiwiSU5DTFVERV9QUk9EVUNUX1JFTEFUSU9OU0hJUFMiLCJJTkNMVURFX0VYVFJBU19DT05UQUlOSU5HX0ZFRVMiXX0=",
+                "recommendationsSearchUniqueId": "3498b9b4-4b15-4ee7-b110-6d7c4657aa94"
+              },
+              "search_key": "eyJkcml2ZXJzQWdlIjozMCwiZHJvcE9mZkRhdGVUaW1lIjoiMjAyNC0xMS0zMFQxNjowMDowMCIsImRyb3BPZmZMb2NhdGlvbiI6IjQwLjczNTU5OTUxNzgyMjMsLTc0LjE3Mjc5ODE1NjczODMiLCJkcm9wT2ZmTG9jYXRpb25UeXBlIjoiTEFUTE9ORyIsInBpY2tVcERhdGVUaW1lIjoiMjAyNC0xMS0yNVQxMTowMDowMCIsInBpY2tVcExvY2F0aW9uIjoiNDAuNjkxNjk5OTgxNjg5NSwtNzQuMTgwMDk5NDg3MzA0NyIsInBpY2tVcExvY2F0aW9uVHlwZSI6IkxBVExPTkciLCJyZW50YWxEdXJhdGlvbkluRGF5cyI6Niwic2VydmljZUZlYXR1cmVzIjpbIk5PX09QQVFVRVMiLCJTVVBSRVNTX0ZJWEVEX1BSSUNFX1ZFSElDTEVTIiwiSU5DTFVERV9QUk9EVUNUX1JFTEFUSU9OU0hJUFMiLCJJTkNMVURFX0VYVFJBU19DT05UQUlOSU5HX0ZFRVMiXX0="
+            }
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": ""
+      }
+    ],
+    "message": "Success.",
+    "count_dict": {
+      "success_turn_num": 2,
+      "total_turn_num": 2,
+      "correct_call_num": 3,
+      "total_call_num": 3,
+      "real_turn_num": 2
+    },
+    "resp_eval": null,
+    "status": "Success",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Attraction-59",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "We are planning a family trip to Sydney from November 10 to November 20, 2024. Help us find the two highest-rated attractions and provide detailed information about them."
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Attraction_Location",
+            "arguments": {
+              "query": "Sydney, Australia"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": {
+              "products": [
+                {
+                  "id": "eyJwaW5uZWRQcm9kdWN0IjoiUFIxSDIzY2lWMjRNIiwidWZpIjotMTYwMzEzNX0=",
+                  "__typename": "AttractionsSearchProductSuggestion",
+                  "title": "Sydney CBD to Sydney Airport",
+                  "productId": "PR1H23ciV24M",
+                  "productSlug": "pr1h23civ24m-sydney-cbd-to-sydney-airport",
+                  "taxonomySlug": "transfers-services",
+                  "cityUfi": -1603135,
+                  "cityName": "Sydney",
+                  "countryCode": "au"
+                },
+                {
+                  "id": "eyJwaW5uZWRQcm9kdWN0IjoiUFI2aEw5YUhrdmhoIiwidWZpIjotMTYwMzEzNX0=",
+                  "__typename": "AttractionsSearchProductSuggestion",
+                  "title": "Shared Sydney Airport Transfers for Sydney",
+                  "productId": "PR6hL9aHkvhh",
+                  "productSlug": "pr6hl9ahkvhh-shared-sydney-airport-transfers-for-sydney",
+                  "taxonomySlug": "transfers-services",
+                  "cityUfi": -1603135,
+                  "cityName": "Sydney",
+                  "countryCode": "au"
+                },
+                {
+                  "id": "eyJwaW5uZWRQcm9kdWN0IjoiUFJsTGZwTWlodk1NIiwidWZpIjotMTYwMzEzNX0=",
+                  "__typename": "AttractionsSearchProductSuggestion",
+                  "title": "Private Sydney Airport-Sydney CBD, Sydney City, Cruise Terminal",
+                  "productId": "PRlLfpMihvMM",
+                  "productSlug": "prllfpmihvmm-sydney-airport-to-cbd-and-suburbs-and-blue-mountain-transfer",
+                  "taxonomySlug": "transfers-services",
+                  "cityUfi": -1603135,
+                  "cityName": "Sydney",
+                  "countryCode": "au"
+                },
+                {
+                  "id": "eyJwaW5uZWRQcm9kdWN0IjoiUFJocFpNV1dTV2hyIiwidWZpIjotMTYwMzEzNX0=",
+                  "__typename": "AttractionsSearchProductSuggestion",
+                  "title": "Private Minibus Sydney Airport to Sydney CBD",
+                  "productId": "PRhpZMWWSWhr",
+                  "productSlug": "prhpzmwwswhr-private-minibus-sydney-airport-to-sydney-cbd",
+                  "taxonomySlug": "transfers-services",
+                  "cityUfi": -1603135,
+                  "cityName": "Sydney",
+                  "countryCode": "au"
+                },
+                {
+                  "id": "eyJwaW5uZWRQcm9kdWN0IjoiUFJxRWljZE05akd4IiwidWZpIjotMTYwMzEzNX0=",
+                  "__typename": "AttractionsSearchProductSuggestion",
+                  "title": "Discover Sydney",
+                  "productId": "PRqEicdM9jGx",
+                  "productSlug": "prqeicdm9jgx-discover-sydney",
+                  "taxonomySlug": "tours",
+                  "cityUfi": -1603135,
+                  "cityName": "Sydney",
+                  "countryCode": "au"
+                }
+              ],
+              "destinations": [
+                {
+                  "id": "eyJ1ZmkiOi0xNjAzMTM1fQ==",
+                  "__typename": "AttractionsSearchDestinationSuggestion",
+                  "ufi": -1603135,
+                  "country": "Australia",
+                  "cityName": "Sydney",
+                  "productCount": 565,
+                  "cc1": "au"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Attractions",
+            "arguments": {
+              "id": "eyJ1ZmkiOi0xNjAzMTM1fQ==",
+              "sortBy": "attr_book_score"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": {
+              "__typename": "AttractionsProductSearchResponse",
+              "products": [
+                {
+                  "__typename": "AttractionsProduct",
+                  "cancellationPolicy": {
+                    "__typename": "AttractionsCancellationPolicy",
+                    "hasFreeCancellation": true
+                  },
+                  "id": "PRo1N9QfZ59u",
+                  "name": "Behind The Scenes: Sydney Cricket Ground (SCG) Guided Walking Tour",
+                  "slug": "pro1n9qfz59u-sydney-cricket-ground-walking-tour",
+                  "shortDescription": "Tread the Path of Champions - unforgettable for locals, international visitors and sports fans of...",
+                  "representativePrice": {
+                    "__typename": "AttractionsPrice",
+                    "chargeAmount": 22.11,
+                    "currency": "USD",
+                    "publicAmount": 22.11
+                  },
+                  "reviewsStats": {
+                    "__typename": "AttractionsProductReviewStats",
+                    "allReviewsCount": 1,
+                    "percentage": "100%",
+                    "combinedNumericStats": {
+                      "__typename": "AttractionsProductCombinedReviewStats",
+                      "average": 4.9,
+                      "total": 69
+                    }
+                  },
+                  "ufiDetails": {
+                    "__typename": "AttractionLocationResponse",
+                    "bCityName": "Sydney",
+                    "ufi": -1603135
+                  },
+                  "offers": [
+                    {
+                      "__typename": "Offer",
+                      "items": [
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OI7C4vHwcG9b"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OI0RVBhHB1aE"
+                        }
+                      ]
+                    }
+                  ],
+                  "supportedFeatures": {
+                    "__typename": "AttractionsProductSupportedFeatures",
+                    "nativeApp": true
+                  }
+                },
+                {
+                  "__typename": "AttractionsProduct",
+                  "cancellationPolicy": {
+                    "__typename": "AttractionsCancellationPolicy",
+                    "hasFreeCancellation": true
+                  },
+                  "id": "PRmPvKqS3eRD",
+                  "name": "The Ultimate Sydney Attractions Pass",
+                  "slug": "prmpvkqs3erd-the-ultimate-sydney-attractions-pass",
+                  "shortDescription": "A chance to visit some of Sydney's top attractions with an all-in-one pass",
+                  "representativePrice": {
+                    "__typename": "AttractionsPrice",
+                    "chargeAmount": 40.2,
+                    "currency": "USD",
+                    "publicAmount": 40.2
+                  },
+                  "reviewsStats": {
+                    "__typename": "AttractionsProductReviewStats",
+                    "allReviewsCount": 0,
+                    "percentage": "0",
+                    "combinedNumericStats": {
+                      "__typename": "AttractionsProductCombinedReviewStats",
+                      "average": 4.8,
+                      "total": 266
+                    }
+                  },
+                  "ufiDetails": {
+                    "__typename": "AttractionLocationResponse",
+                    "bCityName": "Sydney",
+                    "ufi": -1603135
+                  },
+                  "offers": [
+                    {
+                      "__typename": "Offer",
+                      "items": [
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OI4ye8dQfwUS"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OI51mHuxUbzT"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIubEKp5uEX3"
+                        }
+                      ]
+                    },
+                    {
+                      "__typename": "Offer",
+                      "items": [
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIu4pVoyYdnw"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIRVfF0zITOL"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OITawq7DoJ61"
+                        }
+                      ]
+                    },
+                    {
+                      "__typename": "Offer",
+                      "items": [
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIWsHtWXIk8w"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OI1nMKkcYzpx"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OI6BueU7IvUH"
+                        }
+                      ]
+                    },
+                    {
+                      "__typename": "Offer",
+                      "items": [
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OI35CvOQunNk"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIU4ZqsRhTAw"
+                        }
+                      ]
+                    },
+                    {
+                      "__typename": "Offer",
+                      "items": [
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIP31wQvfAi9"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OI6DRxtroKnZ"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OImhyrsZMJNU"
+                        }
+                      ]
+                    }
+                  ],
+                  "supportedFeatures": {
+                    "__typename": "AttractionsProductSupportedFeatures",
+                    "nativeApp": true
+                  }
+                },
+                {
+                  "__typename": "AttractionsProduct",
+                  "cancellationPolicy": {
+                    "__typename": "AttractionsCancellationPolicy",
+                    "hasFreeCancellation": true
+                  },
+                  "id": "PRwIFqZ0fA7c",
+                  "name": "Sydney Opera House Official Guided Walking Tour",
+                  "slug": "prwifqz0fa7c-sydney-opera-house-official-guided-walking-tour",
+                  "shortDescription": "A one-hour tour to discover the iconic building",
+                  "representativePrice": {
+                    "__typename": "AttractionsPrice",
+                    "chargeAmount": 30.15,
+                    "currency": "USD",
+                    "publicAmount": 30.15
+                  },
+                  "reviewsStats": {
+                    "__typename": "AttractionsProductReviewStats",
+                    "allReviewsCount": 41,
+                    "percentage": "88%",
+                    "combinedNumericStats": {
+                      "__typename": "AttractionsProductCombinedReviewStats",
+                      "average": 4.7,
+                      "total": 1218
+                    }
+                  },
+                  "ufiDetails": {
+                    "__typename": "AttractionLocationResponse",
+                    "bCityName": "Sydney",
+                    "ufi": -1603135
+                  },
+                  "offers": [
+                    {
+                      "__typename": "Offer",
+                      "items": [
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIItAVA5DmbW"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIu7reP5vaH9"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIZFlA03QYTJ"
+                        }
+                      ]
+                    },
+                    {
+                      "__typename": "Offer",
+                      "items": [
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIvC54iTRqE5"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIbJLEwBIAYN"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIsY6oyfjNm5"
+                        }
+                      ]
+                    },
+                    {
+                      "__typename": "Offer",
+                      "items": [
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIOkcqCKvufT"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OITk6GTXm1dy"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIn4QA9CdW56"
+                        }
+                      ]
+                    },
+                    {
+                      "__typename": "Offer",
+                      "items": [
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OI3B3wwNFGz3"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OI0deBh9qlKU"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OItvcDprdaBk"
+                        }
+                      ]
+                    },
+                    {
+                      "__typename": "Offer",
+                      "items": [
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIr8hIEd3h4M"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIrsRhIaAc4K"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIjZnGNS9Ndt"
+                        }
+                      ]
+                    }
+                  ],
+                  "supportedFeatures": {
+                    "__typename": "AttractionsProductSupportedFeatures",
+                    "nativeApp": true
+                  },
+                  "flags": [
+                    {
+                      "__typename": "AttractionsProductFlags",
+                      "flag": "bestseller",
+                      "value": true,
+                      "rank": 1
+                    },
+                    {
+                      "__typename": "AttractionsProductFlags",
+                      "flag": "bestsellerForLandmarks",
+                      "value": true,
+                      "rank": 3
+                    }
+                  ]
+                },
+                {
+                  "__typename": "AttractionsProduct",
+                  "cancellationPolicy": {
+                    "__typename": "AttractionsCancellationPolicy",
+                    "hasFreeCancellation": true
+                  },
+                  "id": "PR85fyf4Wtgm",
+                  "name": "Blue Mountains ALL INCLUSIVE day tour with Free Koala Photo",
+                  "slug": "pr85fyf4wtgm-blue-mountains-all-inclusive-day-tour-with-free-koala-photo",
+                  "shortDescription": "Brighton Tours offers personalized, All inclusive day tours from Sydney to the magnificent UNESCO...",
+                  "representativePrice": {
+                    "__typename": "AttractionsPrice",
+                    "chargeAmount": 126.64,
+                    "currency": "USD",
+                    "publicAmount": 126.64
+                  },
+                  "reviewsStats": {
+                    "__typename": "AttractionsProductReviewStats",
+                    "allReviewsCount": 0,
+                    "percentage": "0",
+                    "combinedNumericStats": {
+                      "__typename": "AttractionsProductCombinedReviewStats",
+                      "average": 4.5,
+                      "total": 29
+                    }
+                  },
+                  "ufiDetails": {
+                    "__typename": "AttractionLocationResponse",
+                    "bCityName": "Sydney",
+                    "ufi": -1603135
+                  },
+                  "offers": [
+                    {
+                      "__typename": "Offer",
+                      "items": [
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OI0nm9FgbabS"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIpCtQM7e3T8"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIf9OoVkZUqw"
+                        }
+                      ]
+                    }
+                  ],
+                  "supportedFeatures": {
+                    "__typename": "AttractionsProductSupportedFeatures",
+                    "nativeApp": true
+                  },
+                  "flags": [
+                    {
+                      "__typename": "AttractionsProductFlags",
+                      "flag": "bestseller",
+                      "value": true,
+                      "rank": 6
+                    }
+                  ]
+                },
+                {
+                  "__typename": "AttractionsProduct",
+                  "cancellationPolicy": {
+                    "__typename": "AttractionsCancellationPolicy",
+                    "hasFreeCancellation": true
+                  },
+                  "id": "PRrnSsEJpfNb",
+                  "name": "General Admission to Sydney Taronga Zoo",
+                  "slug": "prrnssejpfnb-general-admission-to-sydney-taronga-zoo",
+                  "shortDescription": "A visit to Australia's largest zoo to see and learn about its animals",
+                  "representativePrice": {
+                    "__typename": "AttractionsPrice",
+                    "chargeAmount": 35.51,
+                    "currency": "USD",
+                    "publicAmount": 35.51
+                  },
+                  "reviewsStats": {
+                    "__typename": "AttractionsProductReviewStats",
+                    "allReviewsCount": 43,
+                    "percentage": "91%",
+                    "combinedNumericStats": {
+                      "__typename": "AttractionsProductCombinedReviewStats",
+                      "average": 4.4,
+                      "total": 203
+                    }
+                  },
+                  "ufiDetails": {
+                    "__typename": "AttractionLocationResponse",
+                    "bCityName": "Sydney",
+                    "ufi": -1603135
+                  },
+                  "offers": [
+                    {
+                      "__typename": "Offer",
+                      "items": [
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIu1BoDhIC70"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIcC8UuPUCZo"
+                        },
+                        {
+                          "__typename": "OfferItem",
+                          "id": "OIuDhS5evIMg"
+                        }
+                      ]
+                    }
+                  ],
+                  "supportedFeatures": {
+                    "__typename": "AttractionsProductSupportedFeatures",
+                    "nativeApp": true
+                  },
+                  "flags": [
+                    {
+                      "__typename": "AttractionsProductFlags",
+                      "flag": "bestseller",
+                      "value": true,
+                      "rank": 7
+                    },
+                    {
+                      "__typename": "AttractionsProductFlags",
+                      "flag": "bestsellerForAttractions",
+                      "value": true,
+                      "rank": 2
+                    },
+                    {
+                      "__typename": "AttractionsProductFlags",
+                      "flag": "popularFor3Travelers",
+                      "value": true,
+                      "rank": 2
+                    }
+                  ]
+                }
+              ],
+              "filterStats": {
+                "__typename": "FilterStats",
+                "unfilteredProductCount": 565,
+                "filteredProductCount": 565
+              },
+              "sorters": [
+                {
+                  "__typename": "AttractionsSorterOption",
+                  "name": "Our top picks",
+                  "value": "trending"
+                },
+                {
+                  "__typename": "AttractionsSorterOption",
+                  "name": "Most popular",
+                  "value": "attr_book_score"
+                },
+                {
+                  "__typename": "AttractionsSorterOption",
+                  "name": "Lowest price",
+                  "value": "lowest_price"
+                }
+              ],
+              "defaultSorter": {
+                "__typename": "AttractionsSorterOption",
+                "name": "Our top picks",
+                "value": "trending"
+              },
+              "filterOptions": {
+                "__typename": "FilterOptions",
+                "typeFilters": [
+                  {
+                    "__typename": "FilterOption",
+                    "name": "Tours",
+                    "tagname": "tours",
+                    "productCount": 148
+                  },
+                  {
+                    "__typename": "FilterOption",
+                    "name": "Nature & outdoor",
+                    "tagname": "nature-outdoor",
+                    "productCount": 112
+                  },
+                  {
+                    "__typename": "FilterOption",
+                    "name": "Entertainment & tickets",
+                    "tagname": "entertainment-tickets",
+                    "productCount": 61
+                  },
+                  {
+                    "__typename": "FilterOption",
+                    "name": "Museums, arts & culture",
+                    "tagname": "museums-arts-culture",
+                    "productCount": 59
+                  },
+                  {
+                    "__typename": "FilterOption",
+                    "name": "Food & drinks",
+                    "tagname": "food-drinks",
+                    "productCount": 30
+                  }
+                ],
+                "labelFilters": [
+                  {
+                    "__typename": "FilterOption",
+                    "name": "Free cancellation",
+                    "tagname": "free_cancellation",
+                    "productCount": 519
+                  }
+                ],
+                "ufiFilters": [
+                  {
+                    "__typename": "FilterOption",
+                    "name": "Sydney",
+                    "tagname": "-1603135",
+                    "productCount": 565
+                  }
+                ],
+                "priceFilters": [
+                  {
+                    "__typename": "FilterOption",
+                    "name": "US$0 - US$22",
+                    "tagname": "b0",
+                    "productCount": 40
+                  },
+                  {
+                    "__typename": "FilterOption",
+                    "name": "US$22 - US$44",
+                    "tagname": "b1",
+                    "productCount": 69
+                  },
+                  {
+                    "__typename": "FilterOption",
+                    "name": "US$44 - US$83",
+                    "tagname": "b2",
+                    "productCount": 99
+                  },
+                  {
+                    "__typename": "FilterOption",
+                    "name": "US$83 - US$138",
+                    "tagname": "b3",
+                    "productCount": 81
+                  },
+                  {
+                    "__typename": "FilterOption",
+                    "name": "US$138+",
+                    "tagname": "b4",
+                    "productCount": 288
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Get_Attraction_Details",
+            "arguments": {
+              "slug": "pro1n9qfz59u-sydney-cricket-ground-walking-tour"
+            }
+          },
+          {
+            "name": "Get_Attraction_Details",
+            "arguments": {
+              "slug": "prmpvkqs3erd-the-ultimate-sydney-attractions-pass"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": {
+              "__typename": "AttractionsProduct",
+              "additionalInfo": "Infants and small children can ride in a pram or stroller\n\nService animals allowed\n\nPublic transportation options are available nearby\n\nSuitable for all physical fitness levels\n\nTour routes may vary depending on events, site activities and severe inclement weather.\n\nPlease wear comfortable walking shoes, hat and sunscreen. Parts of the tour are outdoors so please ensure weather appropriate clothing is worn, including rain attire in wet weather.\n\nTour guests should arrive 15 minutes before the tour and present their tickets.\n\nAllianz Stadium is currently undergoing redevelopment, scheduled to reopen in 2022. Tour route will exclude Allianz Stadium during this time.\n\nScheduled finish time is approximate. If you have paid parking it is advisable to add some extra time just in case\n\nWheel chair access available on approximately 90% of the tour\n\nNot wheelchair accessible\n\nPlease bring your ticket with you to the attraction.\n\nBe aware that operators may cancel for unforeseen reasons.\n\nYou need to be 18 years or older to book or be accompanied by an adult. ",
+              "applicableTerms": [
+                {
+                  "__typename": "TermsConditions",
+                  "policyProvider": "Booking.com"
+                },
+                {
+                  "__typename": "TermsConditions",
+                  "policyProvider": "Viator"
+                }
+              ],
+              "cancellationPolicy": {
+                "__typename": "AttractionsCancellationPolicy",
+                "hasFreeCancellation": true
+              },
+              "description": "Tread the Path of Champions - unforgettable for locals, international visitors and sports fans of all ages\n\nThis\u00a090-minute BEHIND THE SCENES guided walking tour offers a dynamic, journey through the Sydney Cricket Ground (SCG) precinct and the SCG Museum.\u00a0",
+              "guideSupportedLanguages": [
+                "English (UK)"
+              ],
+              "id": "PRo1N9QfZ59u",
+              "isBookable": true,
+              "labels": [
+                {
+                  "__typename": "AttractionsLabel",
+                  "text": "Free cancellation",
+                  "type": "free_cancellation"
+                }
+              ],
+              "name": "Behind The Scenes: Sydney Cricket Ground (SCG) Guided Walking Tour",
+              "notIncluded": [
+                "Transportation to/from attractions"
+              ],
+              "offers": [
+                {
+                  "__typename": "Offer",
+                  "availabilityType": "date_time",
+                  "id": "OFecXlgXftTw"
+                }
+              ],
+              "onSiteRequirements": {
+                "__typename": "OnSiteRequirements"
+              },
+              "operatedBy": "SCG and Allianz Stadium Tour",
+              "representativePrice": {
+                "__typename": "AttractionsPrice",
+                "chargeAmount": 22.11,
+                "currency": "USD",
+                "publicAmount": 22.11
+              },
+              "reviews": {
+                "__typename": "AttractionsGetReviewsResponse",
+                "total": 17,
+                "reviews": [
+                  {
+                    "__typename": "AttractionsReview",
+                    "id": "RSsXIG7EqSdO",
+                    "epochMs": 1726004234000,
+                    "numericRating": 5
+                  },
+                  {
+                    "__typename": "AttractionsReview",
+                    "id": "RSIjxnGdCrSg",
+                    "content": "Really interesting and a few surprises on the tour. Our guide Karen was funny, informed and delivered her information very well. We would thoroughly recommend the tour if you love cricket.",
+                    "epochMs": 1724491858000,
+                    "language": "en-gb",
+                    "numericRating": 5,
+                    "user": {
+                      "__typename": "AttractionsReviewUser",
+                      "name": "Patricia",
+                      "cc1": "au"
+                    }
+                  },
+                  {
+                    "__typename": "AttractionsReview",
+                    "id": "RSgWsDtY9epO",
+                    "epochMs": 1721806719000,
+                    "numericRating": 5
+                  },
+                  {
+                    "__typename": "AttractionsReview",
+                    "id": "RSuNThnHODJl",
+                    "content": "As big sports fans this was a must see while in Sydney. Plenty of time to look around, ask questions and soak in the surroundings. Our guide Stuart was fantastic, really knowledgeable and provided lots of fun facts too. Interacted with everyone in our group, a natural host he made it even more enjoyable.",
+                    "epochMs": 1721215049000,
+                    "language": "en-gb",
+                    "numericRating": 4,
+                    "user": {
+                      "__typename": "AttractionsReviewUser",
+                      "name": "Debbie"
+                    }
+                  },
+                  {
+                    "__typename": "AttractionsReview",
+                    "id": "RSLnFqDUdtfx",
+                    "content": "The link provided by Booking.com for location is not right , no where its mentioned that the venue to be reach is Gate A of Sydney cricket ground , because of it had to go around numerous times in heavy rain. Could you please update you geolocation for SCG tour entry mentioning to reach Gate A.",
+                    "epochMs": 1720169369000,
+                    "language": "en-gb",
+                    "numericRating": 4
+                  }
+                ]
+              },
+              "reviewsStats": {
+                "__typename": "AttractionsProductReviewStats",
+                "allReviewsCount": 1,
+                "percentage": "100%",
+                "combinedNumericStats": {
+                  "__typename": "AttractionsProductCombinedReviewStats",
+                  "average": 4.9,
+                  "total": 69
+                }
+              },
+              "slug": "pro1n9qfz59u-sydney-cricket-ground-walking-tour",
+              "supportedFeatures": {
+                "__typename": "AttractionsProductSupportedFeatures",
+                "nativeApp": true,
+                "nativeAppBookProcess": true,
+                "liveAvailabilityCheckSupported": true
+              },
+              "ufiDetails": {
+                "__typename": "AttractionLocationResponse",
+                "ufi": -1603135,
+                "bCityName": "Sydney"
+              },
+              "whatsIncluded": [
+                "Professional guide",
+                "Behind the Scenes Walking tour"
+              ]
+            }
+          },
+          {
+            "status": true,
+            "message": "Success",
+            "data": {
+              "__typename": "AttractionsProduct",
+              "additionalInfo": "Please bring your ticket with you to the attraction.\n\nBe aware that operators may cancel for unforeseen reasons.\n\nYou need to be 18 years or older to book or be accompanied by an adult. ",
+              "applicableTerms": [
+                {
+                  "__typename": "TermsConditions",
+                  "policyProvider": "Booking.com"
+                },
+                {
+                  "__typename": "TermsConditions",
+                  "policyProvider": "Klook"
+                }
+              ],
+              "cancellationPolicy": {
+                "__typename": "AttractionsCancellationPolicy",
+                "hasFreeCancellation": true
+              },
+              "description": "With the Ultimate Sydney Attractions Pass, you'll be able to explore some of the city's most famous landmarks with ease. Highlights include the Sydney Opera House, SEA LIFE Sydney Aquarium and Sydney Harbour Bridge. You'll also have the opportunity to see other main sights like WILD LIFE Sydney Zoo, Darling Harbour, Bondi Beach and Sydney Tower Eye.",
+              "id": "PRmPvKqS3eRD",
+              "isBookable": true,
+              "labels": [
+                {
+                  "__typename": "AttractionsLabel",
+                  "text": "Free cancellation",
+                  "type": "free_cancellation"
+                }
+              ],
+              "name": "The Ultimate Sydney Attractions Pass",
+              "offers": [
+                {
+                  "__typename": "Offer",
+                  "availabilityType": "date_time",
+                  "id": "OFTRuKtjSX15"
+                },
+                {
+                  "__typename": "Offer",
+                  "availabilityType": "date_time",
+                  "id": "OFgGYLzSAlcZ"
+                },
+                {
+                  "__typename": "Offer",
+                  "availabilityType": "date_time",
+                  "id": "OFAFKEP3AsxY"
+                },
+                {
+                  "__typename": "Offer",
+                  "availabilityType": "date_time",
+                  "id": "OFyrAFHyZHYD"
+                },
+                {
+                  "__typename": "Offer",
+                  "availabilityType": "date_time",
+                  "id": "OFNf2SfeXfWI"
+                }
+              ],
+              "onSiteRequirements": {
+                "__typename": "OnSiteRequirements"
+              },
+              "operatedBy": "Klook",
+              "representativePrice": {
+                "__typename": "AttractionsPrice",
+                "chargeAmount": 40.2,
+                "currency": "USD",
+                "publicAmount": 40.2
+              },
+              "reviews": {
+                "__typename": "AttractionsGetReviewsResponse",
+                "total": 10,
+                "reviews": [
+                  {
+                    "__typename": "AttractionsReview",
+                    "id": "RSInnuttufzu",
+                    "epochMs": 1728712814000,
+                    "numericRating": 5,
+                    "user": {
+                      "__typename": "AttractionsReviewUser",
+                      "name": "Rhiana",
+                      "cc1": "au"
+                    }
+                  },
+                  {
+                    "__typename": "AttractionsReview",
+                    "id": "RSkSQfbcyO7F",
+                    "epochMs": 1727476751000,
+                    "numericRating": 5,
+                    "user": {
+                      "__typename": "AttractionsReviewUser",
+                      "name": "jimena",
+                      "cc1": "cl"
+                    }
+                  },
+                  {
+                    "__typename": "AttractionsReview",
+                    "id": "RSNZH2PiVAq0",
+                    "content": "It was okay, a bit old school. Sea Life exceeded my expectations, while Madame Tussauds was nice, though I don\u2019t think we were the target audience. I appreciate that you can use the pass within 30 days from visiting the first attraction. The price is also better if you buy it directly from the Sea Life website.",
+                    "epochMs": 1727069095000,
+                    "language": "en-gb",
+                    "numericRating": 4,
+                    "user": {
+                      "__typename": "AttractionsReviewUser",
+                      "name": "Aleksandra",
+                      "cc1": "au"
+                    }
+                  },
+                  {
+                    "__typename": "AttractionsReview",
+                    "id": "RSda1KektaVy",
+                    "epochMs": 1725521256000,
+                    "numericRating": 5
+                  },
+                  {
+                    "__typename": "AttractionsReview",
+                    "id": "RSskt3tEAReU",
+                    "epochMs": 1724059522000,
+                    "numericRating": 4
+                  }
+                ]
+              },
+              "reviewsStats": {
+                "__typename": "AttractionsProductReviewStats",
+                "allReviewsCount": 0,
+                "percentage": "0",
+                "combinedNumericStats": {
+                  "__typename": "AttractionsProductCombinedReviewStats",
+                  "average": 4.8,
+                  "total": 266
+                }
+              },
+              "shortDescription": "A chance to visit some of Sydney's top attractions with an all-in-one pass",
+              "slug": "prmpvkqs3erd-the-ultimate-sydney-attractions-pass",
+              "supportedFeatures": {
+                "__typename": "AttractionsProductSupportedFeatures",
+                "nativeApp": true,
+                "nativeAppBookProcess": true,
+                "liveAvailabilityCheckSupported": true
+              },
+              "ufiDetails": {
+                "__typename": "AttractionLocationResponse",
+                "ufi": -1603135,
+                "bCityName": "Sydney"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": ""
+      }
+    ],
+    "message": "Success.",
+    "count_dict": {
+      "success_turn_num": 3,
+      "total_turn_num": 3,
+      "correct_call_num": 4,
+      "total_call_num": 4,
+      "real_turn_num": 3
+    },
+    "resp_eval": null,
+    "status": "Success",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Cross-131",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "Help me check the details of the fastest plane tickets from Toronto to Los Angeles on November 15, 2024, and from Los Angeles to San Francisco on November 17, 2024. I need to book the tickets separately in case my plans change. I'm going to stay in Los Angeles and San Francisco for two days each. Please provide hotels within 10 kilometers of the related airports in Los Angeles and San Francisco based on the arrival airports of the flights."
+      },
+      {
+        "role": "assistant",
+        "content": ""
+      }
+    ],
+    "message": {
+      "error_type": "stop_early",
+      "content": "Stop early."
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 3,
+      "correct_call_num": 0,
+      "total_call_num": 11,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  }
+]

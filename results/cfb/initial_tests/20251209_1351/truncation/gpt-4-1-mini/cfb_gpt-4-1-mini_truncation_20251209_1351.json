@@ -1,0 +1,2111 @@
+[
+  {
+    "id": "Hotels-104",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "My friends are planning to visit Berlin from December 10th to December 15th, 2024. Find a hotel near the Museumsinsel that has a 24-hour front desk. Then find other nearby cities around hotel where they can continue their travel plans."
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Hotel_Destination",
+            "arguments": {
+              "query": "Museumsinsel, Berlin"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": [
+              {
+                "dest_id": "11684764",
+                "search_type": "hotel",
+                "region": "Berlin Federal State",
+                "nr_hotels": 1,
+                "name": "Great Central City Apartments Mitte Museumsinsel",
+                "label": "Great Central City Apartments Mitte Museumsinsel, Berlin, Berlin Federal State, Germany",
+                "country": "Germany",
+                "hotels": 1,
+                "city_name": "Berlin",
+                "dest_type": "hotel",
+                "lc": "en",
+                "cc1": "de",
+                "roundtrip": "GgEwIAAoATICZW46FE11c2V1bXNpbnNlbCwgQmVybGluQABKAFAA",
+                "latitude": 52.51292,
+                "city_ufi": -1746443,
+                "type": "ho",
+                "longitude": 13.402804
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Get_Filter",
+            "arguments": {
+              "categories_filter": "",
+              "search_type": "hotel",
+              "dest_id": "11684764",
+              "arrival_date": "2024-12-10",
+              "departure_date": "2024-12-15"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "timestamp": 1729527542729,
+            "data": {
+              "pagination": {
+                "nbResultsTotal": 1390
+              },
+              "availabilityInfo": {
+                "totalAvailableNotAutoextended": 1153
+              },
+              "filters": [
+                {
+                  "title": "Your previous filters",
+                  "field": "previous",
+                  "filterStyle": "CHECKBOX",
+                  "options": [
+                    {
+                      "title": "3 stars",
+                      "genericId": "class::3",
+                      "countNotAutoextended": 629
+                    },
+                    {
+                      "title": "Resorts",
+                      "genericId": "property_type::206",
+                      "countNotAutoextended": 0
+                    },
+                    {
+                      "title": "Hotels",
+                      "genericId": "property_type::204",
+                      "countNotAutoextended": 481
+                    },
+                    {
+                      "title": "Breakfast included",
+                      "genericId": "mealplan::breakfast_included",
+                      "countNotAutoextended": 345
+                    },
+                    {
+                      "title": "5 stars",
+                      "genericId": "class::5",
+                      "countNotAutoextended": 41
+                    },
+                    {
+                      "title": "Free WiFi",
+                      "genericId": "facility::107",
+                      "countNotAutoextended": 1132
+                    },
+                    {
+                      "title": "Entire homes & apartments",
+                      "genericId": "privacy_type::3",
+                      "countNotAutoextended": 615
+                    },
+                    {
+                      "title": "Very good: 8+",
+                      "genericId": "reviewscorebuckets::80",
+                      "countNotAutoextended": 658
+                    },
+                    {
+                      "title": "Pets allowed",
+                      "genericId": "facility::4",
+                      "countNotAutoextended": 488
+                    },
+                    {
+                      "title": "Family rooms",
+                      "genericId": "facility::28",
+                      "countNotAutoextended": 585
+                    }
+                  ]
+                },
+                {
+                  "title": "Your budget (for 5 nights)",
+                  "field": "price",
+                  "filterStyle": "SLIDER",
+                  "options": [],
+                  "min": "50",
+                  "max": "2000",
+                  "minPriceStep": "50",
+                  "minSelected": "0",
+                  "histogram": [
+                    0,
+                    0,
+                    13,
+                    26,
+                    7,
+                    7,
+                    2,
+                    8,
+                    12,
+                    35,
+                    36,
+                    46,
+                    63,
+                    100,
+                    96,
+                    86,
+                    83,
+                    95,
+                    83,
+                    82,
+                    61,
+                    58,
+                    70,
+                    57,
+                    40,
+                    42,
+                    37,
+                    26,
+                    20,
+                    32,
+                    28,
+                    37,
+                    28,
+                    21,
+                    18,
+                    38,
+                    16,
+                    12,
+                    18,
+                    8,
+                    3,
+                    7,
+                    8,
+                    7,
+                    12,
+                    7,
+                    7,
+                    6,
+                    3,
+                    8
+                  ],
+                  "currency": "EUR"
+                },
+                {
+                  "title": "Popular filters",
+                  "field": "popular",
+                  "filterStyle": "CHECKBOX",
+                  "options": [
+                    {
+                      "title": "Breakfast included",
+                      "genericId": "mealplan::breakfast_included",
+                      "countNotAutoextended": 345
+                    },
+                    {
+                      "title": "Hotels",
+                      "genericId": "property_type::204",
+                      "countNotAutoextended": 481
+                    },
+                    {
+                      "title": "Mitte",
+                      "genericId": "district::200",
+                      "countNotAutoextended": 283
+                    },
+                    {
+                      "title": "Very good: 8+",
+                      "genericId": "reviewscorebuckets::80",
+                      "countNotAutoextended": 658
+                    },
+                    {
+                      "title": "Berlin City Centre",
+                      "genericId": "district::2285",
+                      "countNotAutoextended": 252
+                    },
+                    {
+                      "title": "Apartments",
+                      "genericId": "property_type::201",
+                      "countNotAutoextended": 590
+                    },
+                    {
+                      "title": "Free cancellation",
+                      "genericId": "free_cancellation::1",
+                      "countNotAutoextended": 995
+                    },
+                    {
+                      "title": "Free WiFi",
+                      "genericId": "facility::107",
+                      "countNotAutoextended": 1132
+                    }
+                  ]
+                },
+                {
+                  "title": "Review score",
+                  "field": "review_score",
+                  "filterStyle": "CHECKBOX",
+                  "options": [
+                    {
+                      "title": "Passable: 5+",
+                      "genericId": "reviewscorebuckets::50",
+                      "countNotAutoextended": 1104
+                    },
+                    {
+                      "title": "Pleasant: 6+",
+                      "genericId": "reviewscorebuckets::60",
+                      "countNotAutoextended": 1068
+                    },
+                    {
+                      "title": "Good: 7+",
+                      "genericId": "reviewscorebuckets::70",
+                      "countNotAutoextended": 950
+                    },
+                    {
+                      "title": "Very good: 8+",
+                      "genericId": "reviewscorebuckets::80",
+                      "countNotAutoextended": 658
+                    },
+                    {
+                      "title": "Superb: 9+",
+                      "genericId": "reviewscorebuckets::90",
+                      "countNotAutoextended": 174
+                    }
+                  ]
+                },
+                {
+                  "title": "Property type",
+                  "field": "ht_id",
+                  "filterStyle": "CHECKBOX",
+                  "options": [
+                    {
+                      "title": "Entire homes & apartments",
+                      "genericId": "privacy_type::3",
+                      "countNotAutoextended": 615
+                    },
+                    {
+                      "title": "Apartments",
+                      "genericId": "property_type::201",
+                      "countNotAutoextended": 590
+                    },
+                    {
+                      "title": "Hotels",
+                      "genericId": "property_type::204",
+                      "countNotAutoextended": 481
+                    },
+                    {
+                      "title": "Guest houses",
+                      "genericId": "property_type::216",
+                      "countNotAutoextended": 55
+                    },
+                    {
+                      "title": "Hostels",
+                      "genericId": "property_type::203",
+                      "countNotAutoextended": 48
+                    },
+                    {
+                      "title": "Holiday homes",
+                      "genericId": "property_type::220",
+                      "countNotAutoextended": 22
+                    },
+                    {
+                      "title": "Homestays",
+                      "genericId": "property_type::222",
+                      "countNotAutoextended": 20
+                    },
+                    {
+                      "title": "Boats",
+                      "genericId": "property_type::215",
+                      "countNotAutoextended": 5
+                    },
+                    {
+                      "title": "Bed and breakfasts",
+                      "genericId": "property_type::208",
+                      "countNotAutoextended": 6
+                    },
+                    {
+                      "title": "Motels",
+                      "genericId": "property_type::205",
+                      "countNotAutoextended": 3
+                    },
+                    {
+                      "title": "Cabins",
+                      "genericId": "property_type_ml::9999",
+                      "countNotAutoextended": 2
+                    },
+                    {
+                      "title": "Villas",
+                      "genericId": "property_type::213",
+                      "countNotAutoextended": 0
+                    },
+                    {
+                      "title": "Resorts",
+                      "genericId": "property_type::206",
+                      "countNotAutoextended": 0
+                    },
+                    {
+                      "title": "Holiday parks",
+                      "genericId": "property_type::212",
+                      "countNotAutoextended": 1
+                    },
+                    {
+                      "title": "Chalets",
+                      "genericId": "property_type::228",
+                      "countNotAutoextended": 0
+                    },
+                    {
+                      "title": "Student accommodation",
+                      "genericId": "property_type::235",
+                      "countNotAutoextended": 1
+                    }
+                  ]
+                },
+                {
+                  "title": "Chain",
+                  "field": "chaincode",
+                  "filterStyle": "CHECKBOX",
+                  "options": [
+                    {
+                      "title": "A&O Hotels & Hostels",
+                      "genericId": "chaincode::1086",
+                      "countNotAutoextended": 4
+                    },
+                    {
+                      "title": "Arbio",
+                      "genericId": "chaincode::14801",
+                      "countNotAutoextended": 13
+                    },
+                    {
+                      "title": "B&B Hotels",
+                      "genericId": "chaincode::1175",
+                      "countNotAutoextended": 6
+                    },
+                    {
+                      "title": "Belvilla",
+                      "genericId": "chaincode::3292",
+                      "countNotAutoextended": 0
+                    },
+                    {
+                      "title": "Best Western",
+                      "genericId": "chaincode::1029",
+                      "countNotAutoextended": 3
+                    },
+                    {
+                      "title": "Design Hotels",
+                      "genericId": "chaincode::1641",
+                      "countNotAutoextended": 3
+                    },
+                    {
+                      "title": "H-Hotels.com",
+                      "genericId": "chaincode::1226",
+                      "countNotAutoextended": 4
+                    },
+                    {
+                      "title": "Holiday Inn Hotels & Resorts",
+                      "genericId": "chaincode::1072",
+                      "countNotAutoextended": 5
+                    },
+                    {
+                      "title": "Holidu",
+                      "genericId": "chaincode::10845",
+                      "countNotAutoextended": 10
+                    },
+                    {
+                      "title": "Homaris Apartments",
+                      "genericId": "chaincode::14807",
+                      "countNotAutoextended": 45
+                    },
+                    {
+                      "title": "ibis",
+                      "genericId": "chaincode::1053",
+                      "countNotAutoextended": 7
+                    },
+                    {
+                      "title": "ibis Budget",
+                      "genericId": "chaincode::3186",
+                      "countNotAutoextended": 4
+                    },
+                    {
+                      "title": "IntercityHotels",
+                      "genericId": "chaincode::1491",
+                      "countNotAutoextended": 2
+                    },
+                    {
+                      "title": "Leonardo Hotels",
+                      "genericId": "chaincode::1844",
+                      "countNotAutoextended": 6
+                    },
+                    {
+                      "title": "limehome",
+                      "genericId": "chaincode::13837",
+                      "countNotAutoextended": 17
+                    },
+                    {
+                      "title": "Meininger Hotels",
+                      "genericId": "chaincode::1850",
+                      "countNotAutoextended": 6
+                    },
+                    {
+                      "title": "Mercure",
+                      "genericId": "chaincode::1051",
+                      "countNotAutoextended": 7
+                    },
+                    {
+                      "title": "Motel One",
+                      "genericId": "chaincode::1282",
+                      "countNotAutoextended": 4
+                    },
+                    {
+                      "title": "NH Hotels",
+                      "genericId": "chaincode::1043",
+                      "countNotAutoextended": 4
+                    },
+                    {
+                      "title": "NOVASOL",
+                      "genericId": "chaincode::3531",
+                      "countNotAutoextended": 2
+                    },
+                    {
+                      "title": "NOVUM Select Hotels",
+                      "genericId": "chaincode::10822",
+                      "countNotAutoextended": 6
+                    },
+                    {
+                      "title": "numa",
+                      "genericId": "chaincode::13777",
+                      "countNotAutoextended": 11
+                    },
+                    {
+                      "title": "Premier Inn",
+                      "genericId": "chaincode::1396",
+                      "countNotAutoextended": 4
+                    },
+                    {
+                      "title": "SECRA",
+                      "genericId": "chaincode::14678",
+                      "countNotAutoextended": 0
+                    },
+                    {
+                      "title": "Select Hotels",
+                      "genericId": "chaincode::2305",
+                      "countNotAutoextended": 4
+                    }
+                  ]
+                },
+                {
+                  "title": "Facilities",
+                  "field": "hotelfacility",
+                  "filterStyle": "CHECKBOX",
+                  "options": [
+                    {
+                      "title": "Free WiFi",
+                      "genericId": "facility::107",
+                      "countNotAutoextended": 1132
+                    },
+                    {
+                      "title": "Non-smoking rooms",
+                      "genericId": "facility::16",
+                      "countNotAutoextended": 940
+                    },
+                    {
+                      "title": "Parking",
+                      "genericId": "facility::2",
+                      "countNotAutoextended": 628
+                    },
+                    {
+                      "title": "Family rooms",
+                      "genericId": "facility::28",
+                      "countNotAutoextended": 585
+                    },
+                    {
+                      "title": "Pets allowed",
+                      "genericId": "facility::4",
+                      "countNotAutoextended": 488
+                    },
+                    {
+                      "title": "Free parking",
+                      "genericId": "facility::46",
+                      "countNotAutoextended": 202
+                    },
+                    {
+                      "title": "24-hour front desk",
+                      "genericId": "facility::8",
+                      "countNotAutoextended": 337
+                    },
+                    {
+                      "title": "Restaurant",
+                      "genericId": "facility::3",
+                      "countNotAutoextended": 196
+                    },
+                    {
+                      "title": "Wheelchair accessible",
+                      "genericId": "facility::185",
+                      "countNotAutoextended": 177
+                    },
+                    {
+                      "title": "Room service",
+                      "genericId": "facility::5",
+                      "countNotAutoextended": 154
+                    },
+                    {
+                      "title": "Fitness centre",
+                      "genericId": "facility::11",
+                      "countNotAutoextended": 120
+                    },
+                    {
+                      "title": "BBQ facilities",
+                      "genericId": "facility::72",
+                      "countNotAutoextended": 74
+                    },
+                    {
+                      "title": "Electric vehicle charging station",
+                      "genericId": "facility::182",
+                      "countNotAutoextended": 97
+                    },
+                    {
+                      "title": "Airport shuttle",
+                      "genericId": "facility::17",
+                      "countNotAutoextended": 45
+                    },
+                    {
+                      "title": "Adult only",
+                      "genericId": "facility::149",
+                      "countNotAutoextended": 41
+                    },
+                    {
+                      "title": "Spa and wellness centre",
+                      "genericId": "facility::54",
+                      "countNotAutoextended": 40
+                    },
+                    {
+                      "title": "Swimming Pool",
+                      "genericId": "facility::433",
+                      "countNotAutoextended": 35
+                    }
+                  ]
+                },
+                {
+                  "title": "Distance from city centre",
+                  "field": "distance",
+                  "filterStyle": "CHECKBOX",
+                  "options": [
+                    {
+                      "title": "Less than 1 km",
+                      "genericId": "distance::1000",
+                      "countNotAutoextended": 23
+                    },
+                    {
+                      "title": "Less than 3 km",
+                      "genericId": "distance::3000",
+                      "countNotAutoextended": 326
+                    },
+                    {
+                      "title": "Less than 5 km",
+                      "genericId": "distance::5000",
+                      "countNotAutoextended": 660
+                    }
+                  ]
+                },
+                {
+                  "title": "Landmarks",
+                  "field": "popular_nearby_landmarks",
+                  "filterStyle": "CHECKBOX",
+                  "options": [
+                    {
+                      "title": "ALEXA",
+                      "genericId": "popular_nearby_landmarks::12997",
+                      "countNotAutoextended": 30
+                    },
+                    {
+                      "title": "Alexanderplatz",
+                      "genericId": "popular_nearby_landmarks::1539",
+                      "countNotAutoextended": 41
+                    },
+                    {
+                      "title": "Brandenburg Gate",
+                      "genericId": "popular_nearby_landmarks::1537",
+                      "countNotAutoextended": 24
+                    },
+                    {
+                      "title": "Dutch Quarter",
+                      "genericId": "popular_nearby_landmarks::8730",
+                      "countNotAutoextended": 0
+                    },
+                    {
+                      "title": "Filmpark Babelsberg",
+                      "genericId": "popular_nearby_landmarks::8726",
+                      "countNotAutoextended": 0
+                    },
+                    {
+                      "title": "Reichstag",
+                      "genericId": "popular_nearby_landmarks::1538",
+                      "countNotAutoextended": 21
+                    }
+                  ]
+                },
+                {
+                  "title": "District",
+                  "field": "di",
+                  "filterStyle": "CHECKBOX",
+                  "options": [
+                    {
+                      "title": "Berlin City Centre",
+                      "genericId": "district::2285",
+                      "countNotAutoextended": 252
+                    },
+                    {
+                      "title": "Mitte",
+                      "genericId": "district::200",
+                      "countNotAutoextended": 283
+                    },
+                    {
+                      "title": "Guests' favourite area ",
+                      "genericId": "district::9443",
+                      "countNotAutoextended": 244
+                    },
+                    {
+                      "title": "Adlershof",
+                      "genericId": "district::562",
+                      "countNotAutoextended": 4
+                    },
+                    {
+                      "title": "Best areas outside centre",
+                      "genericId": "district::9999997",
+                      "countNotAutoextended": 103
+                    },
+                    {
+                      "title": "Charlottenburg",
+                      "genericId": "district::199",
+                      "countNotAutoextended": 113
+                    },
+                    {
+                      "title": "Charlottenburg-Wilmersdorf",
+                      "genericId": "district::5846",
+                      "countNotAutoextended": 201
+                    },
+                    {
+                      "title": "Friedrichshain",
+                      "genericId": "district::345",
+                      "countNotAutoextended": 98
+                    },
+                    {
+                      "title": "Friedrichshain-Kreuzberg",
+                      "genericId": "district::5845",
+                      "countNotAutoextended": 184
+                    },
+                    {
+                      "title": "Gesundbrunnen",
+                      "genericId": "district::1691",
+                      "countNotAutoextended": 29
+                    },
+                    {
+                      "title": "Gr\u00fcnau",
+                      "genericId": "district::563",
+                      "countNotAutoextended": 4
+                    },
+                    {
+                      "title": "Hohensch\u00f6nhausen",
+                      "genericId": "district::348",
+                      "countNotAutoextended": 4
+                    },
+                    {
+                      "title": "Innenstadt",
+                      "genericId": "district::8643",
+                      "countNotAutoextended": 0
+                    },
+                    {
+                      "title": "Kaulsdorf",
+                      "genericId": "district::353",
+                      "countNotAutoextended": 6
+                    },
+                    {
+                      "title": "Kreuzberg",
+                      "genericId": "district::201",
+                      "countNotAutoextended": 86
+                    },
+                    {
+                      "title": "Lichtenberg",
+                      "genericId": "district::346",
+                      "countNotAutoextended": 38
+                    },
+                    {
+                      "title": "Lichtenrade",
+                      "genericId": "district::561",
+                      "countNotAutoextended": 5
+                    },
+                    {
+                      "title": "Lichterfelde",
+                      "genericId": "district::347",
+                      "countNotAutoextended": 11
+                    },
+                    {
+                      "title": "Mariendorf",
+                      "genericId": "district::356",
+                      "countNotAutoextended": 5
+                    },
+                    {
+                      "title": "Marzahn-Hellersdorf",
+                      "genericId": "district::1863",
+                      "countNotAutoextended": 20
+                    },
+                    {
+                      "title": "Moabit",
+                      "genericId": "district::6590",
+                      "countNotAutoextended": 45
+                    },
+                    {
+                      "title": "Neuk\u00f6lln",
+                      "genericId": "district::357",
+                      "countNotAutoextended": 66
+                    },
+                    {
+                      "title": "Pankow",
+                      "genericId": "district::358",
+                      "countNotAutoextended": 141
+                    },
+                    {
+                      "title": "Prenzlauer Berg",
+                      "genericId": "district::359",
+                      "countNotAutoextended": 84
+                    },
+                    {
+                      "title": "Reinickendorf",
+                      "genericId": "district::349",
+                      "countNotAutoextended": 19
+                    },
+                    {
+                      "title": "Sch\u00f6neberg",
+                      "genericId": "district::330",
+                      "countNotAutoextended": 55
+                    },
+                    {
+                      "title": "Sch\u00f6neweide",
+                      "genericId": "district::564",
+                      "countNotAutoextended": 6
+                    },
+                    {
+                      "title": "Spandau",
+                      "genericId": "district::351",
+                      "countNotAutoextended": 24
+                    },
+                    {
+                      "title": "Steglitz",
+                      "genericId": "district::360",
+                      "countNotAutoextended": 4
+                    },
+                    {
+                      "title": "Steglitz-Zehlendorf",
+                      "genericId": "district::566",
+                      "countNotAutoextended": 27
+                    },
+                    {
+                      "title": "Tempelhof",
+                      "genericId": "district::361",
+                      "countNotAutoextended": 11
+                    },
+                    {
+                      "title": "Tempelhof-Sch\u00f6neberg",
+                      "genericId": "district::5844",
+                      "countNotAutoextended": 82
+                    },
+                    {
+                      "title": "The real heart of Potsdam",
+                      "genericId": "district::9385",
+                      "countNotAutoextended": 0
+                    },
+                    {
+                      "title": "Tiergarten",
+                      "genericId": "district::197",
+                      "countNotAutoextended": 31
+                    },
+                    {
+                      "title": "Treptow-K\u00f6penick",
+                      "genericId": "district::354",
+                      "countNotAutoextended": 66
+                    },
+                    {
+                      "title": "Wannsee",
+                      "genericId": "district::362",
+                      "countNotAutoextended": 5
+                    },
+                    {
+                      "title": "Wedding",
+                      "genericId": "district::559",
+                      "countNotAutoextended": 18
+                    },
+                    {
+                      "title": "Wei\u00dfensee",
+                      "genericId": "district::363",
+                      "countNotAutoextended": 25
+                    },
+                    {
+                      "title": "West Berlin Centre",
+                      "genericId": "district::2286",
+                      "countNotAutoextended": 111
+                    },
+                    {
+                      "title": "Wilmersdorf",
+                      "genericId": "district::202",
+                      "countNotAutoextended": 57
+                    }
+                  ]
+                },
+                {
+                  "title": "Property rating",
+                  "field": "class",
+                  "filterStyle": "CHECKBOX",
+                  "options": [
+                    {
+                      "title": "Unrated",
+                      "genericId": "class::0",
+                      "countNotAutoextended": 213
+                    },
+                    {
+                      "title": "1 star",
+                      "genericId": "class::1",
+                      "countNotAutoextended": 9
+                    },
+                    {
+                      "title": "2 stars",
+                      "genericId": "class::2",
+                      "countNotAutoextended": 53
+                    },
+                    {
+                      "title": "3 stars",
+                      "genericId": "class::3",
+                      "countNotAutoextended": 629
+                    },
+                    {
+                      "title": "4 stars",
+                      "genericId": "class::4",
+                      "countNotAutoextended": 208
+                    },
+                    {
+                      "title": "5 stars",
+                      "genericId": "class::5",
+                      "countNotAutoextended": 41
+                    }
+                  ]
+                },
+                {
+                  "title": "Bed preference",
+                  "field": "tdb",
+                  "filterStyle": "CHECKBOX",
+                  "options": [
+                    {
+                      "title": "2 single beds",
+                      "genericId": "twin_double_bed::2",
+                      "countNotAutoextended": 465
+                    },
+                    {
+                      "title": "Double bed",
+                      "genericId": "twin_double_bed::3",
+                      "countNotAutoextended": 1000
+                    }
+                  ]
+                },
+                {
+                  "title": "Room facilities",
+                  "field": "roomfacility",
+                  "filterStyle": "CHECKBOX",
+                  "options": [
+                    {
+                      "title": "Coffee machine",
+                      "genericId": "room_facility::120",
+                      "countNotAutoextended": 517
+                    },
+                    {
+                      "title": "Electric kettle",
+                      "genericId": "room_facility::86",
+                      "countNotAutoextended": 723
+                    },
+                    {
+                      "title": "View",
+                      "genericId": "room_facility::81",
+                      "countNotAutoextended": 369
+                    },
+                    {
+                      "title": "Soundproofing",
+                      "genericId": "room_facility::79",
+                      "countNotAutoextended": 284
+                    },
+                    {
+                      "title": "Washing machine",
+                      "genericId": "room_facility::34",
+                      "countNotAutoextended": 364
+                    },
+                    {
+                      "title": "Flat-screen TV",
+                      "genericId": "room_facility::75",
+                      "countNotAutoextended": 877
+                    },
+                    {
+                      "title": "Balcony",
+                      "genericId": "room_facility::17",
+                      "countNotAutoextended": 228
+                    },
+                    {
+                      "title": "Terrace",
+                      "genericId": "room_facility::123",
+                      "countNotAutoextended": 170
+                    },
+                    {
+                      "title": "Bath",
+                      "genericId": "room_facility::5",
+                      "countNotAutoextended": 309
+                    },
+                    {
+                      "title": "Desk",
+                      "genericId": "room_facility::23",
+                      "countNotAutoextended": 715
+                    },
+                    {
+                      "title": "Air conditioning",
+                      "genericId": "room_facility::11",
+                      "countNotAutoextended": 256
+                    },
+                    {
+                      "title": "Kitchenette",
+                      "genericId": "room_facility::16",
+                      "countNotAutoextended": 396
+                    },
+                    {
+                      "title": "Private bathroom",
+                      "genericId": "room_facility::38",
+                      "countNotAutoextended": 916
+                    }
+                  ]
+                },
+                {
+                  "title": "Free cancellation ",
+                  "field": "fc",
+                  "filterStyle": "CHECKBOX",
+                  "options": [
+                    {
+                      "title": "Free cancellation",
+                      "genericId": "free_cancellation::1",
+                      "countNotAutoextended": 995
+                    }
+                  ]
+                },
+                {
+                  "title": "Online payment",
+                  "field": "pmt",
+                  "filterStyle": "CHECKBOX",
+                  "options": [
+                    {
+                      "title": "Accepts online payments",
+                      "genericId": "pmt::101",
+                      "countNotAutoextended": 997
+                    }
+                  ]
+                },
+                {
+                  "title": "Number of bedrooms",
+                  "field": "entire_place_bedroom_count",
+                  "filterStyle": "CHECKBOX",
+                  "options": [
+                    {
+                      "title": "1+ bedrooms",
+                      "genericId": "entire_place_bedroom_count::1",
+                      "countNotAutoextended": 615
+                    },
+                    {
+                      "title": "2+ bedrooms",
+                      "genericId": "entire_place_bedroom_count::2",
+                      "countNotAutoextended": 230
+                    },
+                    {
+                      "title": "3+ bedrooms",
+                      "genericId": "entire_place_bedroom_count::3",
+                      "countNotAutoextended": 81
+                    },
+                    {
+                      "title": "4+ bedrooms",
+                      "genericId": "entire_place_bedroom_count::4",
+                      "countNotAutoextended": 21
+                    }
+                  ]
+                },
+                {
+                  "title": "Meals",
+                  "field": "mealplan",
+                  "filterStyle": "CHECKBOX",
+                  "options": [
+                    {
+                      "title": "Breakfast included",
+                      "genericId": "mealplan::breakfast_included",
+                      "countNotAutoextended": 345
+                    },
+                    {
+                      "title": "Breakfast & dinner included",
+                      "genericId": "mealplan::breakfast_and_dinner",
+                      "countNotAutoextended": 5
+                    },
+                    {
+                      "title": "Self catering",
+                      "genericId": "mealplan::999",
+                      "countNotAutoextended": 694
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Hotels",
+            "arguments": {
+              "dest_id": 11684764,
+              "search_type": "hotel",
+              "arrival_date": "2024-12-10",
+              "departure_date": "2024-12-15",
+              "adults": 1,
+              "room_qty": 1,
+              "sort_by": "popularity"
+            }
+          }
+        ]
+      }
+    ],
+    "message": [
+      {
+        "error_type": "param_missing",
+        "content": "Missing parameter categories_filter in prediction."
+      }
+    ],
+    "count_dict": {
+      "success_turn_num": 2,
+      "total_turn_num": 4,
+      "correct_call_num": 2,
+      "total_call_num": 4,
+      "real_turn_num": 3
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Car-Rental-114",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "My friend Lily is going to rent a car at Dallas-Fort Worth International Airport at 7 AM on November 20th, 2024, and return it at George Bush Intercontinental Airport in Houston at 1 PM nine days later. Provide detailed information about two different car types."
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Car_Location",
+            "arguments": {
+              "query": "Dallas-Fort Worth International Airport"
+            }
+          },
+          {
+            "name": "Search_Car_Location",
+            "arguments": {
+              "query": "George Bush Intercontinental Airport"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": [
+              {
+                "coordinates": {
+                  "latitude": 32.8967018127441,
+                  "longitude": -97.0421981811523
+                },
+                "type": "airport",
+                "iata_code": "DFW",
+                "city": "Dallas",
+                "name": "Dallas-Fort Worth International Airport",
+                "country": "United States"
+              }
+            ]
+          },
+          {
+            "status": true,
+            "message": "Success",
+            "data": [
+              {
+                "name": "George Bush Intercontinental Airport",
+                "type": "airport",
+                "iata_code": "IAH",
+                "city": "Houston",
+                "country": "United States",
+                "coordinates": {
+                  "longitude": -95.3394012451172,
+                  "latitude": 29.9803009033203
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Car_Rentals",
+            "arguments": {
+              "pick_up_latitude": 32.8967018127441,
+              "pick_up_longitude": -97.0421981811523,
+              "drop_off_latitude": 29.9803009033203,
+              "drop_off_longitude": -95.3394012451172,
+              "pick_up_date": "2024-11-20",
+              "pick_up_time": "07:00",
+              "drop_off_date": "2024-11-29",
+              "drop_off_time": "13:00"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": {
+              "title": "Car rentals",
+              "count": 2,
+              "search_results": [
+                {
+                  "vehicle_id": "370879416",
+                  "supplier_info": {
+                    "may_require_credit_card_guarantee": false,
+                    "pickup_instructions": "-",
+                    "logo_url": "https://cdn.rcstatic.com/sp/images/suppliers/82_logo_200.png",
+                    "location_type": "Shuttle Bus",
+                    "latitude": "32.899806",
+                    "longitude": "-97.040341",
+                    "address": "2424, East 38th Street, Dallas, TX, USA, 75261",
+                    "name": "Dollar"
+                  },
+                  "vehicle_info": {
+                    "aircon": 1,
+                    "airbags": 1,
+                    "free_cancellation": 1,
+                    "unlimited_mileage": 1,
+                    "label": "Standard car with:",
+                    "cma_compliant": -1,
+                    "seats": "5",
+                    "fuel_policy": "Like for like",
+                    "transmission": "Automatic",
+                    "doors": "2",
+                    "mileage": "Unlimited mileage",
+                    "suitcases": {
+                      "big": "0",
+                      "small": "4"
+                    },
+                    "group": "Standard",
+                    "fuel_type": "N/A",
+                    "v_id": "370879416",
+                    "v_name": "Volkswagen Jetta  "
+                  },
+                  "content": {
+                    "badges": [
+                      {
+                        "type": "CONSTRUCTIVE",
+                        "variation": "DEFAULT",
+                        "text": "Free cancellation"
+                      }
+                    ],
+                    "supplier": {
+                      "name": "Dollar",
+                      "rating": {
+                        "title": "OK",
+                        "average": "6.7",
+                        "localisedRating": {
+                          "rawValue": 6.7,
+                          "displayValue": "6.7"
+                        },
+                        "subtitle": "1,688 reviews"
+                      }
+                    }
+                  },
+                  "route_info": {
+                    "pickup": {
+                      "country_code": "US",
+                      "address": "2424, East 38th Street, Dallas, TX, USA, 75261",
+                      "longitude": "-97.040341",
+                      "name": "Dallas-Fort Worth International Airport",
+                      "location_hash": "RGFsbGFzLUZvcnQgV29ydGggSW50ZXJuYXRpb25hbCBBaXJwb3J0",
+                      "location_id": "820018",
+                      "latitude": "32.899806",
+                      "location_type": "SHUTTLE_BUS"
+                    },
+                    "dropoff": {
+                      "country_code": "US",
+                      "address": "17330 PALMETTO PINES, Houston, TX, USA, 77032",
+                      "longitude": "-95.33179782",
+                      "name": "George Bush Intercontinental Airport",
+                      "location_id": "820083",
+                      "latitude": "29.96975707",
+                      "location_type": "SHUTTLE_BUS"
+                    }
+                  },
+                  "pricing_info": {
+                    "discount": 0,
+                    "base_currency": "INR",
+                    "drive_away_price_is_approx": true,
+                    "deposit": 413,
+                    "base_price": 34734.84,
+                    "currency": "USD",
+                    "price": 413,
+                    "pay_when": "PAY_NOW",
+                    "fee_breakdown": {
+                      "known_fees": [
+                        {
+                          "max_amount": 0,
+                          "min_amount": 0,
+                          "amount": 0,
+                          "type": "THEFT_EXCESS",
+                          "currency": "USD",
+                          "is_tax_included": 1,
+                          "is_always_payable": 0
+                        },
+                        {
+                          "is_always_payable": 1,
+                          "is_tax_included": 0,
+                          "currency": "USD",
+                          "amount": 8.33,
+                          "type": "AP CONC FEE RECOV",
+                          "min_amount": 8.33,
+                          "max_amount": 8.33
+                        },
+                        {
+                          "max_amount": 4.17,
+                          "min_amount": 4.17,
+                          "type": "STATE SALES TAX",
+                          "amount": 4.17,
+                          "is_always_payable": 1,
+                          "is_tax_included": 0,
+                          "currency": "USD"
+                        },
+                        {
+                          "type": "DEPOSIT",
+                          "amount": 684.96,
+                          "is_always_payable": 0,
+                          "currency": "USD",
+                          "is_tax_included": 1,
+                          "max_amount": 684.96,
+                          "min_amount": 273.98
+                        },
+                        {
+                          "type": "CITY MVR TAX",
+                          "amount": 4.17,
+                          "currency": "USD",
+                          "is_tax_included": 0,
+                          "is_always_payable": 1,
+                          "max_amount": 4.17,
+                          "min_amount": 4.17
+                        }
+                      ],
+                      "fuel_policy": {
+                        "type": "RETURN_SAME",
+                        "amount": 0
+                      }
+                    },
+                    "drive_away_price": 512.59,
+                    "base_deposit": 34734.84,
+                    "quote_allowed": 1
+                  },
+                  "freebies": [
+                    "Amendments"
+                  ],
+                  "rating_info": {
+                    "cleanliness": 7,
+                    "location": 7.4,
+                    "pickup_time": 5.6,
+                    "efficiency": 6.3,
+                    "average": 6.7,
+                    "average_text": "Good",
+                    "value_for_money": 6.2,
+                    "condition": 7.1,
+                    "no_of_ratings": 1688,
+                    "dropoff_time": 8.5
+                  },
+                  "accessibility": {
+                    "supplier_rating": "At this location, our customers have rated Dollar as 6.7 out of 10, OK.",
+                    "fuel_policy": "Fuel policy is: Like for like",
+                    "pick_up_location": "Pick-up information: Shuttle Bus",
+                    "transmission": "Automatic gearbox"
+                  },
+                  "fee_info": {
+                    "fee": 0,
+                    "tax": 0
+                  }
+                },
+                {
+                  "vehicle_id": "370879356",
+                  "supplier_info": {
+                    "may_require_credit_card_guarantee": false,
+                    "latitude": "32.899806",
+                    "location_type": "Shuttle Bus",
+                    "logo_url": "https://cdn.rcstatic.com/sp/images/suppliers/82_logo_200.png",
+                    "pickup_instructions": "-",
+                    "longitude": "-97.040341",
+                    "address": "2424, East 38th Street, Dallas, TX, USA, 75261",
+                    "name": "Dollar"
+                  },
+                  "vehicle_info": {
+                    "v_id": "370879356",
+                    "fuel_type": "N/A",
+                    "v_name": "Chevrolet Spark  ",
+                    "transmission": "Automatic",
+                    "doors": "2",
+                    "mileage": "Unlimited mileage",
+                    "cma_compliant": -1,
+                    "seats": "4",
+                    "fuel_policy": "Like for like",
+                    "suitcases": {
+                      "big": "0",
+                      "small": "2"
+                    },
+                    "group": "Economy",
+                    "free_cancellation": 1,
+                    "unlimited_mileage": 1,
+                    "label": "Economy car with:",
+                    "aircon": 1,
+                    "airbags": 1
+                  },
+                  "content": {
+                    "badges": [
+                      {
+                        "variation": "DEFAULT",
+                        "type": "CONSTRUCTIVE",
+                        "text": "Free cancellation"
+                      }
+                    ],
+                    "supplier": {
+                      "rating": {
+                        "localisedRating": {
+                          "displayValue": "6.7",
+                          "rawValue": 6.7
+                        },
+                        "subtitle": "1,688 reviews",
+                        "title": "OK",
+                        "average": "6.7"
+                      },
+                      "name": "Dollar"
+                    }
+                  },
+                  "route_info": {
+                    "dropoff": {
+                      "country_code": "US",
+                      "longitude": "-95.33179782",
+                      "address": "17330 PALMETTO PINES, Houston, TX, USA, 77032",
+                      "name": "George Bush Intercontinental Airport",
+                      "location_id": "820083",
+                      "location_type": "SHUTTLE_BUS",
+                      "latitude": "29.96975707"
+                    },
+                    "pickup": {
+                      "location_type": "SHUTTLE_BUS",
+                      "latitude": "32.899806",
+                      "location_id": "820018",
+                      "location_hash": "RGFsbGFzLUZvcnQgV29ydGggSW50ZXJuYXRpb25hbCBBaXJwb3J0",
+                      "name": "Dallas-Fort Worth International Airport",
+                      "address": "2424, East 38th Street, Dallas, TX, USA, 75261",
+                      "longitude": "-97.040341",
+                      "country_code": "US"
+                    }
+                  },
+                  "pricing_info": {
+                    "drive_away_price_is_approx": true,
+                    "discount": 0,
+                    "base_currency": "INR",
+                    "fee_breakdown": {
+                      "fuel_policy": {
+                        "amount": 0,
+                        "type": "RETURN_SAME"
+                      },
+                      "known_fees": [
+                        {
+                          "currency": "USD",
+                          "is_tax_included": 1,
+                          "is_always_payable": 0,
+                          "type": "THEFT_EXCESS",
+                          "amount": 0,
+                          "min_amount": 0,
+                          "max_amount": 0
+                        },
+                        {
+                          "max_amount": 8.33,
+                          "min_amount": 8.33,
+                          "amount": 8.33,
+                          "type": "AP CONC FEE RECOV",
+                          "is_always_payable": 1,
+                          "is_tax_included": 0,
+                          "currency": "USD"
+                        },
+                        {
+                          "min_amount": 4.17,
+                          "max_amount": 4.17,
+                          "currency": "USD",
+                          "is_tax_included": 0,
+                          "is_always_payable": 1,
+                          "type": "STATE SALES TAX",
+                          "amount": 4.17
+                        },
+                        {
+                          "min_amount": 273.98,
+                          "max_amount": 684.96,
+                          "currency": "USD",
+                          "is_tax_included": 1,
+                          "is_always_payable": 0,
+                          "amount": 684.96,
+                          "type": "DEPOSIT"
+                        },
+                        {
+                          "amount": 4.17,
+                          "type": "CITY MVR TAX",
+                          "currency": "USD",
+                          "is_tax_included": 0,
+                          "is_always_payable": 1,
+                          "max_amount": 4.17,
+                          "min_amount": 4.17
+                        }
+                      ]
+                    },
+                    "pay_when": "PAY_NOW",
+                    "price": 408.32,
+                    "drive_away_price": 507.91,
+                    "base_deposit": 34341.42,
+                    "quote_allowed": 1,
+                    "deposit": 408.32,
+                    "base_price": 34341.42,
+                    "currency": "USD"
+                  },
+                  "freebies": [
+                    "Amendments"
+                  ],
+                  "accessibility": {
+                    "supplier_rating": "At this location, our customers have rated Dollar as 6.7 out of 10, OK.",
+                    "fuel_policy": "Fuel policy is: Like for like",
+                    "pick_up_location": "Pick-up information: Shuttle Bus",
+                    "transmission": "Automatic gearbox"
+                  },
+                  "fee_info": {
+                    "fee": 0,
+                    "tax": 0
+                  },
+                  "rating_info": {
+                    "average_text": "Good",
+                    "condition": 7.1,
+                    "value_for_money": 6.2,
+                    "efficiency": 6.3,
+                    "pickup_time": 5.6,
+                    "cleanliness": 7,
+                    "location": 7.4,
+                    "average": 6.7,
+                    "no_of_ratings": 1688,
+                    "dropoff_time": 8.5
+                  }
+                }
+              ],
+              "is_genius_location": false,
+              "filter": [
+                {
+                  "id": "depotLocationType",
+                  "type": "multiple_union",
+                  "layout": {
+                    "is_collapsed": "false",
+                    "layout_type": "list",
+                    "collapsed_count": 3,
+                    "is_collapsable": "false"
+                  },
+                  "categories": [
+                    {
+                      "count": 30,
+                      "name": "Airport (shuttle)",
+                      "id": "depotLocationType::SHUTTLE_BUS",
+                      "nameWithCount": "Airport (shuttle) (30)"
+                    },
+                    {
+                      "id": "depotLocationType::IN_TERMINAL",
+                      "nameWithCount": "Airport (in terminal) (9)",
+                      "name": "Airport (in terminal)",
+                      "count": 9
+                    },
+                    {
+                      "count": 23,
+                      "name": "Airport (car rental centre)",
+                      "nameWithCount": "Airport (car rental centre) (23)",
+                      "id": "depotLocationType::CAR_RENTAL_CENTRE"
+                    }
+                  ],
+                  "title": "Location"
+                },
+                {
+                  "id": "carCategory",
+                  "type": "multiple_union",
+                  "categories": [
+                    {
+                      "id": "carCategory::small",
+                      "nameWithCount": "Small (5)",
+                      "name": "Small",
+                      "count": 5
+                    },
+                    {
+                      "id": "carCategory::medium",
+                      "nameWithCount": "Medium (20)",
+                      "count": 20,
+                      "name": "Medium"
+                    },
+                    {
+                      "count": 40,
+                      "name": "Large",
+                      "id": "carCategory::large",
+                      "nameWithCount": "Large (40)"
+                    },
+                    {
+                      "name": "Premium",
+                      "count": 9,
+                      "id": "carCategory::premium",
+                      "nameWithCount": "Premium (9)"
+                    },
+                    {
+                      "nameWithCount": "People carriers (5)",
+                      "id": "carCategory::carriers",
+                      "name": "People carriers",
+                      "count": 5
+                    }
+                  ],
+                  "layout": {
+                    "is_collapsed": "true",
+                    "collapsed_count": 5,
+                    "layout_type": "list",
+                    "is_collapsable": "true"
+                  },
+                  "title": "Car Type"
+                },
+                {
+                  "categories": [
+                    {
+                      "count": 0,
+                      "name": "US$0 - US$50",
+                      "id": "pricePerDayBuckets::BUCKET_1",
+                      "nameWithCount": "US$0 - US$50 (0)"
+                    },
+                    {
+                      "count": 41,
+                      "name": "US$50 - US$100",
+                      "nameWithCount": "US$50 - US$100 (41)",
+                      "id": "pricePerDayBuckets::BUCKET_2"
+                    },
+                    {
+                      "name": "US$100 - US$150",
+                      "count": 18,
+                      "id": "pricePerDayBuckets::BUCKET_3",
+                      "nameWithCount": "US$100 - US$150 (18)"
+                    },
+                    {
+                      "id": "pricePerDayBuckets::BUCKET_4",
+                      "nameWithCount": "US$150 - US$200 (1)",
+                      "count": 1,
+                      "name": "US$150 - US$200"
+                    },
+                    {
+                      "count": 2,
+                      "name": "US$200+",
+                      "nameWithCount": "US$200+ (2)",
+                      "id": "pricePerDayBuckets::BUCKET_5"
+                    }
+                  ],
+                  "layout": {
+                    "is_collapsable": "false",
+                    "collapsed_count": 5,
+                    "layout_type": "list",
+                    "is_collapsed": "false"
+                  },
+                  "title": "Price per day",
+                  "id": "pricePerDayBuckets",
+                  "type": "multiple_union"
+                },
+                {
+                  "layout": {
+                    "layout_type": "list",
+                    "collapsed_count": 5,
+                    "is_collapsed": "true",
+                    "is_collapsable": "true"
+                  },
+                  "categories": [
+                    {
+                      "nameWithCount": "Avis (9)",
+                      "id": "supplier::Avis",
+                      "count": 9,
+                      "name": "Avis"
+                    },
+                    {
+                      "id": "supplier::Budget",
+                      "nameWithCount": "Budget (12)",
+                      "count": 12,
+                      "name": "Budget"
+                    },
+                    {
+                      "name": "Dollar",
+                      "count": 30,
+                      "nameWithCount": "Dollar (30)",
+                      "id": "supplier::Dollar"
+                    },
+                    {
+                      "name": "Hertz",
+                      "count": 11,
+                      "id": "supplier::Hertz",
+                      "nameWithCount": "Hertz (11)"
+                    }
+                  ],
+                  "title": "Supplier",
+                  "id": "supplier",
+                  "type": "multiple_union"
+                },
+                {
+                  "layout": {
+                    "layout_type": "list",
+                    "collapsed_count": 5,
+                    "is_collapsed": "true",
+                    "is_collapsable": "true"
+                  },
+                  "categories": [
+                    {
+                      "id": "transmission::AUTOMATIC",
+                      "nameWithCount": "Automatic (62)",
+                      "count": 62,
+                      "name": "Automatic"
+                    }
+                  ],
+                  "title": "Transmission",
+                  "id": "transmission",
+                  "type": "multiple_union"
+                }
+              ],
+              "sort": [
+                {
+                  "title_tag": "tr.searchresults.sortBy.recommended",
+                  "identifier": "recommended",
+                  "name": "Recommended \u2013 best first"
+                },
+                {
+                  "title_tag": "tr.searchresults.sortBy.price.lowHigh",
+                  "name": "Price - lowest first",
+                  "identifier": "price_low_to_high"
+                },
+                {
+                  "name": "Review score - highest first",
+                  "identifier": "review_score",
+                  "title_tag": "tr.searchresults.sortBy.reviews.highLow"
+                }
+              ],
+              "search_context": {
+                "recommendationsSearchUniqueId": "d88f778a-bbd5-4814-94b2-ca676b66742a",
+                "searchId": "0576e553-4f3e-4dc7-b660-2c6b8f23acda",
+                "searchKey": "eyJkcml2ZXJzQWdlIjozMCwiZHJvcE9mZkRhdGVUaW1lIjoiMjAyNC0xMS0yOVQxMzowMDowMCIsImRyb3BPZmZMb2NhdGlvbiI6IjI5Ljk4MDMwMDkwMzMyMDMsLTk1LjMzOTQwMTI0NTExNzIiLCJkcm9wT2ZmTG9jYXRpb25UeXBlIjoiTEFUTE9ORyIsInBpY2tVcERhdGVUaW1lIjoiMjAyNC0xMS0yMFQwNzowMDowMCIsInBpY2tVcExvY2F0aW9uIjoiMzIuODk2NzAxODEyNzQ0MSwtOTcuMDQyMTk4MTgxMTUyMyIsInBpY2tVcExvY2F0aW9uVHlwZSI6IkxBVExPTkciLCJyZW50YWxEdXJhdGlvbkluRGF5cyI6MTAsInNlcnZpY2VGZWF0dXJlcyI6WyJOT19PUEFRVUVTIiwiU1VQUkVTU19GSVhFRF9QUklDRV9WRUhJQ0xFUyIsIklOQ0xVREVfUFJPRFVDVF9SRUxBVElPTlNISVBTIiwiSU5DTFVERV9FWFRSQVNfQ09OVEFJTklOR19GRUVTIl19"
+              },
+              "provider": "rentalcars",
+              "meta": {
+                "response_code": 200
+              },
+              "search_key": "eyJkcml2ZXJzQWdlIjozMCwiZHJvcE9mZkRhdGVUaW1lIjoiMjAyNC0xMS0yOVQxMzowMDowMCIsImRyb3BPZmZMb2NhdGlvbiI6IjI5Ljk4MDMwMDkwMzMyMDMsLTk1LjMzOTQwMTI0NTExNzIiLCJkcm9wT2ZmTG9jYXRpb25UeXBlIjoiTEFUTE9ORyIsInBpY2tVcERhdGVUaW1lIjoiMjAyNC0xMS0yMFQwNzowMDowMCIsInBpY2tVcExvY2F0aW9uIjoiMzIuODk2NzAxODEyNzQ0MSwtOTcuMDQyMTk4MTgxMTUyMyIsInBpY2tVcExvY2F0aW9uVHlwZSI6IkxBVExPTkciLCJyZW50YWxEdXJhdGlvbkluRGF5cyI6MTAsInNlcnZpY2VGZWF0dXJlcyI6WyJOT19PUEFRVUVTIiwiU1VQUkVTU19GSVhFRF9QUklDRV9WRUhJQ0xFUyIsIklOQ0xVREVfUFJPRFVDVF9SRUxBVElPTlNISVBTIiwiSU5DTFVERV9FWFRSQVNfQ09OVEFJTklOR19GRUVTIl19",
+              "content": {
+                "filters": {
+                  "countLabel": "2 results"
+                },
+                "items": [
+                  {
+                    "positionInList": 3,
+                    "content": {
+                      "contentType": "carsSearchResultsSecondaryPromotional"
+                    },
+                    "type": "SHELL_REGION_VIEW"
+                  }
+                ]
+              },
+              "type": "cars"
+            }
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "content": "I found two car rental options for you from Dallas-Fort Worth International Airport to George Bush Intercontinental Airport for your specified dates:\n\n1. Volkswagen Jetta (Standard car)\n   - Seats: 5\n   - Transmission: Automatic\n   - Fuel policy: Like for like\n   - Free cancellation\n   - Unlimited mileage\n   - Supplier: Dollar (Rating: 6.7/10)\n   - Pickup location: Shuttle Bus at Dallas-Fort Worth International Airport\n   - Drop off location: Shuttle Bus at George Bush Intercontinental Airport\n   - Price: Approximately $512.59 USD (Drive away price)\n   - Deposit: $413 USD\n   - Other info: 2 doors, no big suitcases, 4 small suitcases\n\n2. Chevrolet Spark (Economy car)\n   - Seats: 4\n   - Transmission: Automatic\n   - Fuel policy: Like for like\n   - Free cancellation\n   - Unlimited mileage\n   - Supplier: Dollar (Rating: 6.7/10)\n   - Pickup location: Shuttle Bus at Dallas-Fort Worth International Airport\n   - Drop off location: Shuttle Bus at George Bush Intercontinental Airport\n   - Price: Approximately $507.91 USD (Drive away price)\n   - Deposit: $408.32 USD\n   - Other info: 2 doors, no big suitcases, 2 small suitcases\n\nWould you like more details on any of these car rental options?"
+      }
+    ],
+    "message": {
+      "error_type": "stop_early",
+      "content": "Stop early."
+    },
+    "count_dict": {
+      "success_turn_num": 2,
+      "total_turn_num": 3,
+      "correct_call_num": 3,
+      "total_call_num": 5,
+      "real_turn_num": 2
+    },
+    "resp_eval": {
+      "complete": {
+        "score": 2,
+        "reason": "All requested information is addressed: the response provides detailed information on two different car types (economy and standard) for the specified rental scenario, including vehicle features, supplier, pickup/drop-off locations, pricing, and deposit."
+      },
+      "correct": {
+        "score": 1,
+        "reason": "Most details (models, classes, seats, transmission, fuel policy, free cancellation, unlimited mileage, supplier rating, pickup/dropoff type, and drive-away prices) match the API. However, the suitcase capacities are incorrect for both cars per the detailed vehicle info (Jetta and Spark each show 1 big and 1 small suitcase), and the stated deposits ($413 and $408.32) conflict with the detailed security deposit range shown (US$273.98\u2013US$684.96)."
+      }
+    },
+    "status": "Failed",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Car-Rental-25",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I want to rent a car at Newark Liberty International Airport at 11 am on November 25th, 2024, and return it in Newark at 4 pm on November 30th."
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Car_Location",
+            "arguments": {
+              "query": "Newark Liberty International Airport"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": [
+              {
+                "name": "Newark Liberty International Airport",
+                "iata_code": "EWR",
+                "coordinates": {
+                  "latitude": 40.6916999816895,
+                  "longitude": -74.1800994873047
+                },
+                "type": "airport",
+                "city": "New York",
+                "country": "United States"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Car_Rentals",
+            "arguments": {
+              "pick_up_longitude": -74.1800994873047,
+              "drop_off_longitude": -74.1800994873047,
+              "pick_up_latitude": 40.6916999816895,
+              "drop_off_latitude": 40.6916999816895,
+              "pick_up_date": "2024-11-25",
+              "pick_up_time": "11:00",
+              "drop_off_date": "2024-11-30",
+              "drop_off_time": "16:00"
+            }
+          }
+        ]
+      }
+    ],
+    "message": [
+      {
+        "error_type": "value_error",
+        "content": "Parameter drop_off_latitude value is not correct in prediction."
+      }
+    ],
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 2,
+      "correct_call_num": 1,
+      "total_call_num": 3,
+      "real_turn_num": 2
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Attraction-59",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "We are planning a family trip to Sydney from November 10 to November 20, 2024. Help us find the two highest-rated attractions and provide detailed information about them."
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Attraction_Location",
+            "arguments": {
+              "query": "Sydney"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": {
+              "products": [
+                {
+                  "id": "eyJwaW5uZWRQcm9kdWN0IjoiUFIxSDIzY2lWMjRNIiwidWZpIjotMTYwMzEzNX0=",
+                  "__typename": "AttractionsSearchProductSuggestion",
+                  "title": "Sydney CBD to Sydney Airport",
+                  "productId": "PR1H23ciV24M",
+                  "productSlug": "pr1h23civ24m-sydney-cbd-to-sydney-airport",
+                  "taxonomySlug": "transfers-services",
+                  "cityUfi": -1603135,
+                  "cityName": "Sydney",
+                  "countryCode": "au"
+                },
+                {
+                  "id": "eyJwaW5uZWRQcm9kdWN0IjoiUFI2aEw5YUhrdmhoIiwidWZpIjotMTYwMzEzNX0=",
+                  "__typename": "AttractionsSearchProductSuggestion",
+                  "title": "Shared Sydney Airport Transfers for Sydney",
+                  "productId": "PR6hL9aHkvhh",
+                  "productSlug": "pr6hl9ahkvhh-shared-sydney-airport-transfers-for-sydney",
+                  "taxonomySlug": "transfers-services",
+                  "cityUfi": -1603135,
+                  "cityName": "Sydney",
+                  "countryCode": "au"
+                },
+                {
+                  "id": "eyJwaW5uZWRQcm9kdWN0IjoiUFJsTGZwTWlodk1NIiwidWZpIjotMTYwMzEzNX0=",
+                  "__typename": "AttractionsSearchProductSuggestion",
+                  "title": "Private Sydney Airport-Sydney CBD, Sydney City, Cruise Terminal",
+                  "productId": "PRlLfpMihvMM",
+                  "productSlug": "prllfpmihvmm-sydney-airport-to-cbd-and-suburbs-and-blue-mountain-transfer",
+                  "taxonomySlug": "transfers-services",
+                  "cityUfi": -1603135,
+                  "cityName": "Sydney",
+                  "countryCode": "au"
+                },
+                {
+                  "id": "eyJwaW5uZWRQcm9kdWN0IjoiUFJocFpNV1dTV2hyIiwidWZpIjotMTYwMzEzNX0=",
+                  "__typename": "AttractionsSearchProductSuggestion",
+                  "title": "Private Minibus Sydney Airport to Sydney CBD",
+                  "productId": "PRhpZMWWSWhr",
+                  "productSlug": "prhpzmwwswhr-private-minibus-sydney-airport-to-sydney-cbd",
+                  "taxonomySlug": "transfers-services",
+                  "cityUfi": -1603135,
+                  "cityName": "Sydney",
+                  "countryCode": "au"
+                },
+                {
+                  "id": "eyJwaW5uZWRQcm9kdWN0IjoiUFJxRWljZE05akd4IiwidWZpIjotMTYwMzEzNX0=",
+                  "__typename": "AttractionsSearchProductSuggestion",
+                  "title": "Discover Sydney",
+                  "productId": "PRqEicdM9jGx",
+                  "productSlug": "prqeicdm9jgx-discover-sydney",
+                  "taxonomySlug": "tours",
+                  "cityUfi": -1603135,
+                  "cityName": "Sydney",
+                  "countryCode": "au"
+                }
+              ],
+              "destinations": [
+                {
+                  "id": "eyJ1ZmkiOi0xNjAzMTM1fQ==",
+                  "__typename": "AttractionsSearchDestinationSuggestion",
+                  "ufi": -1603135,
+                  "country": "Australia",
+                  "cityName": "Sydney",
+                  "productCount": 565,
+                  "cc1": "au"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Attractions",
+            "arguments": {
+              "id": "-1603135",
+              "sortBy": "attr_book_score"
+            }
+          }
+        ]
+      }
+    ],
+    "message": [
+      {
+        "error_type": "value_error",
+        "content": "Parameter id value is not correct in prediction."
+      }
+    ],
+    "count_dict": {
+      "success_turn_num": 1,
+      "total_turn_num": 3,
+      "correct_call_num": 1,
+      "total_call_num": 4,
+      "real_turn_num": 2
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  },
+  {
+    "id": "Cross-131",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "Help me check the details of the fastest plane tickets from Toronto to Los Angeles on November 15, 2024, and from Los Angeles to San Francisco on November 17, 2024. I need to book the tickets separately in case my plans change. I'm going to stay in Los Angeles and San Francisco for two days each. Please provide hotels within 10 kilometers of the related airports in Los Angeles and San Francisco based on the arrival airports of the flights."
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Flight_Location",
+            "arguments": {
+              "query": "Toronto"
+            }
+          },
+          {
+            "name": "Search_Flight_Location",
+            "arguments": {
+              "query": "Los Angeles"
+            }
+          },
+          {
+            "name": "Search_Flight_Location",
+            "arguments": {
+              "query": "San Francisco"
+            }
+          }
+        ]
+      },
+      {
+        "role": "observation",
+        "content": [
+          {
+            "status": true,
+            "message": "Success",
+            "data": [
+              {
+                "id": "YYZ.AIRPORT",
+                "type": "AIRPORT",
+                "name": "Toronto Pearson International Airport",
+                "code": "YYZ",
+                "city": "YTO",
+                "cityName": "Toronto",
+                "regionName": "Ontario",
+                "country": "CA",
+                "countryName": "Canada",
+                "countryNameShort": "Canada",
+                "distanceToCity": {
+                  "value": 19.004770666153274,
+                  "unit": "km"
+                },
+                "parent": "YTO"
+              }
+            ]
+          },
+          {
+            "status": true,
+            "message": "Success",
+            "data": [
+              {
+                "id": "LAX.AIRPORT",
+                "type": "AIRPORT",
+                "name": "Los Angeles International Airport",
+                "code": "LAX",
+                "city": "LAX",
+                "cityName": "Los Angeles",
+                "regionName": "California",
+                "country": "US",
+                "countryName": "United States",
+                "countryNameShort": "US",
+                "distanceToCity": {
+                  "value": 18.926253464412262,
+                  "unit": "km"
+                },
+                "parent": "LAX"
+              }
+            ]
+          },
+          {
+            "status": true,
+            "message": "Success",
+            "data": [
+              {
+                "id": "SFO.AIRPORT",
+                "type": "AIRPORT",
+                "name": "San Francisco International Airport",
+                "code": "SFO",
+                "city": "SFO",
+                "cityName": "San Francisco",
+                "regionName": "California",
+                "country": "US",
+                "countryName": "United States",
+                "countryNameShort": "US",
+                "distanceToCity": {
+                  "value": 19.16395121441966,
+                  "unit": "km"
+                },
+                "parent": "SFO"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "role": "assistant",
+        "function_call": [
+          {
+            "name": "Search_Flights",
+            "arguments": {
+              "fromId": "YYZ.AIRPORT",
+              "toId": "LAX.AIRPORT",
+              "departDate": "2024-06-01",
+              "sort": "CHEAPEST"
+            }
+          }
+        ]
+      }
+    ],
+    "message": [
+      {
+        "error_type": "value_error",
+        "content": "Parameter departDate value is not correct in prediction."
+      }
+    ],
+    "count_dict": {
+      "success_turn_num": 1,
+      "total_turn_num": 3,
+      "correct_call_num": 3,
+      "total_call_num": 11,
+      "real_turn_num": 2
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "truncation"
+  }
+]

@@ -1,0 +1,19 @@
+{
+  "domain_success_rate": {},
+  "domain_turn_acc": {
+    "Hotels": 50.0,
+    "Car-Rental": 58.333333333333336,
+    "Attraction": 66.66666666666666,
+    "Cross": 44.44444444444444
+  },
+  "domain_call_acc": {
+    "Hotels": 250.0,
+    "Car-Rental": 52.17391304347826,
+    "Attraction": 62.5,
+    "Cross": 465.00000000000006
+  },
+  "overall_success": 0.0,
+  "overall_call_acc": 218.18181818181816,
+  "complete_score_avg": 0,
+  "correct_score_avg": 0
+}

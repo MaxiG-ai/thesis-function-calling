@@ -1,0 +1,427 @@
+[
+  {
+    "id": "Attraction-118",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "Can you find the two most trending attractions in Osaka and provide a detailed comparison of them? Also, check if there are any tickets available for both attractions in October."
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_bV32pJQuI4RxTg2XFpYON6Zb",
+            "function": {
+              "arguments": "{\"query\":\"Osaka\"}",
+              "name": "Search_Attraction_Location"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      },
+      {
+        "tool_call_id": "call_bV32pJQuI4RxTg2XFpYON6Zb",
+        "role": "tool",
+        "name": "Search_Attraction_Location",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": {\"products\": [{\"id\": \"eyJwaW5uZWRQcm9kdWN0IjoiUFJaQ1BFYlFaM3BwIiwidWZpIjotMjQwOTA1fQ==\", \"__typename\": \"AttractionsSearchProductSuggestion\", \"title\": \"OSAKA Japanese Entertainment Show UTAGE\", \"productId\": \"PRZCPEbQZ3pp\", \"productSlug\": \"przcpebqz3pp-osaka-japanese-entertainment-show-utage\", \"taxonomySlug\": \"attractions\", \"cityUfi\": -240905, \"cityName\": \"Osaka\", \"countryCode\": \"jp\"}, {\"id\": \"eyJwaW5uZWRQcm9kdWN0IjoiUFIzeUltNUlmSkxlIiwidWZpIjotMjQwOTA1fQ==\", \"__typename\": \"AttractionsSearchProductSuggestion\", \"title\": \"Osaka Japanese Cooking And Matcha Class near Osaka Castle\", \"productId\": \"PR3yIm5IfJLe\", \"productSlug\": \"pr3yim5ifjle-osaka-japanese-cooking-and-matcha-class-near-osaka-castle\", \"taxonomySlug\": \"transfers-services\", \"cityUfi\": -240905, \"cityName\": \"Osaka\", \"countryCode\": \"jp\"}, {\"id\": \"eyJwaW5uZWRQcm9kdWN0IjoiUFJvNktsVTVYSnFSIiwidWZpIjotMjQwOTA1fQ==\", \"__typename\": \"AttractionsSearchProductSuggestion\", \"title\": \"Japan Railway Station Shared Arrival Transfer : Shin Osaka Station to Osaka City\", \"productId\": \"PRo6KlU5XJqR\", \"productSlug\": \"pro6klu5xjqr-japan-railway-station-shared-arrival-transfer-shin-osaka-station-to\", \"taxonomySlug\": \"attractions\", \"cityUfi\": -240905, \"cityName\": \"Osaka\", \"countryCode\": \"jp\"}, {\"id\": \"eyJwaW5uZWRQcm9kdWN0IjoiUFJZVzlkNTIycVdmIiwidWZpIjotMjQwOTA1fQ==\", \"__typename\": \"AttractionsSearchProductSuggestion\", \"title\": \"Osaka Gourmet Adventure: Savor 13 Must-Try Dishes in Japan\", \"productId\": \"PRYW9d522qWf\", \"productSlug\": \"pryw9d522qwf-osaka-gourmet-adventure-savor-13-must-try-dishes-in-japan\", \"taxonomySlug\": \"tours\", \"cityUfi\": -240905, \"cityName\": \"Osaka\", \"countryCode\": \"jp\"}, {\"id\": \"eyJwaW5uZWRQcm9kdWN0IjoiUFJocGpMbERIZWk2IiwidWZpIjotMjQwOTA1fQ==\", \"__typename\": \"AttractionsSearchProductSuggestion\", \"title\": \"Osaka Castle Ticket\", \"productId\": \"PRhpjLlDHei6\", \"productSlug\": \"prhpjlldhei6-osaka-castle-ticket\", \"taxonomySlug\": \"landmarks\", \"cityUfi\": -240905, \"cityName\": \"Osaka\", \"countryCode\": \"jp\"}], \"destinations\": [{\"id\": \"eyJ1ZmkiOi0yNDA5MDV9\", \"__typename\": \"AttractionsSearchDestinationSuggestion\", \"ufi\": -240905, \"country\": \"Japan\", \"cityName\": \"Osaka\", \"productCount\": 464, \"cc1\": \"jp\"}]}}"
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "expected string or buffer"
+    },
+    "count_dict": {
+      "success_turn_num": 1,
+      "total_turn_num": 3,
+      "correct_call_num": 1,
+      "total_call_num": 6,
+      "real_turn_num": 1
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "memory_bank"
+  },
+  {
+    "id": "Attraction-132",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "Our family of five is planning a vacation from November 20 to November 30, 2024, and we're trying to choose between Rome and Milan. Can you check the ticket availability for attractions that offer free entry for our three-year-old on November 25 in both places?"
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_axTc7WpbTvXxSjuVgSgfzXxO",
+            "function": {
+              "arguments": "{\"query\": \"Rome\"}",
+              "name": "Search_Attraction_Location"
+            },
+            "type": "function"
+          },
+          {
+            "id": "call_54hi6zuoB0axRGY2SZorZIF8",
+            "function": {
+              "arguments": "{\"query\": \"Milan\"}",
+              "name": "Search_Attraction_Location"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      },
+      {
+        "tool_call_id": "call_axTc7WpbTvXxSjuVgSgfzXxO",
+        "role": "tool",
+        "name": "Search_Attraction_Location",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": {\"destinations\": [{\"id\": \"eyJ1ZmkiOi0xMjY2OTN9\", \"__typename\": \"AttractionsSearchDestinationSuggestion\", \"ufi\": -126693, \"country\": \"Italy\", \"cityName\": \"Rome\", \"productCount\": 5039, \"cc1\": \"it\"}]}}"
+      },
+      {
+        "tool_call_id": "call_54hi6zuoB0axRGY2SZorZIF8",
+        "role": "tool",
+        "name": "Search_Attraction_Location",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": {\"destinations\": [{\"id\": \"eyJ1ZmkiOi0xMjE3MjZ9\", \"__typename\": \"AttractionsSearchDestinationSuggestion\", \"ufi\": -121726, \"country\": \"Italy\", \"cityName\": \"Milan\", \"productCount\": 1094, \"cc1\": \"it\"}, {\"id\": \"eyJ1ZmkiOi0yNjAxODg5fQ==\", \"__typename\": \"AttractionsSearchDestinationSuggestion\", \"ufi\": -2601889, \"country\": \"United Kingdom\", \"cityName\": \"London\", \"productCount\": 2881, \"cc1\": \"gb\"}, {\"id\": \"eyJ1ZmkiOi0xMjc0NDV9\", \"__typename\": \"AttractionsSearchDestinationSuggestion\", \"ufi\": -127445, \"country\": \"Italy\", \"cityName\": \"San Donato Milanese\", \"productCount\": 734, \"cc1\": \"it\"}, {\"id\": \"eyJ1ZmkiOi01MTY1NzV9\", \"__typename\": \"AttractionsSearchDestinationSuggestion\", \"ufi\": -516575, \"country\": \"Poland\", \"cityName\": \"Milan\u00f3wek\", \"productCount\": 326, \"cc1\": \"pl\"}]}}"
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "expected string or buffer"
+    },
+    "count_dict": {
+      "success_turn_num": 1,
+      "total_turn_num": 4,
+      "correct_call_num": 2,
+      "total_call_num": 7,
+      "real_turn_num": 1
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "memory_bank"
+  },
+  {
+    "id": "Cross-342",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "Look up the cheapest flight from Shanghai to Seoul on December 1, 2024. I do not accept flights that require an overnight transfer. Book a hotel with the most popular rating near Gyeongbokgung Palace for one night and arrange a taxi service from the airport to the hotel half an hour after the plane lands."
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_RtJxmGBc1Nn7X4SjQwYjBo7u",
+            "function": {
+              "arguments": "{\"query\":\"Shanghai\"}",
+              "name": "Search_Flight_Location"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      },
+      {
+        "tool_call_id": "call_RtJxmGBc1Nn7X4SjQwYjBo7u",
+        "role": "tool",
+        "name": "Search_Flight_Location",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": [{\"id\": \"SHA.CITY\", \"type\": \"CITY\", \"name\": \"Shanghai\", \"code\": \"SHA\", \"regionName\": \"Shanghai Area\", \"country\": \"CN\", \"countryName\": \"China\"}]}"
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "expected string or buffer"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 4,
+      "correct_call_num": 1,
+      "total_call_num": 8,
+      "real_turn_num": 1
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "memory_bank"
+  },
+  {
+    "id": "Hotels-121",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "Find a hotel under $800 near Big Ben in London for the dates November 15, 2024, to November 25, 2024. I want to know the user comments about these hotels, with the latest reviews first."
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "Error code: 400 - {'error': {'message': \"Invalid 'tools[2].function.name': string does not match pattern. Expected a string that matches the pattern '^[a-zA-Z0-9_\\\\.-]+$'.\", 'type': 'invalid_request_error', 'code': 'bad_request'}}"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 4,
+      "correct_call_num": 0,
+      "total_call_num": 4,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "memory_bank"
+  },
+  {
+    "id": "Cross-381",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I'm going to have a meeting at the Staples Center in Los Angeles on November 15, 2024. After the meeting ends at 3 PM, I will fly from Los Angeles to New York for a vacation. Could you help me find the earliest flight to New York after the meeting and call a taxi to take me to the airport right after the meeting? Don't forget to look up the hotel within 20 kilometers of the airport in New York and check what fun places there are around the hotel."
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_ZR7bCoWhKrBdnZpR6F0MttFB",
+            "function": {
+              "arguments": "{\"query\":\"Los Angeles International Airport\"}",
+              "name": "Search_Flight_Location"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      }
+    ],
+    "message": [
+      {
+        "error_type": "value_error",
+        "content": "Parameter query value do not equal to golden."
+      }
+    ],
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 5,
+      "correct_call_num": 0,
+      "total_call_num": 9,
+      "real_turn_num": 1
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "memory_bank"
+  },
+  {
+    "id": "Car-Rental-46",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I need to rent a car at Dallas-Fort Worth International Airport at 12:00 on November 25th, 2024 and return it at the same place at 18:00 on December 1st, 2024. Provide the booking summary of all the vehicles that meet the conditions for reimbursement."
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "Error code: 400 - {'error': {'message': \"Invalid 'tools[4].function.name': string does not match pattern. Expected a string that matches the pattern '^[a-zA-Z0-9_\\\\.-]+$'.\", 'type': 'invalid_request_error', 'code': 'bad_request'}}"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 3,
+      "correct_call_num": 0,
+      "total_call_num": 5,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "memory_bank"
+  },
+  {
+    "id": "Flights-140",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I'm traveling from New York to Paris on April 10, 2025, and returning on April 17, 2025. Could you find the cheapest air tickets around those dates for me and provide detailed flight info and a seat map?"
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "Error code: 400 - {'error': {'message': \"Invalid 'tools[0].function.name': string does not match pattern. Expected a string that matches the pattern '^[a-zA-Z0-9_\\\\.-]+$'.\", 'type': 'invalid_request_error', 'code': 'bad_request'}}"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 4,
+      "correct_call_num": 0,
+      "total_call_num": 6,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "memory_bank"
+  },
+  {
+    "id": "Cross-219",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I want to find out about the cheapest connecting flight leaving from Los Angeles on November 20, 2024, going to Seattle and Portland, then returning to Los Angeles. I'm expecting to stay in each city for five days. My address is 500 Sunset Boulevard in Los Angeles. Can you book a taxi to take me to the airport three hours before the flight takes off and bring me home one hour after the returning flight lands?"
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_duIhV8QTVSXQ3ZyCYs5xIJ8z",
+            "function": {
+              "arguments": "{\"query\":\"Los Angeles\"}",
+              "name": "Search_Flight_Location"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      },
+      {
+        "tool_call_id": "call_duIhV8QTVSXQ3ZyCYs5xIJ8z",
+        "role": "tool",
+        "name": "Search_Flight_Location",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": [{\"id\": \"LAX.AIRPORT\", \"type\": \"AIRPORT\", \"name\": \"Los Angeles International Airport\", \"code\": \"LAX\", \"city\": \"LAX\", \"cityName\": \"Los Angeles\", \"regionName\": \"California\", \"country\": \"US\", \"countryName\": \"United States\", \"countryNameShort\": \"US\", \"distanceToCity\": {\"value\": 18.926253464412262, \"unit\": \"km\"}, \"parent\": \"LAX\"}]}"
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "expected string or buffer"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 4,
+      "correct_call_num": 1,
+      "total_call_num": 8,
+      "real_turn_num": 1
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "memory_bank"
+  },
+  {
+    "id": "Cross-290",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I'm planning to stay in Vienna for ten days starting on November 18th, 2024. Help me find detailed information about the most trending attractions in the center of Vienna and book a hotel nearby this attraction."
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_bswyK5cjK1AleObGSsbQo52T",
+            "function": {
+              "arguments": "{\"query\":\"Vienna city center\"}",
+              "name": "Search_Attraction_Location"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      }
+    ],
+    "message": [
+      {
+        "error_type": "value_error",
+        "content": "Parameter query value do not equal to golden."
+      }
+    ],
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 4,
+      "correct_call_num": 0,
+      "total_call_num": 5,
+      "real_turn_num": 1
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "memory_bank"
+  },
+  {
+    "id": "Flights-38",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "Our company is planning to leave from Madrid on December 10th, 2024, and travel to Barcelona and Valencia. We'll return to Madrid on December 24th, 2024. We'll stay in each of those cities for a week. Help us find the best economy class flights for this journey and provide the detailed flight information and seat maps."
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_gotrWya3cN2di849Ozq3fNAK",
+            "function": {
+              "arguments": "{\"query\":\"Madrid\"}",
+              "name": "Search_Flight_Location"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      },
+      {
+        "tool_call_id": "call_gotrWya3cN2di849Ozq3fNAK",
+        "role": "tool",
+        "name": "Search_Flight_Location",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": [{\"id\": \"MAD.AIRPORT\", \"type\": \"AIRPORT\", \"name\": \"Adolfo Suarez Madrid-Barajas Airport\", \"code\": \"MAD\", \"city\": \"MAD\", \"cityName\": \"Madrid\", \"regionName\": \"Community of Madrid\", \"country\": \"ES\", \"countryName\": \"Spain\", \"countryNameShort\": \"Spain\", \"distanceToCity\": {\"value\": 13.390301742754069, \"unit\": \"km\"}, \"parent\": \"MAD\"}]}"
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "expected string or buffer"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 3,
+      "correct_call_num": 1,
+      "total_call_num": 6,
+      "real_turn_num": 1
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "memory_bank"
+  }
+]

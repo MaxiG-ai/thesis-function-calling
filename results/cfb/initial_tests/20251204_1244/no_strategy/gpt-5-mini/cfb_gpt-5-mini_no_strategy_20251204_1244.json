@@ -1,0 +1,809 @@
+[
+  {
+    "id": "Attraction-118",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "Can you find the two most trending attractions in Osaka and provide a detailed comparison of them? Also, check if there are any tickets available for both attractions in October."
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_S2G5XOt7js6BHCgoqE0fjFxE",
+            "function": {
+              "arguments": "{\"query\":\"Osaka\"}",
+              "name": "Search_Attraction_Location"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      },
+      {
+        "tool_call_id": "call_S2G5XOt7js6BHCgoqE0fjFxE",
+        "role": "tool",
+        "name": "Search_Attraction_Location",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": {\"products\": [{\"id\": \"eyJwaW5uZWRQcm9kdWN0IjoiUFJaQ1BFYlFaM3BwIiwidWZpIjotMjQwOTA1fQ==\", \"__typename\": \"AttractionsSearchProductSuggestion\", \"title\": \"OSAKA Japanese Entertainment Show UTAGE\", \"productId\": \"PRZCPEbQZ3pp\", \"productSlug\": \"przcpebqz3pp-osaka-japanese-entertainment-show-utage\", \"taxonomySlug\": \"attractions\", \"cityUfi\": -240905, \"cityName\": \"Osaka\", \"countryCode\": \"jp\"}, {\"id\": \"eyJwaW5uZWRQcm9kdWN0IjoiUFIzeUltNUlmSkxlIiwidWZpIjotMjQwOTA1fQ==\", \"__typename\": \"AttractionsSearchProductSuggestion\", \"title\": \"Osaka Japanese Cooking And Matcha Class near Osaka Castle\", \"productId\": \"PR3yIm5IfJLe\", \"productSlug\": \"pr3yim5ifjle-osaka-japanese-cooking-and-matcha-class-near-osaka-castle\", \"taxonomySlug\": \"transfers-services\", \"cityUfi\": -240905, \"cityName\": \"Osaka\", \"countryCode\": \"jp\"}, {\"id\": \"eyJwaW5uZWRQcm9kdWN0IjoiUFJvNktsVTVYSnFSIiwidWZpIjotMjQwOTA1fQ==\", \"__typename\": \"AttractionsSearchProductSuggestion\", \"title\": \"Japan Railway Station Shared Arrival Transfer : Shin Osaka Station to Osaka City\", \"productId\": \"PRo6KlU5XJqR\", \"productSlug\": \"pro6klu5xjqr-japan-railway-station-shared-arrival-transfer-shin-osaka-station-to\", \"taxonomySlug\": \"attractions\", \"cityUfi\": -240905, \"cityName\": \"Osaka\", \"countryCode\": \"jp\"}, {\"id\": \"eyJwaW5uZWRQcm9kdWN0IjoiUFJZVzlkNTIycVdmIiwidWZpIjotMjQwOTA1fQ==\", \"__typename\": \"AttractionsSearchProductSuggestion\", \"title\": \"Osaka Gourmet Adventure: Savor 13 Must-Try Dishes in Japan\", \"productId\": \"PRYW9d522qWf\", \"productSlug\": \"pryw9d522qwf-osaka-gourmet-adventure-savor-13-must-try-dishes-in-japan\", \"taxonomySlug\": \"tours\", \"cityUfi\": -240905, \"cityName\": \"Osaka\", \"countryCode\": \"jp\"}, {\"id\": \"eyJwaW5uZWRQcm9kdWN0IjoiUFJocGpMbERIZWk2IiwidWZpIjotMjQwOTA1fQ==\", \"__typename\": \"AttractionsSearchProductSuggestion\", \"title\": \"Osaka Castle Ticket\", \"productId\": \"PRhpjLlDHei6\", \"productSlug\": \"prhpjlldhei6-osaka-castle-ticket\", \"taxonomySlug\": \"landmarks\", \"cityUfi\": -240905, \"cityName\": \"Osaka\", \"countryCode\": \"jp\"}], \"destinations\": [{\"id\": \"eyJ1ZmkiOi0yNDA5MDV9\", \"__typename\": \"AttractionsSearchDestinationSuggestion\", \"ufi\": -240905, \"country\": \"Japan\", \"cityName\": \"Osaka\", \"productCount\": 464, \"cc1\": \"jp\"}]}}"
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_yi2aIp6jseJm4J3omRqgQr4g",
+            "function": {
+              "arguments": "{\"id\":\"eyJ1ZmkiOi0yNDA5MDV9\",\"sortBy\":\"trending\"}",
+              "name": "Search_Attractions"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      },
+      {
+        "tool_call_id": "call_yi2aIp6jseJm4J3omRqgQr4g",
+        "role": "tool",
+        "name": "Search_Attractions",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": {\"__typename\": \"AttractionsProductSearchResponse\", \"products\": [{\"__typename\": \"AttractionsProduct\", \"cancellationPolicy\": {\"__typename\": \"AttractionsCancellationPolicy\", \"hasFreeCancellation\": false}, \"id\": \"PRhpjLlDHei6\", \"name\": \"Osaka Castle Ticket\", \"slug\": \"prhpjlldhei6-osaka-castle-ticket\", \"shortDescription\": \"A ticket providing admission to Japan's historic site of Osaka Castle\", \"representativePrice\": {\"__typename\": \"AttractionsPrice\", \"chargeAmount\": 4, \"currency\": \"USD\", \"publicAmount\": 4}, \"reviewsStats\": {\"__typename\": \"AttractionsProductReviewStats\", \"allReviewsCount\": 0, \"percentage\": \"0\", \"combinedNumericStats\": {\"__typename\": \"AttractionsProductCombinedReviewStats\", \"average\": 4.6, \"total\": 1748}}, \"ufiDetails\": {\"__typename\": \"AttractionLocationResponse\", \"bCityName\": \"Osaka\", \"ufi\": -240905}, \"offers\": [{\"__typename\": \"Offer\", \"items\": [{\"__typename\": \"OfferItem\", \"id\": \"OIl6n461zlsn\"}]}], \"supportedFeatures\": {\"__typename\": \"AttractionsProductSupportedFeatures\", \"nativeApp\": true}, \"flags\": [{\"__typename\": \"AttractionsProductFlags\", \"flag\": \"bestseller\", \"value\": true, \"rank\": 1}]}, {\"__typename\": \"AttractionsProduct\", \"cancellationPolicy\": {\"__typename\": \"AttractionsCancellationPolicy\", \"hasFreeCancellation\": false}, \"id\": \"PRYUZzY35vgp\", \"name\": \"teamLab Botanical Garden Osaka Ticket\", \"slug\": \"pryuzzy35vgp-teamlab-botanical-garden-osaka-ticket\", \"shortDescription\": \"Admission to an experiential art space that explores how nature can become art\", \"representativePrice\": {\"__typename\": \"AttractionsPrice\", \"chargeAmount\": 3.33, \"currency\": \"USD\", \"publicAmount\": 3.33}, \"reviewsStats\": {\"__typename\": \"AttractionsProductReviewStats\", \"allReviewsCount\": 120, \"percentage\": \"93%\", \"combinedNumericStats\": {\"__typename\": \"AttractionsProductCombinedReviewStats\", \"average\": 4.4, \"total\": 2163}}, \"ufiDetails\": {\"__typename\": \"AttractionLocationResponse\", \"bCityName\": \"Osaka\", \"ufi\": -240905}, \"offers\": [{\"__typename\": \"Offer\", \"items\": [{\"__typename\": \"OfferItem\", \"id\": \"OIY4hZOF2Upu\"}, {\"__typename\": \"OfferItem\", \"id\": \"OIdaBCMYsMVg\"}]}, {\"__typename\": \"Offer\", \"items\": [{\"__typename\": \"OfferItem\", \"id\": \"OIbuQe6ySKtc\"}, {\"__typename\": \"OfferItem\", \"id\": \"OIxVK4QWMTu0\"}]}], \"supportedFeatures\": {\"__typename\": \"AttractionsProductSupportedFeatures\", \"nativeApp\": true}, \"flags\": [{\"__typename\": \"AttractionsProductFlags\", \"flag\": \"bestseller\", \"value\": true, \"rank\": 3}, {\"__typename\": \"AttractionsProductFlags\", \"flag\": \"bestsellerInMonth\", \"value\": true, \"rank\": 1}, {\"__typename\": \"AttractionsProductFlags\", \"flag\": \"bestsellerInWeek\", \"value\": true, \"rank\": 1}, {\"__typename\": \"AttractionsProductFlags\", \"flag\": \"bestsellerOnWeekends\", \"value\": true, \"rank\": 1}, {\"__typename\": \"AttractionsProductFlags\", \"flag\": \"bestsellerForLandmarks\", \"value\": true, \"rank\": 1}]}, {\"__typename\": \"AttractionsProduct\", \"cancellationPolicy\": {\"__typename\": \"AttractionsCancellationPolicy\", \"hasFreeCancellation\": true}, \"id\": \"PREl34B8Ki8V\", \"name\": \"Umeda Sky Building and Kuchu Teien Observatory Admission\", \"slug\": \"prel34b8ki8v-umeda-sky-building-and-kuchu-teien-observatory-admission\", \"shortDescription\": \"A ticket providing admission to an observation deck in Japan\", \"representativePrice\": {\"__typename\": \"AttractionsPrice\", \"chargeAmount\": 13.33, \"currency\": \"USD\", \"publicAmount\": 13.33}, \"reviewsStats\": {\"__typename\": \"AttractionsProductReviewStats\", \"allReviewsCount\": 0, \"percentage\": \"0\", \"combinedNumericStats\": {\"__typename\": \"AttractionsProductCombinedReviewStats\", \"average\": 4.7, \"total\": 987}}, \"ufiDetails\": {\"__typename\": \"AttractionLocationResponse\", \"bCityName\": \"Osaka\", \"ufi\": -240905}, \"offers\": [{\"__typename\": \"Offer\", \"items\": [{\"__typename\": \"OfferItem\", \"id\": \"OIvpICgj0mmi\"}, {\"__typename\": \"OfferItem\", \"id\": \"OIfa6f6WJJb4\"}]}], \"supportedFeatures\": {\"__typename\": \"AttractionsProductSupportedFeatures\", \"nativeApp\": true}, \"flags\": [{\"__typename\": \"AttractionsProductFlags\", \"flag\": \"bestseller\", \"value\": true, \"rank\": 2}]}, {\"__typename\": \"AttractionsProduct\", \"cancellationPolicy\": {\"__typename\": \"AttractionsCancellationPolicy\", \"hasFreeCancellation\": true}, \"id\": \"PRWp2LFoZY5t\", \"name\": \"Osaka Castle Admission Ticket\", \"slug\": \"prwp2lfozy5t-osaka-castle-admission-ticket\", \"shortDescription\": \"Book your visit to Osaka Castle and experience the perfect blend of historical grandeur and natur...\", \"representativePrice\": {\"__typename\": \"AttractionsPrice\", \"chargeAmount\": 9.91, \"currency\": \"USD\", \"publicAmount\": 9.91}, \"reviewsStats\": {\"__typename\": \"AttractionsProductReviewStats\", \"allReviewsCount\": 0, \"percentage\": \"0\", \"combinedNumericStats\": {\"__typename\": \"AttractionsProductCombinedReviewStats\", \"average\": 2.8, \"total\": 4}}, \"ufiDetails\": {\"__typename\": \"AttractionLocationResponse\", \"bCityName\": \"Osaka\", \"ufi\": -240905}, \"offers\": [{\"__typename\": \"Offer\", \"items\": [{\"__typename\": \"OfferItem\", \"id\": \"OIiMK4wNHnvY\"}]}], \"supportedFeatures\": {\"__typename\": \"AttractionsProductSupportedFeatures\", \"nativeApp\": true}}, {\"__typename\": \"AttractionsProduct\", \"cancellationPolicy\": {\"__typename\": \"AttractionsCancellationPolicy\", \"hasFreeCancellation\": false}, \"id\": \"PRM9jNFXxPbc\", \"name\": \"Osaka Amazing Pass\", \"slug\": \"prm9jnfxxpbc-city-transportation-pass\", \"shortDescription\": \"An access ticket to attractions and the public transportation system in Osaka\", \"representativePrice\": {\"__typename\": \"AttractionsPrice\", \"chargeAmount\": 22, \"currency\": \"USD\", \"publicAmount\": 22}, \"reviewsStats\": {\"__typename\": \"AttractionsProductReviewStats\", \"allReviewsCount\": 0, \"percentage\": \"0\", \"combinedNumericStats\": {\"__typename\": \"AttractionsProductCombinedReviewStats\", \"average\": 4.8, \"total\": 4571}}, \"ufiDetails\": {\"__typename\": \"AttractionLocationResponse\", \"bCityName\": \"Osaka\", \"ufi\": -240905}, \"offers\": [{\"__typename\": \"Offer\", \"items\": [{\"__typename\": \"OfferItem\", \"id\": \"OIpzMC1Dezjt\"}]}, {\"__typename\": \"Offer\", \"items\": [{\"__typename\": \"OfferItem\", \"id\": \"OIX7vbZO3B5X\"}]}], \"supportedFeatures\": {\"__typename\": \"AttractionsProductSupportedFeatures\", \"nativeApp\": true}, \"flags\": [{\"__typename\": \"AttractionsProductFlags\", \"flag\": \"bestseller\", \"value\": true, \"rank\": 5}]}], \"filterStats\": {\"__typename\": \"FilterStats\", \"unfilteredProductCount\": 455, \"filteredProductCount\": 455}, \"sorters\": [{\"__typename\": \"AttractionsSorterOption\", \"name\": \"Our top picks\", \"value\": \"trending\"}, {\"__typename\": \"AttractionsSorterOption\", \"name\": \"Most popular\", \"value\": \"attr_book_score\"}, {\"__typename\": \"AttractionsSorterOption\", \"name\": \"Lowest price\", \"value\": \"lowest_price\"}], \"defaultSorter\": {\"__typename\": \"AttractionsSorterOption\", \"name\": \"Our top picks\", \"value\": \"trending\"}, \"filterOptions\": {\"__typename\": \"FilterOptions\", \"typeFilters\": [{\"__typename\": \"FilterOption\", \"name\": \"Tours\", \"tagname\": \"tours\", \"productCount\": 36}, {\"__typename\": \"FilterOption\", \"name\": \"Entertainment & tickets\", \"tagname\": \"entertainment-tickets\", \"productCount\": 24}, {\"__typename\": \"FilterOption\", \"name\": \"Museums, arts & culture\", \"tagname\": \"museums-arts-culture\", \"productCount\": 22}, {\"__typename\": \"FilterOption\", \"name\": \"Nature & outdoor\", \"tagname\": \"nature-outdoor\", \"productCount\": 22}, {\"__typename\": \"FilterOption\", \"name\": \"Food & drinks\", \"tagname\": \"food-drinks\", \"productCount\": 12}], \"labelFilters\": [{\"__typename\": \"FilterOption\", \"name\": \"Free cancellation\", \"tagname\": \"free_cancellation\", \"productCount\": 419}], \"ufiFilters\": [{\"__typename\": \"FilterOption\", \"name\": \"Osaka\", \"tagname\": \"-240905\", \"productCount\": 263}, {\"__typename\": \"FilterOption\", \"name\": \"Nara\", \"tagname\": \"-238469\", \"productCount\": 83}, {\"__typename\": \"FilterOption\", \"name\": \"Kobe\", \"tagname\": \"-233817\", \"productCount\": 46}, {\"__typename\": \"FilterOption\", \"name\": \"Izumi\", \"tagname\": \"-231169\", \"productCount\": 24}, {\"__typename\": \"FilterOption\", \"name\": \"Nishinomiya\", \"tagname\": \"-239026\", \"productCount\": 24}], \"priceFilters\": [{\"__typename\": \"FilterOption\", \"name\": \"US$0 - US$22\", \"tagname\": \"b0\", \"productCount\": 33}, {\"__typename\": \"FilterOption\", \"name\": \"US$22 - US$44\", \"tagname\": \"b1\", \"productCount\": 25}, {\"__typename\": \"FilterOption\", \"name\": \"US$44 - US$83\", \"tagname\": \"b2\", \"productCount\": 84}, {\"__typename\": \"FilterOption\", \"name\": \"US$83 - US$138\", \"tagname\": \"b3\", \"productCount\": 83}, {\"__typename\": \"FilterOption\", \"name\": \"US$138+\", \"tagname\": \"b4\", \"productCount\": 238}]}}}"
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_GxoPZQNxcfqRS4OxFR4KWFc8",
+            "function": {
+              "arguments": "{\"id\": \"PRhpjLlDHei6\"}",
+              "name": "Get_Availability_Calendar"
+            },
+            "type": "function"
+          },
+          {
+            "id": "call_yJFKhDH67Y3buHszH58LYX3w",
+            "function": {
+              "arguments": "{\"id\": \"PRYUZzY35vgp\"}",
+              "name": "Get_Availability_Calendar"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      },
+      {
+        "tool_call_id": "call_GxoPZQNxcfqRS4OxFR4KWFc8",
+        "role": "tool",
+        "name": "Get_Availability_Calendar",
+        "content": "{\"status\": true, \"message\": \"Success\", \"timestamp\": 1729531705472, \"data\": [{\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-10-21\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-10-22\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-10-23\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-10-24\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-10-25\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-10-26\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-10-27\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-10-28\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-10-29\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-10-30\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-10-31\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-01\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-02\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-03\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-04\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-05\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-06\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-07\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-08\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-09\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-10\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-11\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-12\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-13\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-14\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-15\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-16\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-17\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-18\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-19\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-20\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-21\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-22\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-23\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-24\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-25\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-26\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-27\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-28\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-29\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-30\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-01\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-02\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-03\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-04\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-05\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-06\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-07\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-08\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-09\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-10\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-11\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-12\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-13\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-14\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-15\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-16\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-17\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-18\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-19\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-20\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-21\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-22\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-23\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-24\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-25\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-26\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-27\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-28\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-29\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-30\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-31\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2025-01-01\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2025-01-02\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2025-01-03\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2025-01-04\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2025-01-05\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2025-01-06\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2025-01-07\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2025-01-08\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2025-01-09\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2025-01-10\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2025-01-11\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2025-01-12\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2025-01-13\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2025-01-14\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2025-01-15\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2025-01-16\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2025-01-17\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2025-01-18\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-19\"}]}"
+      },
+      {
+        "tool_call_id": "call_yJFKhDH67Y3buHszH58LYX3w",
+        "role": "tool",
+        "name": "Get_Availability_Calendar",
+        "content": "{\"status\": true, \"message\": \"Success\", \"timestamp\": 1729531737703, \"data\": [{\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-10-21\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-10-22\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-10-23\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-10-24\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-10-25\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-10-26\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-10-27\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-10-28\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-10-29\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-10-30\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-10-31\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-11-01\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-02\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-03\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-04\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-05\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-06\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-07\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-08\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-09\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-10\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-11\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-12\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-13\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-14\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-15\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-16\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-17\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-18\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-19\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-20\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-21\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-22\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-23\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-24\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-25\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-26\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-27\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-28\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-29\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-11-30\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-01\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-12-02\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-03\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-04\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-05\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-06\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-07\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-08\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-09\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-10\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-11\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-12\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-13\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-14\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-15\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2024-12-16\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-17\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-18\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-19\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-20\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-21\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-22\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-23\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-24\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-25\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-26\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-27\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-28\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-29\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-30\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": true, \"date\": \"2024-12-31\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-01\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-02\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-03\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-04\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-05\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-06\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-07\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-08\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-09\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-10\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-11\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-12\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-13\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-14\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-15\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-16\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-17\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-18\"}, {\"__typename\": \"AttractionsCalendarItem\", \"available\": false, \"date\": \"2025-01-19\"}]}"
+      },
+      {
+        "role": "assistant",
+        "content": "Here are the two most trending attractions in Osaka (from the attraction search sorted by \"trending\") and a compact comparison plus availability for October based on the availability calendars returned by the API.\n\nTop two trending attractions\n- Osaka Castle Ticket (id: PRhpjLlDHei6)\n  - Short: Admission to the historic Osaka Castle.\n- teamLab Botanical Garden Osaka Ticket (id: PRYUZzY35vgp)\n  - Short: Admission to an immersive digital art / botanical experience.\n\nDetailed comparison\n- Type\n  - Osaka Castle: Historic landmark / museum-style visit.\n  - teamLab Botanical Garden: Contemporary immersive digital-art exhibition in a botanical setting.\n- Price (representative)\n  - Osaka Castle Ticket: US$4.00 (representative amount returned).\n  - teamLab Botanical Garden: US$3.33 (representative amount returned).\n- Ratings & reviews (from the product data)\n  - Osaka Castle Ticket: average ~4.6 (total ~1,748 combined review score in the product data).\n  - teamLab Botanical Garden: average ~4.4 (total ~2,163 combined review score in the product data).\n- Cancellation policy\n  - Both products returned in the search show hasFreeCancellation = false (no free cancellation in the product info returned).\n- Popularity flags\n  - Osaka Castle Ticket: flagged bestseller (rank 1).\n  - teamLab Botanical Garden: multiple bestseller flags (bestseller, bestseller in month/week/weekends, bestseller for landmarks).\n- Typical visitor experience\n  - Osaka Castle: historical displays, castle keep, panoramic views (classic sightseeing).\n  - teamLab Botanical Garden: visually immersive, interactive art installations combined with plant displays (more sensory / modern art experience).\n- Good to know\n  - Osaka Castle is best for history/architecture fans and great city views.\n  - teamLab is best for immersive-art fans, photographers, families and couples.\n\nAvailability in October (calendar data returned)\nNote: the availability calendar returned by the API contained specific dates in October 2024. If you meant October of a different year (for example this coming October), tell me which year and/or exact dates and I\u2019ll re-check.\n\n- Osaka Castle Ticket (PRhpjLlDHei6)\n  - Calendar entries for the returned October range (2024-10-21 through 2024-10-31) are all marked unavailable in the API response. In short: no availability shown for those late-October 2024 dates in the returned calendar. Availability begins in late November 2024 in the returned data.\n- teamLab Botanical Garden Osaka Ticket (PRYUZzY35vgp)\n  - The returned October 2024 entries show some available dates. Specifically the API response marked these October 2024 dates as available: 2024-10-22, 2024-10-23, 2024-10-24, 2024-10-25, 2024-10-29, 2024-10-30 and 2024-10-31. Other October dates in the returned range (for example 2024-10-21, 2024-10-26\u201310-28) were marked unavailable.\n\nSummary answer to your question\n- Are there tickets available for both attractions in October? Based on the returned calendar data for October 2024: no \u2014 Osaka Castle shows no availability in the returned late-October 2024 range, while teamLab shows several available dates in October 2024.\n\nWould you like me to:\n- Re-check availability for a specific October year or particular dates (e.g., Oct 10\u201320, 2025)?\n- Attempt to reserve a date for either attraction (if you give the date and number of tickets)?"
+      }
+    ],
+    "message": {
+      "error_type": "stop_early",
+      "content": "Stop early."
+    },
+    "count_dict": {
+      "success_turn_num": 2,
+      "total_turn_num": 3,
+      "correct_call_num": 4,
+      "total_call_num": 6,
+      "real_turn_num": 3
+    },
+    "resp_eval": {
+      "complete": {
+        "score": 2,
+        "reason": "all requested information is addressed"
+      },
+      "correct": {
+        "score": 2,
+        "reason": "All mentioned information is correct."
+      }
+    },
+    "status": "Failed",
+    "memory_method": "no_strategy"
+  },
+  {
+    "id": "Attraction-132",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "Our family of five is planning a vacation from November 20 to November 30, 2024, and we're trying to choose between Rome and Milan. Can you check the ticket availability for attractions that offer free entry for our three-year-old on November 25 in both places?"
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_dwjhAjNtvyJhSQYVmAPSwfP1",
+            "function": {
+              "arguments": "{\"query\": \"Rome\"}",
+              "name": "Search_Attraction_Location"
+            },
+            "type": "function"
+          },
+          {
+            "id": "call_aCS3akOMOD1YTEmF4FDNGEyO",
+            "function": {
+              "arguments": "{\"query\": \"Milan\"}",
+              "name": "Search_Attraction_Location"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      },
+      {
+        "tool_call_id": "call_dwjhAjNtvyJhSQYVmAPSwfP1",
+        "role": "tool",
+        "name": "Search_Attraction_Location",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": {\"destinations\": [{\"id\": \"eyJ1ZmkiOi0xMjY2OTN9\", \"__typename\": \"AttractionsSearchDestinationSuggestion\", \"ufi\": -126693, \"country\": \"Italy\", \"cityName\": \"Rome\", \"productCount\": 5039, \"cc1\": \"it\"}]}}"
+      },
+      {
+        "tool_call_id": "call_aCS3akOMOD1YTEmF4FDNGEyO",
+        "role": "tool",
+        "name": "Search_Attraction_Location",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": {\"destinations\": [{\"id\": \"eyJ1ZmkiOi0xMjE3MjZ9\", \"__typename\": \"AttractionsSearchDestinationSuggestion\", \"ufi\": -121726, \"country\": \"Italy\", \"cityName\": \"Milan\", \"productCount\": 1094, \"cc1\": \"it\"}, {\"id\": \"eyJ1ZmkiOi0yNjAxODg5fQ==\", \"__typename\": \"AttractionsSearchDestinationSuggestion\", \"ufi\": -2601889, \"country\": \"United Kingdom\", \"cityName\": \"London\", \"productCount\": 2881, \"cc1\": \"gb\"}, {\"id\": \"eyJ1ZmkiOi0xMjc0NDV9\", \"__typename\": \"AttractionsSearchDestinationSuggestion\", \"ufi\": -127445, \"country\": \"Italy\", \"cityName\": \"San Donato Milanese\", \"productCount\": 734, \"cc1\": \"it\"}, {\"id\": \"eyJ1ZmkiOi01MTY1NzV9\", \"__typename\": \"AttractionsSearchDestinationSuggestion\", \"ufi\": -516575, \"country\": \"Poland\", \"cityName\": \"Milan\u00f3wek\", \"productCount\": 326, \"cc1\": \"pl\"}]}}"
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_NoxYWlZmaoycr8Qm1L8yyvpm",
+            "function": {
+              "arguments": "{\"id\": \"eyJ1ZmkiOi0xMjY2OTN9\", \"sortBy\": \"trending\"}",
+              "name": "Search_Attractions"
+            },
+            "type": "function"
+          },
+          {
+            "id": "call_IvL2T9ObzIfhwtXn6JGOTF9c",
+            "function": {
+              "arguments": "{\"id\": \"eyJ1ZmkiOi0xMjE3MjZ9\", \"sortBy\": \"trending\"}",
+              "name": "Search_Attractions"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      }
+    ],
+    "message": [
+      {
+        "error_type": "param_hallucination",
+        "content": "Parameter sortBy is hallucinated."
+      },
+      {
+        "error_type": "param_hallucination",
+        "content": "Parameter sortBy is hallucinated."
+      }
+    ],
+    "count_dict": {
+      "success_turn_num": 1,
+      "total_turn_num": 4,
+      "correct_call_num": 2,
+      "total_call_num": 7,
+      "real_turn_num": 2
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "no_strategy"
+  },
+  {
+    "id": "Cross-342",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "Look up the cheapest flight from Shanghai to Seoul on December 1, 2024. I do not accept flights that require an overnight transfer. Book a hotel with the most popular rating near Gyeongbokgung Palace for one night and arrange a taxi service from the airport to the hotel half an hour after the plane lands."
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_gJR8I2dy8uAPPHiowqUk6Y2D",
+            "function": {
+              "arguments": "{\"query\": \"Shanghai\"}",
+              "name": "Search_Flight_Location"
+            },
+            "type": "function"
+          },
+          {
+            "id": "call_5BqYoY0SgpgrHH01qGqrAxcv",
+            "function": {
+              "arguments": "{\"query\": \"Seoul\"}",
+              "name": "Search_Flight_Location"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      },
+      {
+        "tool_call_id": "call_gJR8I2dy8uAPPHiowqUk6Y2D",
+        "role": "tool",
+        "name": "Search_Flight_Location",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": [{\"id\": \"SHA.CITY\", \"type\": \"CITY\", \"name\": \"Shanghai\", \"code\": \"SHA\", \"regionName\": \"Shanghai Area\", \"country\": \"CN\", \"countryName\": \"China\"}]}"
+      },
+      {
+        "tool_call_id": "call_5BqYoY0SgpgrHH01qGqrAxcv",
+        "role": "tool",
+        "name": "Search_Flight_Location",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": [{\"id\": \"SEL.CITY\", \"type\": \"CITY\", \"name\": \"Seoul\", \"code\": \"SEL\", \"country\": \"KR\", \"countryName\": \"South Korea\"}]}"
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_KOCKTCxBzsgdrOYtCbIWzXm6",
+            "function": {
+              "arguments": "{\"sort\":\"CHEAPEST\",\"fromId\":\"SHA.CITY\",\"toId\":\"SEL.CITY\",\"departDate\":\"2024-12-01\",\"adults\":1}",
+              "name": "Search_Flights"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      },
+      {
+        "tool_call_id": "call_KOCKTCxBzsgdrOYtCbIWzXm6",
+        "role": "tool",
+        "name": "Search_Flights",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": {\"flightOffers\": [{\"token\": \"d6a1f_H4sIAAAAAAAA_zWQbW-CMBSFf41-o1ALCCbNQgDdMoEQwbcvDdaKOGcXWgPy61dgS2_uec7JbXPTq5Q_YqHrl3tVXqXQngKUXPKykAxQ_q1fatVOnH9Vj1IvqlrfvHubcG3AIPR1qGvq0MXhjbVSEzXF0-rEQIE113VHFBQ7f1RjG5gr3_bTvTVElEtsAguZzjE9LN31GNZ4lS1zcze4M44C0SSdN48yAeObgFGXmrv78hhtwyaB1Mj8dh-HjYiybRpXTRtvvVnyMrrIb2Sa52KdhSLJjQkKhgcZpRgCYM5dOHheCIxGohJDY8SzxJvIRv8zEs8NNE61GCLkWFPB7ozKij8-2Qv7RwSRpv6E0ZmpxZOZXxRN7b4UTJCnqiRqAe869IIEfXoibi90lDOB0IGmIkY0yyoUXEhvKwKBAfp7N_KxU9IR2xXPpvkFxi4257kBAAA.\", \"segments\": [{\"departureAirport\": {\"type\": \"AIRPORT\", \"code\": \"PVG\", \"name\": \"Shanghai Pudong International Airport\", \"city\": \"SHA\", \"cityName\": \"Shanghai\", \"country\": \"CN\", \"countryName\": \"China\", \"province\": \"Shanghai Area\"}, \"arrivalAirport\": {\"type\": \"AIRPORT\", \"code\": \"ICN\", \"name\": \"Incheon International Airport\", \"city\": \"SEL\", \"cityName\": \"Seoul\", \"country\": \"KR\", \"countryName\": \"Korea\"}, \"departureTime\": \"2024-12-01T08:00:00\", \"arrivalTime\": \"2024-12-01T11:00:00\", \"legs\": [{\"departureTime\": \"2024-12-01T08:00:00\", \"arrivalTime\": \"2024-12-01T11:00:00\", \"departureAirport\": {\"type\": \"AIRPORT\", \"code\": \"PVG\", \"name\": \"Shanghai Pudong International Airport\", \"city\": \"SHA\", \"cityName\": \"Shanghai\", \"country\": \"CN\", \"countryName\": \"China\", \"province\": \"Shanghai Area\"}, \"arrivalAirport\": {\"type\": \"AIRPORT\", \"code\": \"ICN\", \"name\": \"Incheon International Airport\", \"city\": \"SEL\", \"cityName\": \"Seoul\", \"country\": \"KR\", \"countryName\": \"Korea\"}, \"cabinClass\": \"ECONOMY\", \"flightInfo\": {\"flightNumber\": 313, \"planeType\": \"321\", \"carrierInfo\": {\"operatingCarrier\": \"CZ\", \"marketingCarrier\": \"CZ\"}}, \"carriers\": [\"CZ\", \"CZ\"], \"carriersData\": [{\"name\": \"China Southern Airlines\", \"code\": \"CZ\"}, {\"name\": \"China Southern Airlines\", \"code\": \"CZ\"}], \"totalTime\": 7200, \"amenities\": [{\"category\": \"AIRCRAFT\", \"model\": \"A321\"}, {\"category\": \"ENTERTAINMENT\", \"cost\": \"free\"}, {\"category\": \"FOOD\", \"cost\": \"free\", \"type\": \"snack\"}, {\"category\": \"POWER\", \"cost\": \"free\", \"type\": [\"usb_port\"]}], \"departureTerminal\": \"2\", \"arrivalTerminal\": \"1\"}], \"totalTime\": 7200, \"isAtolProtected\": false, \"showWarningDestinationAirport\": false, \"showWarningOriginAirport\": false}]}, {\"token\": \"d6a1f_H4sIAAAAAAAA_z2QW1ODMBCFf419IySQcnEm43QorY5ErWBvLxm6TSlaTSVxivx6Y6lOMnu-PbsnD9kbc9TXrrs71NXeaOdLo0oZVZVGIlDv7q6xZaPUW_1RuWXduPntKE8zTMZp4hLXsQeuVzeyNY5ugA3qjUQlc-I47lEDiy7UsADRaRIks-XwbIEyjKKhT6P1bDXx1r3ZsOlTTqarc7dlPDmdHruR5mNtNQ15B-FDwfHj5Pi8KCazotPm5XCn590zzyaAi-TUPsxHXjZOyct4Fdq84TafFQeeJbjN0pl3floCMIIQDWNy7lWpmd8TGEZwj1vDch74fzuGRcTvRy0jvh8NB1oeJJhafdzLb5YnNMDUsd8jwaPOk_g1SPhvFFdeQgL9iaWydOWP7K0ERtjq_qKl4EtUBJY2Iv7dgV62gvgAYEkKiKzsBLW1FgT1wVdxt7DSCdp-fx63PxQ2ePLbAQAA\", \"segments\": [{\"departureAirport\": {\"type\": \"AIRPORT\", \"code\": \"PVG\", \"name\": \"Shanghai Pudong International Airport\", \"city\": \"SHA\", \"cityName\": \"Shanghai\", \"country\": \"CN\", \"countryName\": \"China\", \"province\": \"Shanghai Area\"}, \"arrivalAirport\": {\"type\": \"AIRPORT\", \"code\": \"ICN\", \"name\": \"Incheon International Airport\", \"city\": \"SEL\", \"cityName\": \"Seoul\", \"country\": \"KR\", \"countryName\": \"Korea\"}, \"departureTime\": \"2024-12-01T13:45:00\", \"arrivalTime\": \"2024-12-01T20:10:00\", \"legs\": [{\"departureTime\": \"2024-12-01T13:45:00\", \"arrivalTime\": \"2024-12-01T15:20:00\", \"departureAirport\": {\"type\": \"AIRPORT\", \"code\": \"PVG\", \"name\": \"Shanghai Pudong International Airport\", \"city\": \"SHA\", \"cityName\": \"Shanghai\", \"country\": \"CN\", \"countryName\": \"China\", \"province\": \"Shanghai Area\"}, \"arrivalAirport\": {\"type\": \"AIRPORT\", \"code\": \"TAO\", \"name\": \"Qingdao Jiaodong International Airport\", \"city\": \"TAO\", \"cityName\": \"Qingdao\", \"country\": \"CN\", \"countryName\": \"China\", \"province\": \"Shandong\"}, \"cabinClass\": \"ECONOMY\", \"flightInfo\": {\"flightNumber\": 4604, \"planeType\": \"738\", \"carrierInfo\": {\"operatingCarrier\": \"SC\", \"marketingCarrier\": \"SC\"}}, \"carriers\": [\"SC\", \"SC\"], \"carriersData\": [{\"name\": \"Shandong Airlines\", \"code\": \"SC\"}, {\"name\": \"Shandong Airlines\", \"code\": \"SC\"}], \"totalTime\": 5700, \"amenities\": [{\"category\": \"AIRCRAFT\", \"model\": \"737\"}, {\"category\": \"ENTERTAINMENT\", \"cost\": \"free\"}], \"departureTerminal\": \"2\"}, {\"departureTime\": \"2024-12-01T17:30:00\", \"arrivalTime\": \"2024-12-01T20:10:00\", \"departureAirport\": {\"type\": \"AIRPORT\", \"code\": \"TAO\", \"name\": \"Qingdao Jiaodong International Airport\", \"city\": \"TAO\", \"cityName\": \"Qingdao\", \"country\": \"CN\", \"countryName\": \"China\", \"province\": \"Shandong\"}, \"arrivalAirport\": {\"type\": \"AIRPORT\", \"code\": \"ICN\", \"name\": \"Incheon International Airport\", \"city\": \"SEL\", \"cityName\": \"Seoul\", \"country\": \"KR\", \"countryName\": \"Korea\"}, \"cabinClass\": \"ECONOMY\", \"flightInfo\": {\"flightNumber\": 4617, \"planeType\": \"738\", \"carrierInfo\": {\"operatingCarrier\": \"SC\", \"marketingCarrier\": \"SC\"}}, \"carriers\": [\"SC\", \"SC\"], \"carriersData\": [{\"name\": \"Shandong Airlines\", \"code\": \"SC\"}, {\"name\": \"Shandong Airlines\", \"code\": \"SC\"}], \"totalTime\": 6000, \"amenities\": [{\"category\": \"AIRCRAFT\", \"model\": \"737\"}, {\"category\": \"ENTERTAINMENT\", \"cost\": \"free\"}, {\"category\": \"FOOD\", \"cost\": \"free\", \"type\": \"light_meal\"}], \"arrivalTerminal\": \"1\"}], \"totalTime\": 19500, \"isAtolProtected\": false, \"showWarningDestinationAirport\": false, \"showWarningOriginAirport\": false}]}, {\"token\": \"d6a1f_H4sIAAAAAAAA_z2QUW-CMBSFf417o1CoCEuaxSA4M6oiuM29NHipyOZEaRcZv35VtqXNPd89954-dK_USd6b5u5QlXsljS-JylrVZa4EgvrT3DW6bOv6ozqWZl41Zvo4TsPYwpMwMLFp6AP3mwfRKkM2QO-qrUA5NXzf71EC9X6poS4i08ANktfhzYJaUYKGDvHekk1kb3qzodNliqd9V1AWXC6LbizZRGoNR6yD0Txj1iI6rV6yKMk6qdaHmXzuViyOwMqCSzt_HtvxJMTryWak84rpfJwdWBxYbRwm9u1pAUAxQmTk41tf55I6PYGi2OqxUDRlrvO3o6iHnX7UUuw43vBOioMAVdXHJ_FN04C4FjH09wiwibHkVwP7_0Y2sAPsqvO7m2saOGN9S24hS-v-V3POXtF6rWnL_esO9FJw7ACAJsHB07LjRNeKY9QH3_nsRUvHSft9PhU_ObNhadsBAAA.\", \"segments\": [{\"departureAirport\": {\"type\": \"AIRPORT\", \"code\": \"PVG\", \"name\": \"Shanghai Pudong International Airport\", \"city\": \"SHA\", \"cityName\": \"Shanghai\", \"country\": \"CN\", \"countryName\": \"China\", \"province\": \"Shanghai Area\"}, \"arrivalAirport\": {\"type\": \"AIRPORT\", \"code\": \"ICN\", \"name\": \"Incheon International Airport\", \"city\": \"SEL\", \"cityName\": \"Seoul\", \"country\": \"KR\", \"countryName\": \"Korea\"}, \"departureTime\": \"2024-12-01T13:45:00\", \"arrivalTime\": \"2024-12-01T21:10:00\", \"legs\": [{\"departureTime\": \"2024-12-01T13:45:00\", \"arrivalTime\": \"2024-12-01T15:20:00\", \"departureAirport\": {\"type\": \"AIRPORT\", \"code\": \"PVG\", \"name\": \"Shanghai Pudong International Airport\", \"city\": \"SHA\", \"cityName\": \"Shanghai\", \"country\": \"CN\", \"countryName\": \"China\", \"province\": \"Shanghai Area\"}, \"arrivalAirport\": {\"type\": \"AIRPORT\", \"code\": \"TAO\", \"name\": \"Qingdao Jiaodong International Airport\", \"city\": \"TAO\", \"cityName\": \"Qingdao\", \"country\": \"CN\", \"countryName\": \"China\", \"province\": \"Shandong\"}, \"cabinClass\": \"ECONOMY\", \"flightInfo\": {\"flightNumber\": 4604, \"planeType\": \"738\", \"carrierInfo\": {\"operatingCarrier\": \"SC\", \"marketingCarrier\": \"SC\"}}, \"carriers\": [\"SC\", \"SC\"], \"carriersData\": [{\"name\": \"Shandong Airlines\", \"code\": \"SC\"}, {\"name\": \"Shandong Airlines\", \"code\": \"SC\"}], \"totalTime\": 5700, \"amenities\": [{\"category\": \"AIRCRAFT\", \"model\": \"737\"}, {\"category\": \"ENTERTAINMENT\", \"cost\": \"free\"}], \"departureTerminal\": \"2\"}, {\"departureTime\": \"2024-12-01T18:30:00\", \"arrivalTime\": \"2024-12-01T21:10:00\", \"departureAirport\": {\"type\": \"AIRPORT\", \"code\": \"TAO\", \"name\": \"Qingdao Jiaodong International Airport\", \"city\": \"TAO\", \"cityName\": \"Qingdao\", \"country\": \"CN\", \"countryName\": \"China\", \"province\": \"Shandong\"}, \"arrivalAirport\": {\"type\": \"AIRPORT\", \"code\": \"ICN\", \"name\": \"Incheon International Airport\", \"city\": \"SEL\", \"cityName\": \"Seoul\", \"country\": \"KR\", \"countryName\": \"Korea\"}, \"cabinClass\": \"ECONOMY\", \"flightInfo\": {\"flightNumber\": 4619, \"planeType\": \"738\", \"carrierInfo\": {\"operatingCarrier\": \"SC\", \"marketingCarrier\": \"SC\"}}, \"carriers\": [\"SC\", \"SC\"], \"carriersData\": [{\"name\": \"Shandong Airlines\", \"code\": \"SC\"}, {\"name\": \"Shandong Airlines\", \"code\": \"SC\"}], \"totalTime\": 6000, \"amenities\": [{\"category\": \"AIRCRAFT\", \"model\": \"737\"}, {\"category\": \"ENTERTAINMENT\", \"cost\": \"free\"}, {\"category\": \"FOOD\", \"cost\": \"free\", \"type\": \"light_meal\"}], \"arrivalTerminal\": \"1\"}], \"totalTime\": 23100, \"isAtolProtected\": false, \"showWarningDestinationAirport\": false, \"showWarningOriginAirport\": false}]}, {\"token\": \"d6a1f_H4sIAAAAAAAA_z2QbW-CMBSFf41-o1CKvCxpFoPozOimg724Lw1eKrI5q7SLyK9fJ25pc59zT-9pmm61Pqgb297s6mqrlfWtUCW1rAotEMgve9OYspbys95XdlE3dnY3zpLUwZMktrFtmQU3q1vRaks1QIf1WqCCWlEU9VIBDa-qoT7yZrEfL99GFwukph4aES98X66mhPRmQ2eLDM9Wl66kLD6dHruxYhNlmASsg-AhZ87j9PD0mk-Xeaf0826uXronlk7ByeNT-_AydtNJgp8nq8DkNTP5NN-xNHbaNFm6l6sFAMUIeUGEL70sFO2fIEFT7PSy1DRjPvmb0TTEpD9qKSYkHA2V2AnQtdzfizPNYs93XMt8jwDXsxb818DBv5EP3Bj7x_K4Phs1IGOzK-4gx3B7ZcHnDOW-UWse_c5Aj5JjAgBGCQ6hwYZ7ptYcoz74weevBh332vPxUP4AXhx2ktsBAAA.\", \"segments\": [{\"departureAirport\": {\"type\": \"AIRPORT\", \"code\": \"PVG\", \"name\": \"Shanghai Pudong International Airport\", \"city\": \"SHA\", \"cityName\": \"Shanghai\", \"country\": \"CN\", \"countryName\": \"China\", \"province\": \"Shanghai Area\"}, \"arrivalAirport\": {\"type\": \"AIRPORT\", \"code\": \"ICN\", \"name\": \"Incheon International Airport\", \"city\": \"SEL\", \"cityName\": \"Seoul\", \"country\": \"KR\", \"countryName\": \"Korea\"}, \"departureTime\": \"2024-12-01T11:10:00\", \"arrivalTime\": \"2024-12-01T20:10:00\", \"legs\": [{\"departureTime\": \"2024-12-01T11:10:00\", \"arrivalTime\": \"2024-12-01T12:45:00\", \"departureAirport\": {\"type\": \"AIRPORT\", \"code\": \"PVG\", \"name\": \"Shanghai Pudong International Airport\", \"city\": \"SHA\", \"cityName\": \"Shanghai\", \"country\": \"CN\", \"countryName\": \"China\", \"province\": \"Shanghai Area\"}, \"arrivalAirport\": {\"type\": \"AIRPORT\", \"code\": \"TAO\", \"name\": \"Qingdao Jiaodong International Airport\", \"city\": \"TAO\", \"cityName\": \"Qingdao\", \"country\": \"CN\", \"countryName\": \"China\", \"province\": \"Shandong\"}, \"cabinClass\": \"ECONOMY\", \"flightInfo\": {\"flightNumber\": 4602, \"planeType\": \"738\", \"carrierInfo\": {\"operatingCarrier\": \"SC\", \"marketingCarrier\": \"SC\"}}, \"carriers\": [\"SC\", \"SC\"], \"carriersData\": [{\"name\": \"Shandong Airlines\", \"code\": \"SC\"}, {\"name\": \"Shandong Airlines\", \"code\": \"SC\"}], \"totalTime\": 5700, \"amenities\": [{\"category\": \"AIRCRAFT\", \"model\": \"737\"}, {\"category\": \"ENTERTAINMENT\", \"cost\": \"free\"}, {\"category\": \"FOOD\", \"cost\": \"free\", \"type\": \"light_meal\"}], \"departureTerminal\": \"2\"}, {\"departureTime\": \"2024-12-01T17:30:00\", \"arrivalTime\": \"2024-12-01T20:10:00\", \"departureAirport\": {\"type\": \"AIRPORT\", \"code\": \"TAO\", \"name\": \"Qingdao Jiaodong International Airport\", \"city\": \"TAO\", \"cityName\": \"Qingdao\", \"country\": \"CN\", \"countryName\": \"China\", \"province\": \"Shandong\"}, \"arrivalAirport\": {\"type\": \"AIRPORT\", \"code\": \"ICN\", \"name\": \"Incheon International Airport\", \"city\": \"SEL\", \"cityName\": \"Seoul\", \"country\": \"KR\", \"countryName\": \"Korea\"}, \"cabinClass\": \"ECONOMY\", \"flightInfo\": {\"flightNumber\": 4617, \"planeType\": \"738\", \"carrierInfo\": {\"operatingCarrier\": \"SC\", \"marketingCarrier\": \"SC\"}}, \"carriers\": [\"SC\", \"SC\"], \"carriersData\": [{\"name\": \"Shandong Airlines\", \"code\": \"SC\"}, {\"name\": \"Shandong Airlines\", \"code\": \"SC\"}], \"totalTime\": 6000, \"amenities\": [{\"category\": \"AIRCRAFT\", \"model\": \"737\"}, {\"category\": \"ENTERTAINMENT\", \"cost\": \"free\"}, {\"category\": \"FOOD\", \"cost\": \"free\", \"type\": \"light_meal\"}], \"arrivalTerminal\": \"1\"}], \"totalTime\": 28800, \"isAtolProtected\": false, \"showWarningDestinationAirport\": false, \"showWarningOriginAirport\": false}]}, {\"token\": \"d6a1f_H4sIAAAAAAAA_z2QX0-DMBTFP818o1DaMTBpzMLYNFIdwv7gS8PuOobOMWnNkE9vHdO0ued3z72nD91rfVK3tr07VOVeK-tLobLWdVloiaD-sHeNKZu6fq-OpV1UjZ3ej9ModvAkCm1sW-bAbX4nW22pBthNtZGoYFYQBD0qYP6VGuYhOgu9MFkPLxbUmlE0JNR_TfKpu-7Nhs3mKZ7ll27LeHg-P3djxSfKaDTiHYyeMu48T08vq2yaZJ3Si8ODWnYvPJ6Ck4Xn9mk5duNJhBeTfGTympt8nB14HDptHCXu5WkJwDBCdBTgS18XipGeQDPs9LjVLOUe-dvRzMekH7UME-IPb5Q8SNBVfXyU3ywNqedQy3yPBJdac_FruPjfyAZuiL1Pn7rE0ICMzS2Fgxyj-6sWgq9R7hnaiOB3B3rZCkwAwJAU4BvZCWpqJTDqg2_iYWWkE7T9_jxtfwBslfkK2wEAAA..\", \"segments\": [{\"departureAirport\": {\"type\": \"AIRPORT\", \"code\": \"PVG\", \"name\": \"Shanghai Pudong International Airport\", \"city\": \"SHA\", \"cityName\": \"Shanghai\", \"country\": \"CN\", \"countryName\": \"China\", \"province\": \"Shanghai Area\"}, \"arrivalAirport\": {\"type\": \"AIRPORT\", \"code\": \"ICN\", \"name\": \"Incheon International Airport\", \"city\": \"SEL\", \"cityName\": \"Seoul\", \"country\": \"KR\", \"countryName\": \"Korea\"}, \"departureTime\": \"2024-12-01T13:45:00\", \"arrivalTime\": \"2024-12-01T22:50:00\", \"legs\": [{\"departureTime\": \"2024-12-01T13:45:00\", \"arrivalTime\": \"2024-12-01T15:20:00\", \"departureAirport\": {\"type\": \"AIRPORT\", \"code\": \"PVG\", \"name\": \"Shanghai Pudong International Airport\", \"city\": \"SHA\", \"cityName\": \"Shanghai\", \"country\": \"CN\", \"countryName\": \"China\", \"province\": \"Shanghai Area\"}, \"arrivalAirport\": {\"type\": \"AIRPORT\", \"code\": \"TAO\", \"name\": \"Qingdao Jiaodong International Airport\", \"city\": \"TAO\", \"cityName\": \"Qingdao\", \"country\": \"CN\", \"countryName\": \"China\", \"province\": \"Shandong\"}, \"cabinClass\": \"ECONOMY\", \"flightInfo\": {\"flightNumber\": 4604, \"planeType\": \"738\", \"carrierInfo\": {\"operatingCarrier\": \"SC\", \"marketingCarrier\": \"SC\"}}, \"carriers\": [\"SC\", \"SC\"], \"carriersData\": [{\"name\": \"Shandong Airlines\", \"code\": \"SC\"}, {\"name\": \"Shandong Airlines\", \"code\": \"SC\"}], \"totalTime\": 5700, \"amenities\": [{\"category\": \"AIRCRAFT\", \"model\": \"737\"}, {\"category\": \"ENTERTAINMENT\", \"cost\": \"free\"}], \"departureTerminal\": \"2\"}, {\"departureTime\": \"2024-12-01T20:30:00\", \"arrivalTime\": \"2024-12-01T22:50:00\", \"departureAirport\": {\"type\": \"AIRPORT\", \"code\": \"TAO\", \"name\": \"Qingdao Jiaodong International Airport\", \"city\": \"TAO\", \"cityName\": \"Qingdao\", \"country\": \"CN\", \"countryName\": \"China\", \"province\": \"Shandong\"}, \"arrivalAirport\": {\"type\": \"AIRPORT\", \"code\": \"ICN\", \"name\": \"Incheon International Airport\", \"city\": \"SEL\", \"cityName\": \"Seoul\", \"country\": \"KR\", \"countryName\": \"Korea\"}, \"cabinClass\": \"ECONOMY\", \"flightInfo\": {\"flightNumber\": 4621, \"planeType\": \"738\", \"carrierInfo\": {\"operatingCarrier\": \"SC\", \"marketingCarrier\": \"SC\"}}, \"carriers\": [\"SC\", \"SC\"], \"carriersData\": [{\"name\": \"Shandong Airlines\", \"code\": \"SC\"}, {\"name\": \"Shandong Airlines\", \"code\": \"SC\"}], \"totalTime\": 4800, \"amenities\": [{\"category\": \"AIRCRAFT\", \"model\": \"737\"}, {\"category\": \"ENTERTAINMENT\", \"cost\": \"free\"}], \"arrivalTerminal\": \"1\"}], \"totalTime\": 29100, \"isAtolProtected\": false, \"showWarningDestinationAirport\": false, \"showWarningOriginAirport\": false}]}], \"flightDeals\": [{\"key\": \"CHEAPEST\", \"offerToken\": \"d6a1f_H4sIAAAAAAAA_zWQbW-CMBSFf41-o1ALCCbNQgDdMoEQwbcvDdaKOGcXWgPy61dgS2_uec7JbXPTq5Q_YqHrl3tVXqXQngKUXPKykAxQ_q1fatVOnH9Vj1IvqlrfvHubcG3AIPR1qGvq0MXhjbVSEzXF0-rEQIE113VHFBQ7f1RjG5gr3_bTvTVElEtsAguZzjE9LN31GNZ4lS1zcze4M44C0SSdN48yAeObgFGXmrv78hhtwyaB1Mj8dh-HjYiybRpXTRtvvVnyMrrIb2Sa52KdhSLJjQkKhgcZpRgCYM5dOHheCIxGohJDY8SzxJvIRv8zEs8NNE61GCLkWFPB7ozKij8-2Qv7RwSRpv6E0ZmpxZOZXxRN7b4UTJCnqiRqAe869IIEfXoibi90lDOB0IGmIkY0yyoUXEhvKwKBAfp7N_KxU9IR2xXPpvkFxi4257kBAAA.\", \"price\": {\"currencyCode\": \"USD\", \"units\": 70, \"nanos\": 330000000}, \"travellerPrices\": [{\"travellerPriceBreakdown\": {\"total\": {\"currencyCode\": \"USD\", \"units\": 70, \"nanos\": 330000000}, \"baseFare\": {\"currencyCode\": \"USD\", \"units\": 25, \"nanos\": 630000000}, \"fee\": {\"currencyCode\": \"USD\", \"units\": 0, \"nanos\": 0}, \"tax\": {\"currencyCode\": \"USD\", \"units\": 44, \"nanos\": 700000000}, \"totalRounded\": {\"currencyCode\": \"USD\", \"nanos\": 0, \"units\": 71}, \"discount\": {\"currencyCode\": \"USD\", \"units\": 0, \"nanos\": 0}, \"totalWithoutDiscount\": {\"currencyCode\": \"USD\", \"units\": 70, \"nanos\": 330000000}, \"totalWithoutDiscountRounded\": {\"currencyCode\": \"USD\", \"nanos\": 0, \"units\": 71}}, \"travellerReference\": \"1\", \"travellerType\": \"ADULT\"}]}, {\"key\": \"FASTEST\", \"offerToken\": \"d6a1f_H4sIAAAAAAAA_zWQa2-DIBSGf037TQTBVpuQxdnLlo02XV1vX4hSvGxdXYTFy68f1S2cvO_zHk5IDrnW32pm2-m1yHKtrB8FslKXWawlEOWXnVZGkrL8LG6ZHReVvXsKdotXiOaL0Ea2ZY6YnR5koy1VCTouEgliavm-P6AS1Pujik4AWYWTcHt0-5YoNSXAxcQ7b09LeB6aFV1Fjuus-nShbK7qTRdMWaRa1inEui05XJdntn982yABo7A5rhe1YtF-uy7qZr0PnE0LOxbWeg2Veo0WKlpmIzzvH5RCUAQAmfqoz2WsKB5IaIrggBdNd2yC_2c09fB0WKOhCGPPHSt5lUIX5e1FtpS9u5Agy3yKFA6xopETJnnu1VcDIxyYyjg0mvca86VrLOH-_VIMduEIT11iSPI0vY-l_J4KjgAE9_zBnw_GOk7a5KL8XyZgb6u5AQAA\", \"price\": {\"currencyCode\": \"USD\", \"units\": 83, \"nanos\": 780000000}, \"travellerPrices\": [{\"travellerPriceBreakdown\": {\"total\": {\"currencyCode\": \"USD\", \"units\": 83, \"nanos\": 780000000}, \"baseFare\": {\"currencyCode\": \"USD\", \"units\": 39, \"nanos\": 80000000}, \"fee\": {\"currencyCode\": \"USD\", \"units\": 0, \"nanos\": 0}, \"tax\": {\"currencyCode\": \"USD\", \"units\": 44, \"nanos\": 700000000}, \"totalRounded\": {\"currencyCode\": \"USD\", \"nanos\": 0, \"units\": 84}, \"discount\": {\"currencyCode\": \"USD\", \"units\": 0, \"nanos\": 0}, \"totalWithoutDiscount\": {\"currencyCode\": \"USD\", \"units\": 83, \"nanos\": 780000000}, \"totalWithoutDiscountRounded\": {\"currencyCode\": \"USD\", \"nanos\": 0, \"units\": 84}}, \"travellerReference\": \"1\", \"travellerType\": \"ADULT\"}]}, {\"key\": \"BEST\", \"offerToken\": \"d6a1f_H4sIAAAAAAAA_zWQbW-CMBSFf41-o1ALCCbNQgDdMoEQwbcvDdaKOGcXWgPy61dgS2_uec7JbXPTq5Q_YqHrl3tVXqXQngKUXPKykAxQ_q1fatVOnH9Vj1IvqlrfvHubcG3AIPR1qGvq0MXhjbVSEzXF0-rEQIE113VHFBQ7f1RjG5gr3_bTvTVElEtsAguZzjE9LN31GNZ4lS1zcze4M44C0SSdN48yAeObgFGXmrv78hhtwyaB1Mj8dh-HjYiybRpXTRtvvVnyMrrIb2Sa52KdhSLJjQkKhgcZpRgCYM5dOHheCIxGohJDY8SzxJvIRv8zEs8NNE61GCLkWFPB7ozKij8-2Qv7RwSRpv6E0ZmpxZOZXxRN7b4UTJCnqiRqAe869IIEfXoibi90lDOB0IGmIkY0yyoUXEhvKwKBAfp7N_KxU9IR2xXPpvkFxi4257kBAAA.\", \"price\": {\"currencyCode\": \"USD\", \"units\": 70, \"nanos\": 330000000}, \"travellerPrices\": [{\"travellerPriceBreakdown\": {\"total\": {\"currencyCode\": \"USD\", \"units\": 70, \"nanos\": 330000000}, \"baseFare\": {\"currencyCode\": \"USD\", \"units\": 25, \"nanos\": 630000000}, \"fee\": {\"currencyCode\": \"USD\", \"units\": 0, \"nanos\": 0}, \"tax\": {\"currencyCode\": \"USD\", \"units\": 44, \"nanos\": 700000000}, \"totalRounded\": {\"currencyCode\": \"USD\", \"nanos\": 0, \"units\": 71}, \"discount\": {\"currencyCode\": \"USD\", \"units\": 0, \"nanos\": 0}, \"totalWithoutDiscount\": {\"currencyCode\": \"USD\", \"units\": 70, \"nanos\": 330000000}, \"totalWithoutDiscountRounded\": {\"currencyCode\": \"USD\", \"nanos\": 0, \"units\": 71}}, \"travellerReference\": \"1\", \"travellerType\": \"ADULT\"}]}], \"atolProtectedStatus\": \"NONE\", \"searchId\": \"008D69717F40BB907F7310CB4CBC995F\", \"displayOptions\": {\"brandedFaresShownByDefault\": false, \"directFlightsOnlyFilterIgnored\": false, \"hideFlexiblePricesBanner\": false}, \"isOffersCabinClassExtended\": false, \"searchCriteria\": {\"cabinClass\": \"ECONOMY\"}}}"
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_1Wm1WaOUWX69wbgN8qCQuY07",
+            "function": {
+              "arguments": "{\"query\":\"Gyeongbokgung Palace, Seoul\"}",
+              "name": "Search_Hotel_Destination"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      },
+      {
+        "tool_call_id": "call_1Wm1WaOUWX69wbgN8qCQuY07",
+        "role": "tool",
+        "name": "Search_Hotel_Destination",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": [{\"dest_id\": \"232786\", \"search_type\": \"landmark\", \"label\": \"Gyeongbokgung Palace, Seoul, South Korea\", \"dest_type\": \"landmark\", \"city_name\": \"Seoul\", \"nr_hotels\": 174, \"country\": \"South Korea\", \"type\": \"la\", \"name\": \"Gyeongbokgung Palace\", \"landmark_type\": 13, \"latitude\": 37.57897, \"hotels\": 174, \"cc1\": \"kr\", \"city_ufi\": -716583, \"roundtrip\": \"GgEwIAAoATICZW46FEd5ZW9uZ2Jva2d1bmcgUGFsYWNlQABKAFAA\", \"longitude\": 126.97694, \"lc\": \"en\"}]}"
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_lL0LUdFLKAtHZSIOCOkwx1Sw",
+            "function": {
+              "arguments": "{\"search_type\":\"landmark\",\"dest_id\":232786,\"arrival_date\":\"2024-12-01\",\"departure_date\":\"2024-12-02\",\"adults\":1,\"room_qty\":1,\"sort_by\":\"popularity\"}",
+              "name": "Search_Hotels"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      },
+      {
+        "tool_call_id": "call_lL0LUdFLKAtHZSIOCOkwx1Sw",
+        "role": "tool",
+        "name": "Search_Hotels",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": {\"hotels\": [{\"hotel_id\": 10481137, \"accessibilityLabel\": \"SimpleStay Hotel in Jongno.\\n8.2 Very good 262 reviews.\\n\u200eJongno-Gu, Seoul\u202c \u2022 \u200e1.4 km from Gyeongbokgung Palace\u202c.\\n Hotel room : 1\u00a0bed.\\nOriginal price 125 USD. Current price 87 USD..\\nIncludes taxes and charges.\\nFree cancellation.\", \"property\": {\"mainPhotoId\": 479049255, \"latitude\": 37.5722516, \"currency\": \"KRW\", \"id\": 10481137, \"longitude\": 126.9897044, \"wishlistName\": \"Seoul\", \"ufi\": -716583, \"priceBreakdown\": {\"benefitBadges\": [{\"variant\": \"constructive\", \"text\": \"Limited-time Deal\", \"explanation\": \"Limited-time Deal\", \"identifier\": \"Limited Time Deal\"}], \"grossPrice\": {\"currency\": \"USD\", \"value\": 87.1936308416565}, \"strikethroughPrice\": {\"value\": 124.562329773795, \"currency\": \"USD\"}}, \"position\": 0, \"propertyClass\": 0, \"checkinDate\": \"2024-12-01\", \"blockIds\": [\"1048113702_394817890_2_1_0\"], \"checkout\": {\"untilTime\": \"11:00\", \"fromTime\": \"06:30\"}, \"reviewScore\": 8.2, \"countryCode\": \"kr\", \"isFirstPage\": true, \"checkin\": {\"untilTime\": \"00:00\", \"fromTime\": \"15:00\"}, \"optOutFromGalleryChanges\": 0, \"name\": \"SimpleStay Hotel in Jongno\", \"qualityClass\": 0, \"checkoutDate\": \"2024-12-02\", \"reviewCount\": 262, \"reviewScoreWord\": \"Very good\", \"rankingPosition\": 0, \"accuratePropertyClass\": 0}}, {\"hotel_id\": 431886, \"accessibilityLabel\": \"Amid Hotel Seoul.\\n4 out of 5 stars.\\n8.6 Fabulous 1203 reviews.\\n\u200eJongno-Gu, Seoul\u202c \u2022 \u200e950 m from Gyeongbokgung Palace\u202c.\\n Hotel room : 2\u00a0beds.\\nOriginal price 143 USD. Current price 129 USD..\\nIncludes taxes and charges.\", \"property\": {\"longitude\": 126.984278708696, \"mainPhotoId\": 489169607, \"id\": 431886, \"currency\": \"KRW\", \"latitude\": 37.5724697374284, \"propertyClass\": 4, \"position\": 1, \"blockIds\": [\"43188613_99576766_0_2_0\"], \"checkinDate\": \"2024-12-01\", \"wishlistName\": \"Seoul\", \"priceBreakdown\": {\"strikethroughPrice\": {\"currency\": \"USD\", \"value\": 142.810314390338}, \"grossPrice\": {\"value\": 128.529282951304, \"currency\": \"USD\"}}, \"ufi\": -716583, \"countryCode\": \"kr\", \"reviewScore\": 8.6, \"checkout\": {\"untilTime\": \"12:00\", \"fromTime\": \"00:00\"}, \"reviewCount\": 1203, \"isPreferred\": true, \"accuratePropertyClass\": 4, \"rankingPosition\": 1, \"reviewScoreWord\": \"Fabulous\", \"optOutFromGalleryChanges\": 1, \"checkin\": {\"untilTime\": \"00:00\", \"fromTime\": \"15:00\"}, \"isFirstPage\": true, \"checkoutDate\": \"2024-12-02\", \"qualityClass\": 0, \"name\": \"Amid Hotel Seoul\"}}, {\"hotel_id\": 11420195, \"accessibilityLabel\": \"The Prima Hotel Jongno.\\n3 out of 5 stars.\\n9.0 Superb 254 reviews.\\n\u200eJongno-Gu, Seoul\u202c \u2022 \u200e850 m from Gyeongbokgung Palace\u202c.\\n Hotel room : 1\u00a0bed.\\n100 USD.\\nIncludes taxes and charges.\\nFree cancellation.\", \"property\": {\"priceBreakdown\": {\"grossPrice\": {\"value\": 100.49, \"currency\": \"USD\"}}, \"ufi\": -716583, \"wishlistName\": \"Seoul\", \"blockIds\": [\"1142019501_0_1_0_0\"], \"checkinDate\": \"2024-12-01\", \"propertyClass\": 3, \"position\": 2, \"id\": 11420195, \"currency\": \"KRW\", \"latitude\": 37.573094740044, \"mainPhotoId\": 532283298, \"longitude\": 126.983295934978, \"checkoutDate\": \"2024-12-02\", \"name\": \"The Prima Hotel Jongno\", \"qualityClass\": 0, \"optOutFromGalleryChanges\": 0, \"checkin\": {\"fromTime\": \"15:00\", \"untilTime\": \"00:00\"}, \"isFirstPage\": true, \"accuratePropertyClass\": 3, \"reviewScoreWord\": \"Superb\", \"rankingPosition\": 2, \"reviewCount\": 254, \"isPreferred\": true, \"checkout\": {\"untilTime\": \"11:00\", \"fromTime\": \"00:00\"}, \"reviewScore\": 9, \"countryCode\": \"kr\"}}, {\"hotel_id\": 1584641, \"accessibilityLabel\": \"Shilla Stay Gwanghwamun Myeongdong.\\n4 out of 5 stars.\\n7.8 Good 1297 reviews.\\n\u200eJongno-Gu, Seoul\u202c \u2022 \u200e800 m from Gyeongbokgung Palace\u202c.\\n Hotel room : 2\u00a0beds.\\n136 USD.\\nIncludes taxes and charges.\\nFree cancellation.\", \"property\": {\"longitude\": 126.981031894684, \"mainPhotoId\": 526242127, \"currency\": \"KRW\", \"id\": 1584641, \"latitude\": 37.5726614892225, \"propertyClass\": 4, \"position\": 3, \"blockIds\": [\"158464102_0_1_0_0\"], \"checkinDate\": \"2024-12-01\", \"wishlistName\": \"Seoul\", \"priceBreakdown\": {\"grossPrice\": {\"value\": 135.97, \"currency\": \"USD\"}}, \"ufi\": -716583, \"reviewScore\": 7.8, \"countryCode\": \"kr\", \"checkout\": {\"fromTime\": \"00:00\", \"untilTime\": \"12:00\"}, \"reviewCount\": 1297, \"isPreferred\": true, \"accuratePropertyClass\": 4, \"reviewScoreWord\": \"Good\", \"rankingPosition\": 3, \"optOutFromGalleryChanges\": 0, \"isFirstPage\": true, \"checkin\": {\"fromTime\": \"15:00\", \"untilTime\": \"00:00\"}, \"checkoutDate\": \"2024-12-02\", \"name\": \"Shilla Stay Gwanghwamun Myeongdong\", \"qualityClass\": 0}}, {\"hotel_id\": 98536, \"accessibilityLabel\": \"Somerset Palace Seoul.\\n4 out of 5 stars.\\n8.6 Fabulous 406 reviews.\\n\u200eJongno-Gu, Seoul\u202c \u2022 \u200e550 m from Gyeongbokgung Palace\u202c.\\n Entire studio \u2013 29\u00a0m\u00b2 : 1\u00a0bed \u2022 1\u00a0bedroom \u2022 1\u00a0bathroom.\\n151 USD.\\nIncludes taxes and charges.\\nFree cancellation.\", \"property\": {\"checkinDate\": \"2024-12-01\", \"blockIds\": [\"9853606_144203769_0_1_0\"], \"position\": 4, \"propertyClass\": 4, \"ufi\": -716583, \"priceBreakdown\": {\"grossPrice\": {\"value\": 150.744220745357, \"currency\": \"USD\"}}, \"wishlistName\": \"Seoul\", \"longitude\": 126.98115259409, \"latitude\": 37.575122779081, \"id\": 98536, \"currency\": \"KRW\", \"mainPhotoId\": 91441922, \"rankingPosition\": 4, \"reviewScoreWord\": \"Fabulous\", \"accuratePropertyClass\": 4, \"isPreferred\": true, \"reviewCount\": 406, \"qualityClass\": 0, \"name\": \"Somerset Palace Seoul\", \"checkoutDate\": \"2024-12-02\", \"isFirstPage\": true, \"checkin\": {\"untilTime\": \"00:00\", \"fromTime\": \"15:00\"}, \"optOutFromGalleryChanges\": 0, \"reviewScore\": 8.6, \"countryCode\": \"kr\", \"checkout\": {\"untilTime\": \"12:00\", \"fromTime\": \"00:00\"}}}], \"meta\": [{\"title\": \"435 properties\"}], \"appear\": [{\"id\": \"cma\", \"component\": {\"props\": {\"fill\": true, \"content\": {\"props\": {\"fitContentWidth\": true, \"items\": [{\"props\": {\"component\": {\"props\": {\"items\": [{\"props\": {\"text\": [{\"text\": \"Commission paid and other benefits may affect an accommodation's ranking.\", \"font\": \"body_2\"}, {\"font\": \"strong_2\", \"color\": \"foreground\", \"text\": \"  \"}, {\"text\": \"Find out more\", \"color\": \"action_foreground\", \"linkActions\": [{}], \"font\": \"body_2\"}]}}], \"spacing\": \"spacing_half\"}}}}, {}, {\"props\": {\"component\": {\"props\": {\"variant\": \"tertiary_tinted\", \"tertiaryTintedColor\": \"foreground\", \"accessibilityLabel\": \"Close\", \"icon\": \"close\"}}}}]}}}}}, {}, {\"id\": \"signin_now\", \"component\": {\"props\": {\"text\": \"Get instant access to our Genius loyalty programme and enjoy discounts at properties worldwide.\", \"title\": \"Sign in and save money\"}}}, {\"component\": {\"props\": {\"text\": \"Properties with these icons have been awarded Booking.com's quality rating for homes\"}}, \"id\": \"banner_qualityrating\"}]}}"
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_D9HxmURwTyby60EypI4akvts",
+            "function": {
+              "arguments": "{\"query\":\"Incheon International Airport, Seoul\"}",
+              "name": "Taxi_Search_Location"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      },
+      {
+        "tool_call_id": "call_D9HxmURwTyby60EypI4akvts",
+        "role": "tool",
+        "name": "Taxi_Search_Location",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": [{\"types\": \"airport\", \"city\": \"Seoul\", \"name\": \"Incheon International Airport\", \"iata\": \"ICN\", \"latitude\": 37.4493, \"country\": \"South Korea\", \"countryCode\": \"kr\", \"longitude\": 126.451, \"googlePlaceId\": \"ChIJWfpeOoOaezUR1L5cy5agS40\"}]}"
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_Eh0uejWPIEqzuwvODELQG4Nn",
+            "function": {
+              "arguments": "{\"query\":\"SimpleStay Hotel in Jongno, Seoul\"}",
+              "name": "Taxi_Search_Location"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      },
+      {
+        "tool_call_id": "call_Eh0uejWPIEqzuwvODELQG4Nn",
+        "role": "tool",
+        "name": "Taxi_Search_Location",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": [{\"types\": \"hotel\", \"city\": \"Seoul\", \"googlePlaceId\": \"ChIJz2jH0majfDURib7vkQcRPX8\", \"latitude\": 37.57225, \"name\": \"SimpleStay Hotel in Jongno\", \"countryCode\": \"kr\", \"country\": \"South Korea\", \"longitude\": 126.98971}]}"
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_HM4czEvDx6IngVTiCXHWVqLl",
+            "function": {
+              "arguments": "{\"pick_up_place_id\":\"ChIJWfpeOoOaezUR1L5cy5agS40\",\"drop_off_place_id\":\"ChIJz2jH0majfDURib7vkQcRPX8\",\"pick_up_date\":\"2024-12-01\",\"pick_up_time\":\"11:30\"}",
+              "name": "Search_Taxi"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      },
+      {
+        "tool_call_id": "call_HM4czEvDx6IngVTiCXHWVqLl",
+        "role": "tool",
+        "name": "Search_Taxi",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": {\"journeys\": [{\"pickupLocation\": {\"airportCode\": \"ICN\", \"locationType\": \"AIRPORT\", \"description\": \"272 Gonghang-ro, Jung-gu, Incheon, South Korea\", \"establishment\": \"Incheon International Airport (ICN)\", \"city\": \"Incheon\", \"country\": \"KR\", \"postcode\": \"22382\", \"timezone\": \"Asia/Seoul\", \"name\": \"Incheon International Airport (ICN), 272 Gonghang-ro, Jung-gu, Incheon, South Korea\", \"locationId\": \"ChIJWfpeOoOaezUR1L5cy5agS40\"}, \"janusSearchReference\": \"882d5aa9-e532-4d67-bcc9-ebe8eea7b5ad\", \"dropOffLocation\": {\"name\": \"SimpleStay Hotel, 11 Supyo-ro 26-gil, Jongno District, Seoul, South Korea\", \"establishment\": \"SimpleStay Hotel\", \"description\": \"11 Supyo-ro 26-gil, Jongno District, Seoul, South Korea\", \"locationId\": \"ChIJz2jH0majfDURib7vkQcRPX8\", \"city\": \"Seoul\", \"country\": \"KR\", \"locationType\": \"GEO\", \"postcode\": \"03139\"}, \"journeyDirection\": \"OUTBOUND\", \"requestedPickupDateTime\": \"2024-12-01T11:30:00\"}], \"results\": [{\"priceRuleId\": 19080, \"passengerCapacity\": 3, \"drivingDistance\": 0, \"resultId\": \"97c48b45-68d8-4074-a754-dc7ae54905f4\", \"discountType\": \"NONE\", \"geniusDiscount\": false, \"duration\": 0, \"nonRefundable\": false, \"price\": {\"currencyCode\": \"USD\", \"amount\": \"56.58\"}, \"category\": \"Standard\", \"categoryLocalised\": \"Standard\", \"vehicleType\": \"STANDARD\", \"legPriceBreakdown\": [{\"price\": {\"currencyCode\": \"USD\", \"amount\": \"56.58\"}, \"journeyDirection\": \"OUTBOUND\", \"supplierName\": \"Carzen Plus\", \"supplierLocationId\": 107068, \"supplierId\": 2544}], \"janusResultReference\": \"1\", \"supplierId\": 2544, \"meetGreet\": true, \"descriptionLocalised\": \"Perfect for solo travellers, couples and small families.\", \"description\": \"Standard\", \"bags\": 2, \"supplierName\": \"Carzen Plus\", \"cancellationLeadTimeMinutes\": 1440}, {\"vehicleType\": \"LARGE\", \"price\": {\"amount\": \"57.81\", \"currencyCode\": \"USD\"}, \"categoryLocalised\": \"People carrier\", \"category\": \"People Carrier\", \"nonRefundable\": false, \"duration\": 0, \"geniusDiscount\": false, \"discountType\": \"NONE\", \"priceRuleId\": 19085, \"passengerCapacity\": 4, \"drivingDistance\": 0, \"resultId\": \"0982e39d-ba74-4b5f-8ecc-f4400ea39c03\", \"cancellationLeadTimeMinutes\": 1440, \"bags\": 4, \"supplierName\": \"Carzen Plus\", \"description\": \"People Carrier\", \"descriptionLocalised\": \"Great choice for families.\", \"meetGreet\": true, \"janusResultReference\": \"5\", \"supplierId\": 2544, \"legPriceBreakdown\": [{\"journeyDirection\": \"OUTBOUND\", \"supplierName\": \"Carzen Plus\", \"supplierLocationId\": 107068, \"supplierId\": 2544, \"price\": {\"currencyCode\": \"USD\", \"amount\": \"57.81\"}}]}, {\"cancellationLeadTimeMinutes\": 1440, \"supplierName\": \"Carzen Plus\", \"bags\": 5, \"description\": \"Large People Carrier\", \"descriptionLocalised\": \"Ideal for small groups.\", \"meetGreet\": true, \"supplierId\": 2544, \"janusResultReference\": \"6\", \"legPriceBreakdown\": [{\"journeyDirection\": \"OUTBOUND\", \"supplierLocationId\": 107068, \"supplierId\": 2544, \"supplierName\": \"Carzen Plus\", \"price\": {\"amount\": \"63.96\", \"currencyCode\": \"USD\"}}], \"vehicleType\": \"LARGE\", \"categoryLocalised\": \"Large people carrier\", \"category\": \"Large People Carrier\", \"price\": {\"currencyCode\": \"USD\", \"amount\": \"63.96\"}, \"nonRefundable\": false, \"geniusDiscount\": false, \"duration\": 0, \"discountType\": \"NONE\", \"resultId\": \"448b3656-4c80-4e16-ad10-4bb7bf4250ce\", \"priceRuleId\": 19084, \"passengerCapacity\": 5, \"drivingDistance\": 0}, {\"supplierId\": 2544, \"janusResultReference\": \"7\", \"meetGreet\": true, \"legPriceBreakdown\": [{\"price\": {\"currencyCode\": \"USD\", \"amount\": \"70.11\"}, \"journeyDirection\": \"OUTBOUND\", \"supplierLocationId\": 107068, \"supplierId\": 2544, \"supplierName\": \"Carzen Plus\"}], \"supplierName\": \"Carzen Plus\", \"bags\": 6, \"cancellationLeadTimeMinutes\": 1440, \"descriptionLocalised\": \"Great if you\u2019re travelling in a large group.\", \"description\": \"Minibus\", \"geniusDiscount\": false, \"duration\": 0, \"resultId\": \"831ab7bb-757a-49db-91ab-70d7d1eed526\", \"passengerCapacity\": 6, \"priceRuleId\": 19082, \"drivingDistance\": 0, \"discountType\": \"NONE\", \"category\": \"Minibus\", \"categoryLocalised\": \"Minibus\", \"price\": {\"amount\": \"70.11\", \"currencyCode\": \"USD\"}, \"vehicleType\": \"LARGE\", \"nonRefundable\": false}, {\"legPriceBreakdown\": [{\"price\": {\"amount\": \"79.95\", \"currencyCode\": \"USD\"}, \"supplierLocationId\": 6080, \"supplierId\": 668, \"supplierName\": \"E-Life Limo\", \"journeyDirection\": \"OUTBOUND\"}], \"meetGreet\": true, \"janusResultReference\": \"2\", \"supplierId\": 668, \"description\": \"Executive\", \"descriptionLocalised\": \"Plenty of space to travel in comfort.\", \"cancellationLeadTimeMinutes\": 1440, \"bags\": 3, \"supplierName\": \"E-Life Limo\", \"discountType\": \"NONE\", \"drivingDistance\": 0, \"priceRuleId\": 19086, \"passengerCapacity\": 3, \"resultId\": \"2f7ddeec-161d-4dc2-b5a5-7b198bbdef6f\", \"duration\": 0, \"geniusDiscount\": false, \"nonRefundable\": false, \"vehicleType\": \"EXECUTIVE\", \"price\": {\"currencyCode\": \"USD\", \"amount\": \"79.95\"}, \"categoryLocalised\": \"Executive\", \"category\": \"Executive\"}]}}"
+      },
+      {
+        "role": "assistant",
+        "content": "I found matching options \u2014 summary below and a few quick questions so I can complete the bookings.\n\n1) Cheapest flight (meets your \u201cno overnight transfer\u201d requirement)\n- Airline: China Southern Airlines (CZ) flight CZ313 (operated by China Southern)\n- Route: Shanghai Pudong (PVG) \u2192 Seoul Incheon (ICN)\n- Departure: 2024-12-01 08:00 (Terminal 2, PVG)\n- Arrival: 2024-12-01 11:00 (Terminal 1, ICN)\n- Cabin: Economy, direct (no transfer)\n- Total price shown: USD 70.33 (displayed rounded price USD 71)\n- Notes: Direct flight, ~3 hours. Would you like me to book this flight? If yes I\u2019ll need passenger details and payment.\n\n2) Hotel near Gyeongbokgung Palace (one-night: 2024-12-01 \u2192 12-02)\nI searched hotels near Gyeongbokgung and pulled the top options by popularity. Please pick which you want me to book (I can book once you confirm and provide guest/payment details):\n\n- Option A \u2014 SimpleStay Hotel in Jongno (top result by popularity sort)\n  - Distance: ~1.4 km from Gyeongbokgung\n  - Review score: 8.2 (262 reviews)\n  - Price shown (1 night): ~USD 87.19\n  - Free cancellation on this rate.\n\n- Option B \u2014 Amid Hotel Seoul\n  - Distance: ~950 m from Gyeongbokgung\n  - Review score: 8.6 (1,203 reviews) \u2014 highest number of reviews among the top results (very popular)\n  - Price shown (1 night): ~USD 128.53\n\n- Option C \u2014 The Prima Hotel Jongno\n  - Distance: ~850 m from Gyeongbokgung\n  - Review score: 9.0 (254 reviews)\n  - Price shown (1 night): ~USD 100.49\n  - Free cancellation on the listed rate.\n\nWhich hotel should I book? If you prefer, I recommend Amid Hotel Seoul as the \u201cmost popular\u201d by number of reviews; The Prima has the highest score. Tell me which you want or if you want me to pick the cheapest (SimpleStay).\n\n3) Taxi from Incheon Airport to the hotel (pickup = 30 minutes after plane lands)\n- I scheduled the pickup for 2024-12-01 at 11:30 (ICN local time), which is 30 minutes after the 11:00 arrival.\n- Available options (sample):\n  - Standard (Carzen Plus): USD 56.58 \u2014 meet & greet, up to 3 passengers, 2 bags.\n  - People carrier (Carzen Plus): USD 57.81 \u2014 up to 4 passengers.\n  - Executive (E-Life Limo): USD 79.95 \u2014 up to 3 passengers, more space.\n- Which taxi do you want me to confirm? I can book the Standard by default unless you prefer a larger vehicle or executive option.\n\nBefore I can complete bookings I\u2019ll need:\n- For flight booking: passenger full name (exactly as on passport), date of birth, passport number, passport nationality, passport expiry date, contact phone and email, seat/baggage preferences (if any), and payment method.\n- For hotel booking: guest name(s) as on ID, contact phone and email, and payment method (some rates allow pay-at-hotel; I\u2019ll confirm).\n- For taxi booking: contact phone number for the pickup person and flight number (I already have the flight details, but I\u2019ll include flight number on the taxi booking).\n\nOther notes:\n- Cancellation/changes: I\u2019ll check each rate\u2019s cancellation policy before booking and confirm if you prefer refundable vs non-refundable deals.\n- If you\u2019d rather book the flight or hotel yourself, I can send direct booking links or hold the recommendations.\n\nPlease confirm:\na) Do you want me to book the China Southern direct flight (CZ313, PVG 08:00 \u2192 ICN 11:00)? \nb) Which hotel (A SimpleStay, B Amid Hotel, or C The Prima) do you want booked?\nc) Which taxi option to confirm (Standard / People carrier / Executive)?\nd) Provide the passenger(s) name(s) and required booking details (I\u2019ll then request payment details securely).\n\nIf you want me to proceed, send the booking details you\u2019re comfortable sharing and I\u2019ll continue."
+      }
+    ],
+    "message": "Success.",
+    "count_dict": {
+      "success_turn_num": 4,
+      "total_turn_num": 4,
+      "correct_call_num": 8,
+      "total_call_num": 8,
+      "real_turn_num": 7
+    },
+    "resp_eval": {
+      "complete": {
+        "score": 2,
+        "reason": "all requested information is addressed"
+      },
+      "correct": {
+        "score": 2,
+        "reason": "All mentioned information is correct."
+      }
+    },
+    "status": "Success",
+    "memory_method": "no_strategy"
+  },
+  {
+    "id": "Hotels-121",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "Find a hotel under $800 near Big Ben in London for the dates November 15, 2024, to November 25, 2024. I want to know the user comments about these hotels, with the latest reviews first."
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "Error code: 400 - {'error': {'message': \"Invalid 'tools[2].function.name': string does not match pattern. Expected a string that matches the pattern '^[a-zA-Z0-9_\\\\.-]+$'.\", 'type': 'invalid_request_error', 'code': 'bad_request'}}"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 4,
+      "correct_call_num": 0,
+      "total_call_num": 4,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "no_strategy"
+  },
+  {
+    "id": "Cross-381",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I'm going to have a meeting at the Staples Center in Los Angeles on November 15, 2024. After the meeting ends at 3 PM, I will fly from Los Angeles to New York for a vacation. Could you help me find the earliest flight to New York after the meeting and call a taxi to take me to the airport right after the meeting? Don't forget to look up the hotel within 20 kilometers of the airport in New York and check what fun places there are around the hotel."
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_AapyqH0XkT4x3oGPaePkzPdf",
+            "function": {
+              "arguments": "{\"query\": \"Los Angeles\"}",
+              "name": "Search_Flight_Location"
+            },
+            "type": "function"
+          },
+          {
+            "id": "call_mjqsCwP1Y8pm5Vu4BkgbgFIs",
+            "function": {
+              "arguments": "{\"query\": \"New York\"}",
+              "name": "Search_Flight_Location"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      },
+      {
+        "tool_call_id": "call_AapyqH0XkT4x3oGPaePkzPdf",
+        "role": "tool",
+        "name": "Search_Flight_Location",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": [{\"id\": \"LAX.CITY\", \"type\": \"CITY\", \"name\": \"Los Angeles\", \"code\": \"LAX\", \"regionName\": \"California\", \"country\": \"US\", \"countryName\": \"United States\"}]}"
+      },
+      {
+        "tool_call_id": "call_mjqsCwP1Y8pm5Vu4BkgbgFIs",
+        "role": "tool",
+        "name": "Search_Flight_Location",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": [{\"id\": \"NYC.CITY\", \"type\": \"CITY\", \"name\": \"New York\", \"code\": \"NYC\", \"regionName\": \"New York\", \"country\": \"US\", \"countryName\": \"United States\"}]}"
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_63E916jJ16TDMTOlfhfh9JLu",
+            "function": {
+              "arguments": "{\"fromId\":\"LAX.CITY\",\"toId\":\"NYC.CITY\",\"departDate\":\"2024-11-15\",\"adults\":1,\"sort\":\"FASTEST\"}",
+              "name": "Search_Flights"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      }
+    ],
+    "message": [
+      {
+        "error_type": "param_hallucination",
+        "content": "Parameter adults is hallucinated."
+      }
+    ],
+    "count_dict": {
+      "success_turn_num": 1,
+      "total_turn_num": 5,
+      "correct_call_num": 2,
+      "total_call_num": 9,
+      "real_turn_num": 2
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "no_strategy"
+  },
+  {
+    "id": "Car-Rental-46",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I need to rent a car at Dallas-Fort Worth International Airport at 12:00 on November 25th, 2024 and return it at the same place at 18:00 on December 1st, 2024. Provide the booking summary of all the vehicles that meet the conditions for reimbursement."
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "Error code: 400 - {'error': {'message': \"Invalid 'tools[4].function.name': string does not match pattern. Expected a string that matches the pattern '^[a-zA-Z0-9_\\\\.-]+$'.\", 'type': 'invalid_request_error', 'code': 'bad_request'}}"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 3,
+      "correct_call_num": 0,
+      "total_call_num": 5,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "no_strategy"
+  },
+  {
+    "id": "Flights-140",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I'm traveling from New York to Paris on April 10, 2025, and returning on April 17, 2025. Could you find the cheapest air tickets around those dates for me and provide detailed flight info and a seat map?"
+      }
+    ],
+    "message": {
+      "error_type": "llm_error",
+      "content": "Error code: 400 - {'error': {'message': \"Invalid 'tools[0].function.name': string does not match pattern. Expected a string that matches the pattern '^[a-zA-Z0-9_\\\\.-]+$'.\", 'type': 'invalid_request_error', 'code': 'bad_request'}}"
+    },
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 4,
+      "correct_call_num": 0,
+      "total_call_num": 6,
+      "real_turn_num": 0
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "no_strategy"
+  },
+  {
+    "id": "Cross-219",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I want to find out about the cheapest connecting flight leaving from Los Angeles on November 20, 2024, going to Seattle and Portland, then returning to Los Angeles. I'm expecting to stay in each city for five days. My address is 500 Sunset Boulevard in Los Angeles. Can you book a taxi to take me to the airport three hours before the flight takes off and bring me home one hour after the returning flight lands?"
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_dKbnkUEaUFuLw8jTzXrwDNjz",
+            "function": {
+              "arguments": "{\"query\": \"Los Angeles International Airport\"}",
+              "name": "Search_Flight_Location"
+            },
+            "type": "function"
+          },
+          {
+            "id": "call_kdrtvBF6ohbh9LtXxxR4heQs",
+            "function": {
+              "arguments": "{\"query\": \"Seattle Tacoma International Airport\"}",
+              "name": "Search_Flight_Location"
+            },
+            "type": "function"
+          },
+          {
+            "id": "call_HZp2ToishNuERHu0t2Sj0ar4",
+            "function": {
+              "arguments": "{\"query\": \"Portland International Airport\"}",
+              "name": "Search_Flight_Location"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      },
+      {
+        "tool_call_id": "call_dKbnkUEaUFuLw8jTzXrwDNjz",
+        "role": "tool",
+        "name": "Search_Flight_Location",
+        "content": "{\"api_status\": true, \"content\": \"There is a problem with your api call, please double-check for possible problems.\"}"
+      },
+      {
+        "tool_call_id": "call_kdrtvBF6ohbh9LtXxxR4heQs",
+        "role": "tool",
+        "name": "Search_Flight_Location",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": [{\"id\": \"SEA.CITY\", \"type\": \"CITY\", \"name\": \"Seattle\", \"code\": \"SEA\", \"region\": \"WA\", \"regionName\": \"Washington\", \"country\": \"US\", \"countryName\": \"United States\"}]}"
+      },
+      {
+        "tool_call_id": "call_HZp2ToishNuERHu0t2Sj0ar4",
+        "role": "tool",
+        "name": "Search_Flight_Location",
+        "content": "{\"status\": true, \"message\": \"Success\", \"data\": [{\"id\": \"PDX.AIRPORT\", \"type\": \"AIRPORT\", \"name\": \"Portland International Airport\", \"code\": \"PDX\", \"city\": \"PDX\", \"cityName\": \"Portland\", \"regionName\": \"Oregon\", \"country\": \"US\", \"countryName\": \"United States\", \"countryNameShort\": \"US\", \"distanceToCity\": {\"value\": 10.23218180876822, \"unit\": \"km\"}, \"parent\": \"PDX\"}]}"
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_a87suJZgQRKPnrsTXRA3fBW9",
+            "function": {
+              "arguments": "{\"query\":\"Los Angeles International Airport LAX\"}",
+              "name": "Search_Flight_Location"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      }
+    ],
+    "message": [
+      {
+        "error_type": "value_error",
+        "content": "Parameter query value do not equal to golden."
+      }
+    ],
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 4,
+      "correct_call_num": 2,
+      "total_call_num": 8,
+      "real_turn_num": 2
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "no_strategy"
+  },
+  {
+    "id": "Cross-290",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "I'm planning to stay in Vienna for ten days starting on November 18th, 2024. Help me find detailed information about the most trending attractions in the center of Vienna and book a hotel nearby this attraction."
+      },
+      {
+        "content": null,
+        "refusal": null,
+        "role": "assistant",
+        "annotations": [],
+        "audio": null,
+        "function_call": null,
+        "tool_calls": [
+          {
+            "id": "call_ixM7DizmYQEmfF3fZBEJs3Tk",
+            "function": {
+              "arguments": "{\"query\":\"Vienna city center\"}",
+              "name": "Search_Attraction_Location"
+            },
+            "type": "function"
+          }
+        ],
+        "provider_specific_fields": {
+          "refusal": null
+        }
+      }
+    ],
+    "message": [
+      {
+        "error_type": "value_error",
+        "content": "Parameter query value do not equal to golden."
+      }
+    ],
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 4,
+      "correct_call_num": 0,
+      "total_call_num": 5,
+      "real_turn_num": 1
+    },
+    "resp_eval": null,
+    "status": "Failed",
+    "memory_method": "no_strategy"
+  },
+  {
+    "id": "Flights-38",
+    "gen_convs": [
+      {
+        "role": "user",
+        "content": "Our company is planning to leave from Madrid on December 10th, 2024, and travel to Barcelona and Valencia. We'll return to Madrid on December 24th, 2024. We'll stay in each of those cities for a week. Help us find the best economy class flights for this journey and provide the detailed flight information and seat maps."
+      },
+      {
+        "role": "assistant",
+        "content": "I can do that \u2014 before I search, a couple quick clarifying questions so I return the best results and the correct seat maps:\n\n1) Please confirm the itinerary I\u2019ll search for:\n   - Dec 10, 2024: Madrid \u2192 Barcelona (departure from Madrid)\n   - Dec 17, 2024: Barcelona \u2192 Valencia\n   - Dec 24, 2024: Valencia \u2192 Madrid\n\n2) How many passengers and ages? (Tell me number of adults, children and infants.)\n\n3) Any preferences or constraints?\n   - Nonstop only or connections are acceptable?\n   - Preferred time of day for departures (morning / afternoon / evening / no preference)?\n   - Any preferred airlines or budget target?\n\nOnce you confirm those I\u2019ll search economy class (sorted by BEST) and return detailed flight options for each leg plus the flight detail tokens and seat maps."
+      }
+    ],
+    "message": [
+      {
+        "error_type": "value_error",
+        "content": "Parameter query value do not equal to golden."
+      }
+    ],
+    "count_dict": {
+      "success_turn_num": 0,
+      "total_turn_num": 3,
+      "correct_call_num": 0,
+      "total_call_num": 6,
+      "real_turn_num": 0
+    },
+    "resp_eval": {
+      "complete": {
+        "score": 1,
+        "reason": "Only asked clarifying questions and confirmed the itinerary; did not provide the requested economy flight options, detailed flight information, or seat maps."
+      },
+      "correct": {
+        "score": 1,
+        "reason": "The assistant correctly restates the itinerary and asks for passenger counts/preferences, but it is inconsistent with the API responses: the system already performed the economy-class (sorted by BEST) search and returned flight details and seat maps. The reply incorrectly acts as if the search has not yet been done."
+      }
+    },
+    "status": "Failed",
+    "memory_method": "no_strategy"
+  }
+]

@@ -1,0 +1,13 @@
+{
+  "domain_success_rate": {},
+  "domain_turn_acc": {
+    "Cross": 33.33333333333333
+  },
+  "domain_call_acc": {
+    "Cross": 45.45454545454545
+  },
+  "overall_success": 0.0,
+  "overall_call_acc": 45.45454545454545,
+  "complete_score_avg": 0,
+  "correct_score_avg": 0
+}
