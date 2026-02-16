@@ -8,8 +8,10 @@ Usage: uv run python tools/trace_viewer.py
 
 Features:
 - Browse experiments and timestamps from results/cfb directory
+- Toggle between Eval view (cfb_*.json) and Full Trace view (compressed_*.json)
+- Step-by-step viewer for full trace history with metadata
 - View conversation traces as a chat interface
-- Side-by-side model/strategy comparison
+- Side-by-side model/strategy comparison with independent step navigation
 - Search cases by ID with autocomplete
 - JSON inspector for debugging individual messages
 """
@@ -39,6 +41,9 @@ class LoadedTrace:
     model: str
     case: dict[str, Any]  # The full case object from trace JSON
     metrics: dict[str, Any] | None = None  # Optional metrics data
+    compressed_trace: list[dict[str, Any]] = field(
+        default_factory=list
+    )  # Raw compressed_trace for step viewer
 
 
 @dataclass
@@ -58,6 +63,11 @@ class AppState:
     search_filter: str = ""  # Filter for case list sidebar
     conversation_source: str = "eval"  # eval (cfb_*) or real (compressed_*)
     selected_config_label: str = ""
+    # Step viewer state (per-pane for compare mode independence)
+    expanded_steps_a: set[int] = field(default_factory=set)
+    expanded_steps_b: set[int] = field(default_factory=set)
+    current_step_a: int = 1
+    current_step_b: int = 1
 
 
 # Module-level state (single-user local app)
@@ -203,19 +213,6 @@ def load_trace_file(path: Path | None) -> list[dict[str, Any]]:
         return []
 
 
-def load_compressed_trace_file(path: Path | None) -> list[dict[str, Any]]:
-    """
-    Load and parse a compressed trace JSON file.
-
-    Args:
-        path: Path to the compressed trace JSON file
-
-    Returns:
-        List of case dictionaries, or empty list if file doesn't exist/is invalid
-    """
-    return load_trace_file(path)
-
-
 def normalize_tool_call_arguments(arguments: Any) -> Any:
     """Normalize tool call arguments to a JSON object when possible."""
     if isinstance(arguments, str):
@@ -224,6 +221,48 @@ def normalize_tool_call_arguments(arguments: Any) -> Any:
         except json.JSONDecodeError:
             return arguments
     return arguments
+
+
+def normalize_single_message(msg: dict[str, Any]) -> dict[str, Any]:
+    """
+    Normalize a single message to align with viewer rendering expectations.
+
+    Converts tool_calls to function_call format and tool role to observation role.
+
+    Args:
+        msg: Raw message dictionary
+
+    Returns:
+        Normalized message dictionary
+    """
+    normalized = dict(msg)
+
+    # Convert tool_calls to function_call format if needed
+    if "tool_calls" in normalized and "function_call" not in normalized:
+        tool_calls = []
+        for call in normalized.get("tool_calls", []):
+            function = call.get("function", {})
+            tool_calls.append(
+                {
+                    "name": function.get("name"),
+                    "arguments": normalize_tool_call_arguments(
+                        function.get("arguments")
+                    ),
+                }
+            )
+        normalized["function_call"] = tool_calls
+
+    # Convert tool role to observation role
+    if normalized.get("role") == "tool":
+        normalized["role"] = "observation"
+        content = normalized.get("content")
+        if isinstance(content, str):
+            try:
+                normalized["content"] = json.loads(content)
+            except json.JSONDecodeError:
+                normalized["content"] = content
+
+    return normalized
 
 
 def normalize_compressed_messages(
@@ -323,7 +362,7 @@ def build_case_index(
             metrics_path = paths["metrics_path"]
 
             if conversation_source == "real":
-                cases = load_compressed_trace_file(compressed_path)
+                cases = load_trace_file(compressed_path)
                 for case in cases:
                     compressed_trace = case.get("compressed_trace", [])
                     case["gen_convs"] = normalize_compressed_messages(compressed_trace)
@@ -333,8 +372,18 @@ def build_case_index(
 
             for case in cases:
                 case_id = case.get("id", "unknown")
+                # Store compressed_trace in LoadedTrace for step viewer access
+                compressed_trace_data = (
+                    case.get("compressed_trace", [])
+                    if conversation_source == "real"
+                    else []
+                )
                 loaded = LoadedTrace(
-                    strategy=strategy, model=model, case=case, metrics=metrics
+                    strategy=strategy,
+                    model=model,
+                    case=case,
+                    metrics=metrics,
+                    compressed_trace=compressed_trace_data,
                 )
                 if case_id not in index:
                     index[case_id] = []
@@ -391,6 +440,18 @@ def header_breadcrumbs() -> None:
             ui.label("No data loaded").classes("text-gray-400 italic")
 
 
+@ui.refreshable
+def header_source_toggle() -> None:
+    """Refreshable source toggle."""
+    state = get_state()
+    with ui.row().classes("items-center gap-2 ml-4"):
+        ui.toggle(
+            ["Eval", "Full Trace"],
+            value="Eval" if state.conversation_source == "eval" else "Full Trace",
+            on_change=lambda e: switch_source(state, e.value),
+        ).props("dense")
+
+
 def create_header(state: AppState) -> None:
     """Create the sticky header with breadcrumbs, search, and metrics."""
     with ui.header().classes("bg-white text-black shadow-md items-center px-4"):
@@ -400,6 +461,9 @@ def create_header(state: AppState) -> None:
         )
         header_breadcrumbs()
 
+        # Source toggle
+        header_source_toggle()
+
         ui.space()
 
 
@@ -407,6 +471,45 @@ def select_case(state: AppState, case_id: str) -> None:
     """Select a case and refresh the main content."""
     state.selected_case_id = case_id
     main_content.refresh()
+
+
+def switch_source(state: AppState, toggle_value: str) -> None:
+    """
+    Switch between Eval and Full Trace conversation sources.
+
+    Args:
+        state: Application state
+        toggle_value: Either "Eval" or "Full Trace"
+    """
+    # Map toggle value to conversation_source
+    new_source = "eval" if toggle_value == "Eval" else "real"
+
+    if new_source == state.conversation_source:
+        return  # No change needed
+
+    state.conversation_source = new_source
+
+    # Reload data if experiment and timestamp are selected
+    if state.experiment and state.timestamp:
+        state.case_index = build_case_index(
+            state.experiment,
+            state.timestamp,
+            conversation_source=state.conversation_source,
+        )
+        state.selected_case_id = ""  # Reset selection
+        # Reset step viewer state
+        state.expanded_steps_a = set()
+        state.expanded_steps_b = set()
+        state.current_step_a = 1
+        state.current_step_b = 1
+
+        ui.notify(
+            f"Loaded {len(state.case_index)} cases ({toggle_value} mode)",
+            type="positive",
+        )
+        header_breadcrumbs.refresh()
+        header_source_toggle.refresh()
+        main_content.refresh()
 
 
 def show_nav_modal(state: AppState) -> None:
@@ -456,6 +559,7 @@ def show_nav_modal(state: AppState) -> None:
                     dialog.close()
                     ui.notify(f"Loaded {len(state.case_index)} cases", type="positive")
                     header_breadcrumbs.refresh()
+                    header_source_toggle.refresh()
                     main_content.refresh()
 
             ui.button("Load", on_click=load_data).props("color=primary")
@@ -464,134 +568,128 @@ def show_nav_modal(state: AppState) -> None:
 
 
 def render_user_message(content: str, idx: int, raw_msg: dict) -> None:
-    """Render a user message bubble (right-aligned)."""
-    with ui.row().classes("w-full justify-end"):
-        with ui.card().classes("bg-blue-50 w-full"):
-            with ui.row().classes("items-center gap-2"):
-                ui.label(f"#{idx}").classes("text-xs text-gray-400")
-                ui.label("User").classes("font-semibold text-blue-700")
-                # Debug button
-                ui.button(
-                    icon="bug_report",
-                    on_click=lambda _, m=raw_msg: show_json_inspector(m),
-                ).props("flat dense size=sm")
-            ui.markdown(content).classes(
-                "text-gray-800 whitespace-pre-wrap break-words"
-            )
+    """Render a user message bubble (left-aligned, auto-expanding)."""
+    with ui.card().classes("w-full bg-blue-50"):
+        with ui.row().classes("items-center gap-2"):
+            ui.label(f"#{idx}").classes("text-xs text-gray-400")
+            ui.label("User").classes("font-semibold text-blue-700")
+            # Debug button
+            ui.button(
+                icon="bug_report",
+                on_click=lambda _, m=raw_msg: show_json_inspector(m),
+            ).props("flat dense size=sm")
+        ui.markdown(content).classes(
+            "text-gray-800 whitespace-pre-wrap break-words overflow-x-auto"
+        )
 
 
 def render_assistant_message(msg: dict, idx: int) -> None:
-    """Render an assistant message bubble (left-aligned) with function calls."""
-    with ui.row().classes("w-full justify-start"):
-        with ui.card().classes("bg-gray-50 w-full"):
-            with ui.row().classes("items-center gap-2"):
-                ui.label(f"#{idx}").classes("text-xs text-gray-400")
-                ui.label("Assistant").classes("font-semibold text-gray-700")
-                ui.button(
-                    icon="bug_report",
-                    on_click=lambda _, m=msg: show_json_inspector(m),
-                ).props("flat dense size=sm")
+    """Render an assistant message bubble (left-aligned, auto-expanding) with function calls."""
+    with ui.card().classes("w-full bg-gray-50"):
+        with ui.row().classes("items-center gap-2"):
+            ui.label(f"#{idx}").classes("text-xs text-gray-400")
+            ui.label("Assistant").classes("font-semibold text-gray-700")
+            ui.button(
+                icon="bug_report",
+                on_click=lambda _, m=msg: show_json_inspector(m),
+            ).props("flat dense size=sm")
 
-            # Content if present
-            content = msg.get("content", "")
-            if content:
-                ui.markdown(content).classes(
-                    "text-gray-800 whitespace-pre-wrap break-words"
-                )
+        # Content if present
+        content = msg.get("content", "")
+        if content:
+            ui.markdown(content).classes(
+                "text-gray-800 whitespace-pre-wrap break-words overflow-x-auto"
+            )
 
-            # Function calls
-            func_calls = msg.get("function_call", [])
-            if func_calls:
-                with ui.column().classes("mt-2 gap-1 w-full"):
-                    for fc in func_calls:
-                        name = fc.get("name", "unknown")
-                        args = fc.get("arguments", {})
-                        with ui.expansion(f"Tool: {name}").classes(
-                            "bg-purple-50 w-full"
-                        ):
+        # Function calls
+        func_calls = msg.get("function_call", [])
+        if func_calls:
+            with ui.column().classes("mt-2 gap-1 w-full"):
+                for fc in func_calls:
+                    name = fc.get("name", "unknown")
+                    args = fc.get("arguments", {})
+                    with ui.expansion(f"Tool: {name}").classes("bg-purple-50 w-full"):
+                        with ui.scroll_area().classes("max-h-96 w-full"):
                             ui.json_editor(args)
 
 
 def render_system_message(msg: dict, idx: int) -> None:
-    """Render a system message bubble (left-aligned)."""
+    """Render a system message bubble (left-aligned, auto-expanding)."""
     try:
-        with ui.row().classes("w-full justify-start"):
-            with ui.card().classes("bg-orange-50 w-full"):
-                with ui.row().classes("items-center gap-2"):
-                    ui.label(f"#{idx}").classes("text-xs text-gray-400")
-                    ui.label("System").classes("font-semibold text-orange-700")
-                    ui.button(
-                        icon="bug_report",
-                        on_click=lambda _, m=msg: show_json_inspector(m),
-                    ).props("flat dense size=sm")
-                content = msg.get("content", "")
-                if content:
-                    ui.code(content).classes(
-                        "whitespace-pre-wrap break-words w-full text-sm"
-                    )
-
-    except Exception as e:
-        with ui.row().classes("w-full justify-start"):
-            with ui.card().classes("bg-red-50 w-full border-l-4 border-red-400"):
-                with ui.row().classes("items-center gap-2"):
-                    ui.label(f"#{idx}").classes("text-xs text-gray-400")
-                    ui.icon("error").classes("text-red-600")
-                    ui.label("System (Error Rendering)").classes(
-                        "font-semibold text-red-700"
-                    )
-                    ui.button(
-                        icon="bug_report",
-                        on_click=lambda _, m=msg: show_json_inspector(m),
-                    ).props("flat dense size=sm")
-                ui.label(f"Error rendering system message: {str(e)}").classes(
-                    "text-sm text-red-700"
-                )
-
-
-def render_observation_message(msg: dict, idx: int) -> None:
-    """Render an observation (tool result) as a collapsible card."""
-    with ui.row().classes("w-full justify-start"):
-        with ui.card().classes("bg-green-50 w-full border-l-4 border-green-400"):
+        with ui.card().classes("w-full bg-orange-50"):
             with ui.row().classes("items-center gap-2"):
                 ui.label(f"#{idx}").classes("text-xs text-gray-400")
-                ui.icon("build").classes("text-green-600")
-                ui.label("Tool Result").classes("font-semibold text-green-700")
+                ui.label("System").classes("font-semibold text-orange-700")
                 ui.button(
                     icon="bug_report",
                     on_click=lambda _, m=msg: show_json_inspector(m),
                 ).props("flat dense size=sm")
+            content = msg.get("content", "")
+            if content:
+                ui.code(content).classes(
+                    "whitespace-pre-wrap break-words text-sm w-full"
+                )
 
-            content = msg.get("content", [])
-            if isinstance(content, list):
-                for i, result in enumerate(content):
-                    status = result.get("status", False)
-                    status_text = "Success" if status else "Failed"
-                    status_color = "green" if status else "red"
+    except Exception as e:
+        with ui.card().classes("w-full bg-red-50 border-l-4 border-red-400"):
+            with ui.row().classes("items-center gap-2"):
+                ui.label(f"#{idx}").classes("text-xs text-gray-400")
+                ui.icon("error").classes("text-red-600")
+                ui.label("System (Error Rendering)").classes(
+                    "font-semibold text-red-700"
+                )
+                ui.button(
+                    icon="bug_report",
+                    on_click=lambda _, m=msg: show_json_inspector(m),
+                ).props("flat dense size=sm")
+            ui.label(f"Error rendering system message: {str(e)}").classes(
+                "text-sm text-red-700"
+            )
 
-                    with ui.expansion(f"Result {i + 1}: {status_text}").classes(
-                        "w-full"
-                    ):
-                        ui.badge(status_text, color=status_color)
-                        message = result.get("message", "")
-                        if message:
-                            ui.label(message).classes("text-sm text-gray-600")
-                        data = result.get("data")
-                        if data:
-                            ui.json_editor({'content': {'json': content[i]}})
-            else:
-                status = content.get("status", False)
+
+def render_observation_message(msg: dict, idx: int) -> None:
+    """Render an observation (tool result) as a card (left-aligned, auto-expanding)."""
+    with ui.card().classes("w-full bg-green-50 border-l-4 border-green-400"):
+        with ui.row().classes("items-center gap-2"):
+            ui.label(f"#{idx}").classes("text-xs text-gray-400")
+            ui.icon("build").classes("text-green-600")
+            ui.label("Tool Result").classes("font-semibold text-green-700")
+            ui.button(
+                icon="bug_report",
+                on_click=lambda _, m=msg: show_json_inspector(m),
+            ).props("flat dense size=sm")
+
+        content = msg.get("content", [])
+        if isinstance(content, list):
+            for i, result in enumerate(content):
+                status = result.get("status", False)
                 status_text = "Success" if status else "Failed"
                 status_color = "green" if status else "red"
-                with ui.expansion(f"Result: {status_text}").classes(
-                        "w-full"
-                    ):
+
+                with ui.expansion("Result:").classes("w-full") as exp:
+                    with exp.add_slot('header'):
                         ui.badge(status_text, color=status_color)
-                        message = content.get("message", "")
-                        if message:
-                            ui.label(message).classes("text-sm text-gray-600")
-                        data = content.get("data")
-                        if data:
-                            ui.json_editor({'content': {'json': content}})
+                    message = result.get("message", "")
+                    if message:
+                        ui.label(message).classes("text-sm text-gray-600 break-words")
+                    data = result.get("data")
+                    if data:
+                        with ui.scroll_area().classes("max-h-96 w-full"):
+                            ui.json_editor({"content": {"json": content[i]}})
+        else:
+            status = content.get("status", False)
+            status_text = "Success" if status else "Failed"
+            status_color = "green" if status else "red"
+            with ui.expansion("Result:").classes("w-full") as exp:
+                with exp.add_slot('header'):
+                    ui.badge(status_text, color=status_color)
+                message = content.get("message", "")
+                if message:
+                    ui.label(message).classes("text-sm text-gray-600 break-words")
+                data = content.get("data")
+                if data:
+                    with ui.scroll_area().classes("max-h-96 w-full"):
+                        ui.json_editor({"content": {"json": content}})
 
 
 def render_message(msg: dict, idx: int) -> None:
@@ -608,10 +706,10 @@ def render_message(msg: dict, idx: int) -> None:
         render_observation_message(msg, idx)
     else:
         # Unknown role - render generically
-        with ui.card().classes("bg-yellow-50 max-w-[70%]"):
+        with ui.card().classes("w-full bg-yellow-50"):
             ui.label(f"#{idx} - {role}").classes("font-semibold")
             ui.code(json.dumps(msg, indent=2, default=str), language="json").classes(
-                "whitespace-pre-wrap break-words"
+                "whitespace-pre-wrap break-words overflow-x-auto"
             )
 
 
@@ -621,14 +719,181 @@ def show_json_inspector(data: dict) -> None:
         ui.label("JSON Inspector").classes("text-xl font-bold")
         ui.separator()
         with ui.scroll_area().classes("h-[60vh]"):
-            ui.json_editor({'content': {'json': data}}).classes(
-                "text-sm"
-            )
+            ui.json_editor({"content": {"json": data}}).classes("text-sm")
         ui.button("Close", on_click=dialog.close).classes("mt-4")
     dialog.open()
 
 
-def render_trace_view(trace: LoadedTrace) -> None:
+def calculate_compressed_trace_stats(compressed_trace: list[dict]) -> dict:
+    """
+    Calculate turns and calls statistics from compressed trace data.
+
+    Args:
+        compressed_trace: List of step dictionaries from compressed trace
+
+    Returns:
+        Dictionary with 'total_turns' and 'total_calls' keys
+    """
+    if not compressed_trace:
+        return {"total_turns": 0, "total_calls": 0}
+
+    total_turns = 0
+    total_calls = 0
+
+    for step in compressed_trace:
+        messages = step.get("compressed_messages", [])
+        for msg in messages:
+            role = msg.get("role", "")
+
+            # Count turns (user and assistant messages)
+            if role in ["user", "assistant"]:
+                total_turns += 1
+
+            # Count function/tool calls
+            # Check for tool_calls array (OpenAI format)
+            tool_calls = msg.get("tool_calls", [])
+            if tool_calls:
+                total_calls += len(tool_calls)
+
+            # Also check for function_call array (legacy format)
+            func_calls = msg.get("function_call", [])
+            if func_calls:
+                total_calls += len(func_calls) if isinstance(func_calls, list) else 1
+
+    return {"total_turns": total_turns, "total_calls": total_calls}
+
+
+def render_step_navigation(trace: LoadedTrace, pane: str = "a") -> None:
+    """
+    Render step navigation bar for compressed traces.
+
+    Args:
+        trace: LoadedTrace object containing compressed_trace data
+        pane: "a" or "b" to track state for each pane in compare mode
+    """
+    state = get_state()
+    compressed_trace = trace.compressed_trace
+
+    if not compressed_trace:
+        return
+
+    total_steps = len(compressed_trace)
+    current_step_attr = f"current_step_{pane}"
+    current_step = getattr(state, current_step_attr, 1)
+
+    # Ensure current_step is within bounds
+    if current_step < 1:
+        current_step = 1
+    if current_step > total_steps:
+        current_step = total_steps
+    setattr(state, current_step_attr, current_step)
+
+    # Get current step metadata
+    current_step_data = compressed_trace[current_step - 1] if compressed_trace else {}
+    input_tokens = current_step_data.get("input_token_count", 0)
+    compressed_tokens = current_step_data.get("compressed_token_count", 0)
+    ratio = current_step_data.get("compression_ratio", 1.0)
+
+    with ui.card().classes("w-full mb-3 bg-gray-100"):
+        # Navigation buttons row
+        with ui.row().classes("items-center gap-2 mb-2"):
+            ui.label("Step:").classes("font-semibold")
+
+            # Previous button
+            ui.button(
+                icon="chevron_left",
+                on_click=lambda: navigate_step(pane, current_step - 1, total_steps),
+            ).props("dense flat").set_enabled(current_step > 1)
+
+            # Step number buttons
+            for step_num in range(1, total_steps + 1):
+                is_current = step_num == current_step
+
+                def make_step_handler(step_number: int):
+                    """Create a click handler for a specific step."""
+                    return lambda: navigate_step(pane, step_number, total_steps)
+
+                ui.button(
+                    str(step_num),
+                    on_click=make_step_handler(step_num),
+                ).props(f"dense {'unelevated' if is_current else 'flat'}")
+
+            # Next button
+            ui.button(
+                icon="chevron_right",
+                on_click=lambda: navigate_step(pane, current_step + 1, total_steps),
+            ).props("dense flat").set_enabled(current_step < total_steps)
+
+            ui.space()
+
+            # Current step indicator
+            ui.label(f"Step {current_step} of {total_steps}").classes(
+                "text-sm font-semibold"
+            )
+
+        # Metadata row
+        with ui.row().classes("items-center gap-4 text-sm"):
+            ui.label(f"Input: {input_tokens} tokens").classes("text-gray-700")
+            ui.label(f"Compressed: {compressed_tokens} tokens").classes("text-gray-700")
+            ui.badge(f"Ratio: {ratio:.2f}")
+
+
+def navigate_step(pane: str, new_step: int, total_steps: int) -> None:
+    """
+    Navigate to a specific step.
+
+    Args:
+        pane: "a" or "b" to track state for each pane
+        new_step: Step number to navigate to (1-indexed)
+        total_steps: Total number of steps
+    """
+    state = get_state()
+
+    # Clamp to valid range
+    new_step = max(1, min(new_step, total_steps))
+
+    current_step_attr = f"current_step_{pane}"
+    setattr(state, current_step_attr, new_step)
+
+    main_content.refresh()
+
+
+def render_step_cards(trace: LoadedTrace, pane: str = "a") -> None:
+    """
+    Render the current step's messages directly (no collapsible cards).
+
+    Args:
+        trace: LoadedTrace object containing compressed_trace data
+        pane: "a" or "b" to track which step to display
+    """
+    state = get_state()
+    compressed_trace = trace.compressed_trace
+
+    if not compressed_trace:
+        return
+
+    # Get current step for this pane
+    current_step_attr = f"current_step_{pane}"
+    current_step = getattr(state, current_step_attr, 1)
+
+    # Ensure current_step is within bounds
+    if current_step < 1 or current_step > len(compressed_trace):
+        current_step = 1
+        setattr(state, current_step_attr, current_step)
+
+    # Get the current step data
+    step = compressed_trace[current_step - 1]
+
+    # Render messages in the current step
+    with ui.column().classes("w-full gap-2"):
+        compressed_messages = step.get("compressed_messages", [])
+        for msg_idx, msg in enumerate(compressed_messages):
+            # Normalize the message to ensure consistent rendering
+            normalized_msg = normalize_single_message(msg)
+            render_message(normalized_msg, msg_idx)
+
+
+def render_trace_view(trace: LoadedTrace, pane: str = "a") -> None:
     """Render a complete trace as a chat interface."""
     case = trace.case
     gen_convs = case.get("gen_convs", [])
@@ -647,7 +912,15 @@ def render_trace_view(trace: LoadedTrace) -> None:
 
         # Count stats
         count_dict = case.get("count_dict", {})
-        if count_dict:
+
+        # For compressed traces, calculate stats from trace data
+        if trace.compressed_trace and not count_dict:
+            stats = calculate_compressed_trace_stats(trace.compressed_trace)
+            with ui.row().classes("gap-4 text-sm text-gray-600 mt-2"):
+                ui.label(f"Turns: {stats['total_turns']}")
+                ui.label(f"Calls: {stats['total_calls']}")
+        elif count_dict:
+            # For eval traces, use existing count_dict
             with ui.row().classes("gap-4 text-sm text-gray-600 mt-2"):
                 ui.label(
                     f"Turns: {count_dict.get('success_turn_num', 0)}/{count_dict.get('total_turn_num', 0)}"
@@ -679,10 +952,19 @@ def render_trace_view(trace: LoadedTrace) -> None:
                         ):
                             ui.badge(error_type, color="red").classes("text-xs")
                             ui.label(content).classes("text-sm text-red-700")
-    # Render conversation
-    with ui.column().classes("w-full gap-2"):
-        for idx, msg in enumerate(gen_convs):
-            render_message(msg, idx)
+
+    # Check if this is a compressed trace with step data
+    if trace.compressed_trace:
+        # Render step navigation bar
+        render_step_navigation(trace, pane)
+
+        # Render step cards (collapsible)
+        render_step_cards(trace, pane)
+    else:
+        # Original flat conversation view for eval traces
+        with ui.column().classes("w-full gap-2"):
+            for idx, msg in enumerate(gen_convs):
+                render_message(msg, idx)
 
 
 @ui.refreshable
@@ -866,7 +1148,7 @@ def render_comparison_view(state: AppState, traces: list[LoadedTrace]) -> None:
         with ui.column().classes("flex-1 min-w-0"):
             ui.label(state.model_a).classes("font-bold text-lg mb-2")
             with ui.scroll_area().classes("h-[70vh]"):
-                render_trace_view(config_dict[state.model_a])
+                render_trace_view(config_dict[state.model_a], pane="a")
 
         ui.separator().props("vertical")
 
@@ -874,7 +1156,7 @@ def render_comparison_view(state: AppState, traces: list[LoadedTrace]) -> None:
             label_b = state.model_b
             ui.label(label_b).classes("font-bold text-lg mb-2")
             with ui.scroll_area().classes("h-[70vh]"):
-                render_trace_view(config_dict[label_b])
+                render_trace_view(config_dict[label_b], pane="b")
 
 
 # === KEYBOARD BINDINGS ===
