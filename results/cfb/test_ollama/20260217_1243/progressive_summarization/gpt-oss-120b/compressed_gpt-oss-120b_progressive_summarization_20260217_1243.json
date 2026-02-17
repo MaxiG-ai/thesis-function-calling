@@ -1,0 +1,162 @@
+[
+  {
+    "id": "Hotels-104",
+    "memory_method": "progressive_summarization",
+    "compressed_trace": [
+      {
+        "step": 0,
+        "input_token_count": 55,
+        "compressed_token_count": 0,
+        "compression_ratio": 1.0,
+        "memory_method": "progressive_summarization",
+        "compressed_messages": [
+          {
+            "role": "user",
+            "content": "My friends are planning to visit Berlin from December 10th to December 15th, 2024. Find a hotel near the Museumsinsel that has a 24-hour front desk. Then find other nearby cities around hotel where they can continue their travel plans."
+          }
+        ]
+      },
+      {
+        "step": 1,
+        "input_token_count": 55,
+        "compressed_token_count": 55,
+        "compression_ratio": 1.0,
+        "memory_method": "progressive_summarization",
+        "compressed_messages": [
+          {
+            "role": "user",
+            "content": "My friends are planning to visit Berlin from December 10th to December 15th, 2024. Find a hotel near the Museumsinsel that has a 24-hour front desk. Then find other nearby cities around hotel where they can continue their travel plans."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Car-Rental-114",
+    "memory_method": "progressive_summarization",
+    "compressed_trace": [
+      {
+        "step": 0,
+        "input_token_count": 58,
+        "compressed_token_count": 0,
+        "compression_ratio": 1.0,
+        "memory_method": "progressive_summarization",
+        "compressed_messages": [
+          {
+            "role": "user",
+            "content": "My friend Lily is going to rent a car at Dallas-Fort Worth International Airport at 7 AM on November 20th, 2024, and return it at George Bush Intercontinental Airport in Houston at 1 PM nine days later. Provide detailed information about two different car types."
+          }
+        ]
+      },
+      {
+        "step": 1,
+        "input_token_count": 58,
+        "compressed_token_count": 58,
+        "compression_ratio": 1.0,
+        "memory_method": "progressive_summarization",
+        "compressed_messages": [
+          {
+            "role": "user",
+            "content": "My friend Lily is going to rent a car at Dallas-Fort Worth International Airport at 7 AM on November 20th, 2024, and return it at George Bush Intercontinental Airport in Houston at 1 PM nine days later. Provide detailed information about two different car types."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Car-Rental-25",
+    "memory_method": "progressive_summarization",
+    "compressed_trace": [
+      {
+        "step": 0,
+        "input_token_count": 40,
+        "compressed_token_count": 0,
+        "compression_ratio": 1.0,
+        "memory_method": "progressive_summarization",
+        "compressed_messages": [
+          {
+            "role": "user",
+            "content": "I want to rent a car at Newark Liberty International Airport at 11 am on November 25th, 2024, and return it in Newark at 4 pm on November 30th."
+          }
+        ]
+      },
+      {
+        "step": 1,
+        "input_token_count": 40,
+        "compressed_token_count": 40,
+        "compression_ratio": 1.0,
+        "memory_method": "progressive_summarization",
+        "compressed_messages": [
+          {
+            "role": "user",
+            "content": "I want to rent a car at Newark Liberty International Airport at 11 am on November 25th, 2024, and return it in Newark at 4 pm on November 30th."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Attraction-59",
+    "memory_method": "progressive_summarization",
+    "compressed_trace": [
+      {
+        "step": 0,
+        "input_token_count": 36,
+        "compressed_token_count": 0,
+        "compression_ratio": 1.0,
+        "memory_method": "progressive_summarization",
+        "compressed_messages": [
+          {
+            "role": "user",
+            "content": "We are planning a family trip to Sydney from November 10 to November 20, 2024. Help us find the two highest-rated attractions and provide detailed information about them."
+          }
+        ]
+      },
+      {
+        "step": 1,
+        "input_token_count": 36,
+        "compressed_token_count": 36,
+        "compression_ratio": 1.0,
+        "memory_method": "progressive_summarization",
+        "compressed_messages": [
+          {
+            "role": "user",
+            "content": "We are planning a family trip to Sydney from November 10 to November 20, 2024. Help us find the two highest-rated attractions and provide detailed information about them."
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "Cross-131",
+    "memory_method": "progressive_summarization",
+    "compressed_trace": [
+      {
+        "step": 0,
+        "input_token_count": 95,
+        "compressed_token_count": 0,
+        "compression_ratio": 1.0,
+        "memory_method": "progressive_summarization",
+        "compressed_messages": [
+          {
+            "role": "user",
+            "content": "Help me check the details of the fastest plane tickets from Toronto to Los Angeles on November 15, 2024, and from Los Angeles to San Francisco on November 17, 2024. I need to book the tickets separately in case my plans change. I'm going to stay in Los Angeles and San Francisco for two days each. Please provide hotels within 10 kilometers of the related airports in Los Angeles and San Francisco based on the arrival airports of the flights."
+          }
+        ]
+      },
+      {
+        "step": 1,
+        "input_token_count": 95,
+        "compressed_token_count": 95,
+        "compression_ratio": 1.0,
+        "memory_method": "progressive_summarization",
+        "compressed_messages": [
+          {
+            "role": "user",
+            "content": "Help me check the details of the fastest plane tickets from Toronto to Los Angeles on November 15, 2024, and from Los Angeles to San Francisco on November 17, 2024. I need to book the tickets separately in case my plans change. I'm going to stay in Los Angeles and San Francisco for two days each. Please provide hotels within 10 kilometers of the related airports in Los Angeles and San Francisco based on the arrival airports of the flights."
+          }
+        ]
+      }
+    ]
+  }
+]
