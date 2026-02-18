@@ -38,6 +38,7 @@ This repo should be developed in Test-Driven-Development Style. Always begin by 
 - I will review all your changes by hand. Make sure they have excellent quality and do not change more than necessary.
 - Never write simple test scripts, always refer to the testing approach & preferences above
 - Never summarize your finding to a .md unless i explicitly ask you.
-- Code efficiently (minimizing lines of code)
+- Strictly adhere to DRY (Don't repeat yourself)
+- Code efficiently
 - code understandably (explain code in comments)
-- remove duplicate functions
+- remove all duplicate parts and features
