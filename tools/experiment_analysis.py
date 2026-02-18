@@ -28,7 +28,7 @@ def _():
     # Configuration
     BASE_DIR = Path("results/cfb")
     OUTPUT_ROOT = Path("thesis_assets")
-    return BASE_DIR, OUTPUT_ROOT, alt, dl, mo, plot, plt, sns
+    return BASE_DIR, OUTPUT_ROOT, alt, dl, mo, plot, plt, sns, pd
 
 
 @app.cell(hide_code=True)
@@ -217,7 +217,6 @@ def _(OUTPUT_ROOT, dl, metrics_long_df, mo, plot, project_dropdown, save_btn):
 
 
 @app.cell(hide_code=True)
-<<<<<<< HEAD
 def _(BASE_DIR, mo, parse_experiment_results, project_dropdown):
     mo.stop(project_dropdown.value is None, None)
     turn_count_df = parse_experiment_results(BASE_DIR.as_posix() + "/" + project_dropdown.value)
@@ -347,7 +346,7 @@ def _(
     turn_count_df,
 ):
     mo.stop(project_dropdown.value is None, None)
-    tables = {
+    _tables = {
         "Task-Result Table": turn_count_df,
         "Experiment Metrics Table": agg_metrics_df,
         "Task and Metrics Table": join_results_with_metrics(
@@ -358,8 +357,8 @@ def _(
     mo.vstack(
         [
             mo.md("## View Results as Plain Data"),
-            mo.ui.tabs(tables)
-            if tables
+            mo.ui.tabs(_tables)
+            if _tables
             else mo.md("No tables available"),
         ])
     return
@@ -384,24 +383,14 @@ def _(turn_count_df):
         ["model", "timestamp", "memory_strategy", "domain"], 
         )["response_llm_judge_correct_score"].value_counts(dropna=False).unstack(fill_value=0)
     turn_count_domain_grouped
-=======
-def _(mo):
-    """Section header for LLM judge analysis."""
-    mo.md("## LLM-as-a-Judge Evaluation")
->>>>>>> f9e6443 (Refactor thesis graphics utilities into modular helper functions)
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
-<<<<<<< HEAD
     mo.md(r"""
     ## LLM-as-a-Judge Correctness Evaluation
     """)
-=======
-    """Subsection: Correctness evaluation."""
-    mo.md("### Correctness Scores")
->>>>>>> f9e6443 (Refactor thesis graphics utilities into modular helper functions)
     return
 
 
@@ -471,14 +460,9 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
-<<<<<<< HEAD
     mo.md(r"""
     ## Metrics per Turn Count
     """)
-=======
-    """Subsection: Turn distribution."""
-    mo.md("### Turn Distribution Histogram")
->>>>>>> f9e6443 (Refactor thesis graphics utilities into modular helper functions)
     return
 
 
@@ -494,24 +478,6 @@ def _(mo):
     """Subsection: Success by turn category."""
     mo.md("### Success Rate by Turn Category")
     return
-
-
-@app.cell
-def _(plot, plt, sns, task_results_df):
-    """Plot success count by turn category."""
-    # Filter for successful trials
-    success_df = task_results_df[task_results_df["status"] == "Success"].copy()
-
-<<<<<<< HEAD
-    turn_count_df['turns_cat'] = pd.cut(turn_count_df['total_call_num'], bins=bins, labels=labels, ordered=True)
-    return
-
-
-@app.cell
-def _(turn_count_df):
-    turn_count_df
-    return
-
 
 @app.cell
 def _(turn_count_df):
@@ -539,9 +505,6 @@ def _(plt, sns, turn_count_df):
     success_df = turn_count_df[turn_count_df['status'] == 'Success'].copy()
 
     # 2. Generate the faceted count plot
-=======
-    plot.apply_nature_style()
->>>>>>> f9e6443 (Refactor thesis graphics utilities into modular helper functions)
     sns.set_theme(style="whitegrid")
 
     success_by_turns = sns.catplot(
@@ -571,11 +534,6 @@ def _(mo):
     return
 
 
-@app.cell
-def _():
-    return
-
-
 @app.cell(hide_code=True)
 def _(mo):
     """Section header for data tables."""
@@ -592,7 +550,6 @@ def _(mo):
 
 
 @app.cell
-<<<<<<< HEAD
 def _(turn_count_df):
     turn_count_df
     return
@@ -658,7 +615,8 @@ def _(mo):
     - Clustering of pattern for entire dataset
     """)
     return
-=======
+
+@app.cell(hide_code=True)
 def _(mo, project_dropdown, task_results_df):
     """Display raw data in tabbed view."""
     mo.stop(project_dropdown.value is None, None)
@@ -667,13 +625,7 @@ def _(mo, project_dropdown, task_results_df):
         "Task Results": task_results_df,
     }
     mo.ui.tabs(tables) if tables else mo.md("_No tables available_")
-<<<<<<< HEAD
     return (tables,)
->>>>>>> f9e6443 (Refactor thesis graphics utilities into modular helper functions)
-=======
-    return
->>>>>>> fb24573 (Update version and streamline function returns in experiment analysis script)
-
 
 if __name__ == "__main__":
     app.run()
