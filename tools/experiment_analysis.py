@@ -11,11 +11,6 @@ __generated_with = "0.19.11"
 app = marimo.App(width="full")
 
 
-# =============================================================================
-# 1. SETUP & CONFIGURATION
-# =============================================================================
-
-
 @app.cell(hide_code=True)
 def _():
     """Import dependencies and configure paths."""
@@ -33,13 +28,7 @@ def _():
     # Configuration
     BASE_DIR = Path("results/cfb")
     OUTPUT_ROOT = Path("thesis_assets")
-
-    return BASE_DIR, OUTPUT_ROOT, Path, alt, dl, mo, pd, plt, plot, sns
-
-
-# =============================================================================
-# 2. PROJECT SELECTION
-# =============================================================================
+    return BASE_DIR, OUTPUT_ROOT, alt, dl, mo, plot, plt, sns
 
 
 @app.cell(hide_code=True)
@@ -77,11 +66,6 @@ def _(mo, projects):
     )
     project_dropdown
     return (project_dropdown,)
-
-
-# =============================================================================
-# 3. DATA LOADING
-# =============================================================================
 
 
 @app.cell(hide_code=True)
@@ -122,11 +106,6 @@ def _(BASE_DIR, dl, mo, project_dropdown):
     return (task_results_df,)
 
 
-# =============================================================================
-# 4. OVERVIEW STATISTICS
-# =============================================================================
-
-
 @app.cell(hide_code=True)
 def _(metrics_long_df, mo, project_dropdown):
     """Display project overview statistics."""
@@ -146,11 +125,6 @@ def _(metrics_long_df, mo, project_dropdown):
         kind="info",
     )
     return
-
-
-# =============================================================================
-# 5. INTERACTIVE METRIC CHARTS (ALTAIR)
-# =============================================================================
 
 
 @app.cell(hide_code=True)
@@ -240,11 +214,6 @@ def _(OUTPUT_ROOT, dl, metrics_long_df, mo, plot, project_dropdown, save_btn):
         kind="success",
     )
     return
-
-
-# =============================================================================
-# 6. LLM-AS-A-JUDGE ANALYSIS
-# =============================================================================
 
 
 @app.cell(hide_code=True)
@@ -458,7 +427,7 @@ def _(plot, plt, sns, task_results_df):
 
     plt.tight_layout()
     plt.show()
-    return (correctness_plot,)
+    return
 
 
 @app.cell(hide_code=True)
@@ -490,12 +459,7 @@ def _(plot, plt, sns, task_results_df):
 
     plt.tight_layout()
     plt.show()
-    return (completeness_plot,)
-
-
-# =============================================================================
-# 7. TURN COUNT ANALYSIS
-# =============================================================================
+    return
 
 
 @app.cell(hide_code=True)
@@ -596,12 +560,20 @@ def _(plt, sns, turn_count_df):
 
     plt.tight_layout()
     plt.show()
-    return (success_by_turns, success_df)
+    return
 
 
-# =============================================================================
-# 8. DATA TABLES
-# =============================================================================
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Token Count Analysis
+    """)
+    return
+
+
+@app.cell
+def _():
+    return
 
 
 @app.cell(hide_code=True)
@@ -695,8 +667,12 @@ def _(mo, project_dropdown, task_results_df):
         "Task Results": task_results_df,
     }
     mo.ui.tabs(tables) if tables else mo.md("_No tables available_")
+<<<<<<< HEAD
     return (tables,)
 >>>>>>> f9e6443 (Refactor thesis graphics utilities into modular helper functions)
+=======
+    return
+>>>>>>> fb24573 (Update version and streamline function returns in experiment analysis script)
 
 
 if __name__ == "__main__":
