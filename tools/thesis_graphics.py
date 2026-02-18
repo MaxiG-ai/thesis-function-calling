@@ -533,3 +533,145 @@ def save_all_plots(
         saved.extend([pdf_path, png_path])
 
     return saved
+
+
+def load_compressed_project(base_dir: Path, project: str) -> pd.DataFrame:
+    """
+    Collect all token info from the compressed trace files. Aggregating this info per strategy/model/timestamp/task.
+
+    This function extracts token usage metrics from compressed conversation traces, including:
+    - max_token_count: Maximum compressed token count across all conversation steps
+    - avg_token_count: Average compressed token count across steps
+    - final_token_count: Token count at the end of the conversation
+    - min_token_count: Minimum compressed token count across steps
+    - num_steps: Total number of conversation steps
+    - total_input_tokens: Sum of input tokens across all steps
+    - avg_compression_ratio: Average compression ratio across steps
+    - max_compression_ratio: Maximum compression ratio achieved
+    - token_growth_rate: Relative growth from first to last step token count
+    - step_aggregates: JSON string mapping step number to token count
+
+    Args:
+        base_dir: Root directory containing experiment results.
+        project: Project name (subdirectory).
+
+    Returns:
+        DataFrame with columns: timestamp, memory_strategy, model, task_id, metric, value, domain.
+        Domain is extracted from task_id (e.g., "Hotels-104" -> domain="Hotels").
+        Returns empty DataFrame if no compressed files are found.
+    """
+    project_path = base_dir / project
+    if not project_path.exists():
+        return pd.DataFrame()
+
+    # Collect all timestamp directories
+    timestamps = sorted([d.name for d in project_path.iterdir() if d.is_dir()])
+    if not timestamps:
+        return pd.DataFrame()
+
+    all_rows: list[dict[str, object]] = []
+
+    for ts in timestamps:
+        ts_path = project_path / ts
+        for strategy_dir in ts_path.iterdir():
+            if not strategy_dir.is_dir():
+                continue
+            for model_dir in strategy_dir.iterdir():
+                if not model_dir.is_dir():
+                    continue
+
+                # Find compressed JSON files
+                json_files = list(model_dir.glob("compressed_*.json"))
+                if not json_files:
+                    continue
+
+                compressed_file = json_files[0]
+                try:
+                    with compressed_file.open("r") as handle:
+                        tasks = json.load(handle)
+                except json.JSONDecodeError:
+                    continue
+
+                # Process each task in the compressed file
+                for task in tasks:
+                    task_id = task.get("id", "Unknown")
+                    compressed_trace = task.get("compressed_trace", [])
+
+                    if not compressed_trace:
+                        continue
+
+                    # Extract domain from task_id (e.g., "Hotels-104" -> "Hotels")
+                    domain = task_id.split("-")[0] if "-" in task_id else "Unknown"
+
+                    # Collect token counts and compression ratios from all steps
+                    compressed_tokens = [
+                        step["compressed_token_count"] for step in compressed_trace
+                    ]
+                    input_tokens = [
+                        step["input_token_count"] for step in compressed_trace
+                    ]
+                    compression_ratios = [
+                        step["compression_ratio"] for step in compressed_trace
+                    ]
+
+                    # Calculate metrics
+                    max_token_count = max(compressed_tokens)
+                    avg_token_count = sum(compressed_tokens) / len(compressed_tokens)
+                    final_token_count = compressed_tokens[-1]
+                    min_token_count = min(compressed_tokens)
+                    num_steps = len(compressed_trace)
+                    total_input_tokens = sum(input_tokens)
+                    avg_compression_ratio = sum(compression_ratios) / len(
+                        compression_ratios
+                    )
+                    max_compression_ratio = max(compression_ratios)
+
+                    # Token growth rate: (final - first) / first
+                    first_token_count = compressed_tokens[0]
+                    token_growth_rate = (
+                        (final_token_count - first_token_count) / first_token_count
+                        if first_token_count > 0
+                        else 0.0
+                    )
+
+                    # Step aggregates as JSON
+                    step_aggregates = json.dumps(
+                        {
+                            step["step"]: step["compressed_token_count"]
+                            for step in compressed_trace
+                        }
+                    )
+
+                    # Create rows in long format
+                    base_row = {
+                        "timestamp": ts,
+                        "memory_strategy": strategy_dir.name,
+                        "model": model_dir.name,
+                        "task_id": task_id,
+                        "domain": domain,
+                    }
+
+                    # Add metrics as separate rows
+                    metrics = {
+                        "max_token_count": float(max_token_count),
+                        "avg_token_count": float(avg_token_count),
+                        "final_token_count": float(final_token_count),
+                        "min_token_count": float(min_token_count),
+                        "num_steps": float(num_steps),
+                        "total_input_tokens": float(total_input_tokens),
+                        "avg_compression_ratio": float(avg_compression_ratio),
+                        "max_compression_ratio": float(max_compression_ratio),
+                        "token_growth_rate": float(token_growth_rate),
+                        "step_aggregates": step_aggregates,  # String value
+                    }
+
+                    for metric_name, metric_value in metrics.items():
+                        row = base_row.copy()
+                        row["metric"] = metric_name
+                        row["value"] = metric_value
+                        all_rows.append(row)
+
+    if not all_rows:
+        return pd.DataFrame()
+
+    return pd.DataFrame.from_records(all_rows)

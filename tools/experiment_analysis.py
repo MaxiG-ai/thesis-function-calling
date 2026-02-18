@@ -7,7 +7,7 @@
 
 import marimo
 
-__generated_with = "0.19.10"
+__generated_with = "0.19.11"
 app = marimo.App(width="full")
 
 
@@ -471,7 +471,7 @@ def _(pd):
     return (join_results_with_metrics,)
 
 
-@app.cell
+@app.cell(hide_code=True)
 def _(
     agg_metrics_df,
     join_results_with_metrics,
@@ -523,7 +523,7 @@ def _(turn_count_df):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ### LLM-as-a-Judge Correctness Evaluation
+    ## LLM-as-a-Judge Correctness Evaluation
     """)
     return
 
@@ -589,7 +589,7 @@ def _(plt, sns, turn_count_df):
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Further Eval
+    ## Metrics per Turn Count
     """)
     return
 
@@ -635,12 +635,6 @@ def _(turn_count_df):
 
 
 @app.cell
-def _(turn_count_df):
-    turn_count_df.dtypes
-    return
-
-
-@app.cell
 def _(plt, sns, turn_count_df):
     # 1. Filter for successful trials
     # Ensure your 'turns_cat' is an ordered category for the best visual flow
@@ -670,8 +664,79 @@ def _(plt, sns, turn_count_df):
     return
 
 
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Metrics per Max Token in Context
+    """)
+    return
+
+
 @app.cell
-def _():
+def _(turn_count_df):
+    turn_count_df
+    return
+
+
+@app.cell
+def _(BASE_DIR, project_dropdown, tg):
+    tokens_df = tg.load_compressed_project(BASE_DIR, project_dropdown.value)
+    return (tokens_df,)
+
+
+@app.cell
+def _(tokens_df):
+    tokens_df.dtypes
+    return
+
+
+@app.cell
+def _(tokens_df):
+    tokens_df.head()
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Token Usage per Case
+    """)
+    return
+
+
+@app.cell
+def _(pd, plt, sns, tokens_df):
+    # 1. Convert value to numeric (crucial since it's an object/string)
+    tokens_df['value'] = pd.to_numeric(tokens_df['value'], errors='coerce')
+
+    # 2. Filter for the metric of interest
+    plot_df = tokens_df[tokens_df['metric'] == 'max_token_count'].copy()
+
+    # 3. Filter for one task (e.g., Hotels-104) to avoid overcrowding
+    target_task = 'Hotels-104'
+    plot_df_task = plot_df[plot_df['task_id'] == target_task]
+
+    # 4. Create the visualization
+    plt.figure(figsize=(10, 6))
+    sns.barplot(data=plot_df_task, x='memory_strategy', y='value', hue='model')
+
+    plt.title(f'Max Token Count per Strategy and Model (Task: {target_task})')
+    plt.ylabel('Token Count')
+    plt.xlabel('Memory Strategy')
+    plt.legend(title='Model')
+
+    plt.show()
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Further ideas for Evaluation
+
+    - Distribution of Completion/Correctness Reason per model/memory method
+    - Clustering of pattern for entire dataset
+    """)
     return
 
 
