@@ -11,41 +11,41 @@ __generated_with = "0.19.11"
 app = marimo.App(width="full")
 
 
+# =============================================================================
+# 1. SETUP & CONFIGURATION
+# =============================================================================
+
+
 @app.cell(hide_code=True)
 def _():
-    import json
+    """Import dependencies and configure paths."""
     import marimo as mo
     import pandas as pd
     import altair as alt
-    import thesis_graphics as tg
     import seaborn as sns
     import matplotlib.pyplot as plt
-
     from pathlib import Path
-    from datetime import datetime
-    from typing import Optional
+
+    # Import helper modules
+    from helpers import data_loading as dl
+    from helpers import plotting as plot
 
     # Configuration
     BASE_DIR = Path("results/cfb")
     OUTPUT_ROOT = Path("thesis_assets")
-    return (
-        BASE_DIR,
-        OUTPUT_ROOT,
-        Optional,
-        Path,
-        alt,
-        datetime,
-        json,
-        mo,
-        pd,
-        plt,
-        sns,
-        tg,
-    )
+
+    return BASE_DIR, OUTPUT_ROOT, Path, alt, dl, mo, pd, plt, plot, sns
+
+
+# =============================================================================
+# 2. PROJECT SELECTION
+# =============================================================================
 
 
 @app.cell(hide_code=True)
 def _(BASE_DIR):
+    """Get list of available projects."""
+
     def get_projects() -> list[str]:
         if not BASE_DIR.exists():
             return []
@@ -57,16 +57,18 @@ def _(BASE_DIR):
 
 @app.cell(hide_code=True)
 def _(mo):
+    """Display title and instructions."""
     mo.md("""
-    # Experiment Analysis
+    # Experiment Analysis Dashboard
 
-    Choose the Project below
+    Select a project from the dropdown below to load and analyze experiment results.
     """)
     return
 
 
 @app.cell(hide_code=True)
 def _(mo, projects):
+    """Project selection dropdown."""
     project_dropdown = mo.ui.dropdown(
         options=projects,
         label="Project",
@@ -77,49 +79,95 @@ def _(mo, projects):
     return (project_dropdown,)
 
 
+# =============================================================================
+# 3. DATA LOADING
+# =============================================================================
+
+
 @app.cell(hide_code=True)
-def _(BASE_DIR, mo, project_dropdown, tg):
+def _(BASE_DIR, dl, mo, project_dropdown):
+    """Load all data for selected project."""
     # Stop if no selection made
     mo.stop(
         project_dropdown.value is None,
         mo.md("*Select a project to load data.*"),
     )
 
-    # Load all data for project (aggregates across all timestamps)
-    metrics_df = tg.load_metrics_project(BASE_DIR, project_dropdown.value)
+    # Load metrics in long format
+    metrics_long_df = dl.load_metrics_long(BASE_DIR, project_dropdown.value)
 
     mo.stop(
-        metrics_df.empty,
+        metrics_long_df.empty,
         mo.callout(mo.md("No metrics found for this project."), kind="warn"),
     )
-    return (metrics_df,)
+    return (metrics_long_df,)
 
 
 @app.cell(hide_code=True)
-def _(metrics_df, mo, project_dropdown):
-    _strategies = sorted(metrics_df["memory_strategy"].unique())
-    _models = sorted(metrics_df["model"].unique())
-    _n_metrics = metrics_df["metric"].nunique()
+def _(BASE_DIR, dl, mo, project_dropdown):
+    """Load task-level results."""
+    mo.stop(project_dropdown.value is None, None)
+
+    # Load task results and add domain column
+    task_results_df = dl.load_task_results(BASE_DIR / project_dropdown.value)
+    task_results_df = dl.add_domain_column(task_results_df)
+
+    # Add turn category column
+    task_results_df = dl.add_turn_category(
+        task_results_df,
+        column="total_call_num",
+        bins=[0, 4, 8, 100],
+        labels=["few_turns", "med_turns", "many_turns"],
+    )
+    return (task_results_df,)
+
+
+# =============================================================================
+# 4. OVERVIEW STATISTICS
+# =============================================================================
+
+
+@app.cell(hide_code=True)
+def _(metrics_long_df, mo, project_dropdown):
+    """Display project overview statistics."""
+    _strategies = sorted(metrics_long_df["memory_strategy"].unique())
+    _models = sorted(metrics_long_df["model"].unique())
+    _n_metrics = metrics_long_df["metric"].nunique()
 
     mo.callout(
         mo.md(f"""
-    **{project_dropdown.value}** (aggregated across all timestamps)
+    **{project_dropdown.value}** - Experiment Overview
 
-    Strategies: {len(_strategies)} | Models: {len(_models)} | Metrics: {_n_metrics}
+    - **Strategies:** {len(_strategies)}
+    - **Models:** {len(_models)}
+    - **Metrics:** {_n_metrics}
+    - **Data aggregated across all timestamps**
         """),
         kind="info",
     )
     return
 
 
+# =============================================================================
+# 5. INTERACTIVE METRIC CHARTS (ALTAIR)
+# =============================================================================
+
+
 @app.cell(hide_code=True)
-def _(alt, metrics_df, mo):
-    """Create interactive Altair charts for display."""
+def _(mo):
+    """Section header for interactive charts."""
+    mo.md("## Interactive Metric Visualizations")
+    return
+
+
+@app.cell(hide_code=True)
+def _(alt, metrics_long_df, mo):
+    """Create interactive Altair charts for each metric."""
     altair_charts = {}
-    _metrics = sorted(metrics_df["metric"].unique())
+    _metrics = sorted(metrics_long_df["metric"].unique())
 
     for _metric in _metrics:
-        _subset = metrics_df[metrics_df["metric"] == _metric]
+        _subset = metrics_long_df[metrics_long_df["metric"] == _metric]
         if _subset.empty:
             continue
 
@@ -146,34 +194,41 @@ def _(alt, metrics_df, mo):
 
 @app.cell(hide_code=True)
 def _(altair_charts, mo):
-    """Display interactive charts."""
+    """Display interactive charts with save button."""
     save_btn = mo.ui.run_button(label="Save plots and tables to disk")
     mo.vstack(
         [
-            mo.md("## Interactive Charts"),
             mo.ui.tabs(altair_charts)
             if altair_charts
-            else mo.md("No charts available"),
-            mo.hstack([mo.md("Click the button to save plots and tables as PDFs and CSVs."), save_btn], justify="start"),
-            mo.md("---"),
+            else mo.md("_No charts available_"),
+            mo.hstack(
+                [
+                    mo.md(
+                        "Click to save Nature-quality plots (PDF/PNG) and CSV tables:"
+                    ),
+                    save_btn,
+                ],
+                justify="start",
+            ),
         ]
     )
     return (save_btn,)
 
 
 @app.cell(hide_code=True)
-def _(OUTPUT_ROOT, metrics_df, mo, project_dropdown, save_btn, tg):
+def _(OUTPUT_ROOT, dl, metrics_long_df, mo, plot, project_dropdown, save_btn):
+    """Save plots and tables when button is clicked."""
     mo.stop(not save_btn.value, None)
 
     _output_dir = OUTPUT_ROOT / project_dropdown.value
     _output_dir.mkdir(parents=True, exist_ok=True)
 
     # Save tables
-    tg.save_metric_tables(metrics_df, _output_dir)
-    tg.save_results_table(metrics_df, _output_dir)
+    dl.save_metric_tables(metrics_long_df, _output_dir)
+    dl.save_results_table(metrics_long_df, _output_dir)
 
     # Save plots (Nature-quality PDFs)
-    _saved = tg.save_all_plots(metrics_df, _output_dir)
+    _saved = plot.save_all_plots(metrics_long_df, _output_dir)
 
     mo.callout(
         mo.md(f"""
@@ -187,170 +242,13 @@ def _(OUTPUT_ROOT, metrics_df, mo, project_dropdown, save_btn, tg):
     return
 
 
-@app.cell(hide_code=True)
-def _(Optional, Path, datetime, json, pd):
-    def parse_experiment_results(experiment_path: str) -> pd.DataFrame:
-        """
-        Parse all experiment results from subdirectories into a DataFrame.
-
-        Iterates through all subdirectories of an experiment folder structured as:
-        experiment_path/<timestamp>/<memory_strategy>/<model>/cfb_*.json
-
-        Args:
-            experiment_path: Path to experiment directory, e.g., "results/cfb/demo_trace_diff"
-
-        Returns:
-            DataFrame with columns:
-            - task_id: Task identifier, e.g., "Hotels-104"
-            - memory_strategy: Memory strategy key, e.g., "prog_sum"
-            - model: Model name, e.g., "gpt-4-1-mini"
-            - timestamp: ISO-formatted timestamp from subfolder
-            - success_turn_num: Number of successful turns
-            - total_turn_num: Total number of turns
-            - correct_call_num: Number of correct function calls
-            - total_call_num: Total function calls made
-            - real_turn_num: Actual turns (excluding observations)
-            - response_llm_judge_complete_score: Completeness score (0, 1, or 2)
-            - response_llm_judge_complete_reason: Explanation for completeness score
-            - response_llm_judge_correct_score: Correctness score (0, 1, or 2)
-            - response_llm_judge_correct_reason: Explanation for correctness score
-            - status: Task status (Success/Failed)
-            - gen_convs: Generated conversation trace
-        """
-        experiment_dir = Path(experiment_path)
-        rows = []
-
-        # Iterate through timestamp directories
-        for timestamp_dir in experiment_dir.iterdir():
-            if not timestamp_dir.is_dir():
-                continue
-
-            timestamp_str = timestamp_dir.name
-            # Parse timestamp from format YYYYMMDD_HHMM to ISO format
-            timestamp_iso = parse_timestamp(timestamp_str)
-            if timestamp_iso is None:
-                continue
-
-            # Iterate through memory strategy directories
-            for strategy_dir in timestamp_dir.iterdir():
-                if not strategy_dir.is_dir():
-                    continue
-
-                memory_strategy = strategy_dir.name
-
-                # Iterate through model directories
-                for model_dir in strategy_dir.iterdir():
-                    if not model_dir.is_dir():
-                        continue
-
-                    model = model_dir.name
-
-                    # Find the main results JSON file (cfb_*.json pattern)
-                    for json_file in model_dir.glob(f"cfb_{model}_{memory_strategy}_{timestamp_str}.json"):
-                        rows.extend(
-                            parse_json_file(
-                                json_file, memory_strategy, model, timestamp_iso
-                            )
-                        )
-
-        return pd.DataFrame(rows)
-
-
-    def parse_timestamp(timestamp_str: str) -> Optional[str]:
-        """
-        Parse timestamp string from YYYYMMDD_HHMM format to ISO format.
-
-        Args:
-            timestamp_str: Timestamp in format YYYYMMDD_HHMM, e.g., "20260211_1046"
-
-        Returns:
-            ISO-formatted timestamp string, or None if parsing fails
-        """
-        try:
-            dt = datetime.strptime(timestamp_str, "%Y%m%d_%H%M")
-            return dt.isoformat()
-        except ValueError:
-            return None
-
-
-    def parse_json_file(
-        json_path: Path,
-        memory_strategy: str,
-        model: str,
-        timestamp_iso: str,
-    ) -> list[dict]:
-        """
-        Parse a single JSON results file into row dictionaries.
-
-        Args:
-            json_path: Path to the JSON file
-            memory_strategy: Memory strategy name
-            model: Model name
-            timestamp_iso: ISO-formatted timestamp
-
-        Returns:
-            List of dictionaries, one per task in the JSON file
-        """
-        rows = []
-
-        with open(json_path, "r", encoding="utf-8") as f:
-            data = json.load(f)
-
-        for task in data:
-            row = {
-                "task_id": task.get("id"),
-                "memory_strategy": memory_strategy,
-                "model": model,
-                "timestamp": timestamp_iso,
-                # Extract count_dict fields
-                "success_turn_num": task.get("count_dict", {}).get("success_turn_num"),
-                "total_turn_num": task.get("count_dict", {}).get("total_turn_num"),
-                "correct_call_num": task.get("count_dict", {}).get("correct_call_num"),
-                "total_call_num": task.get("count_dict", {}).get("total_call_num"),
-                "real_turn_num": task.get("count_dict", {}).get("real_turn_num"),
-                # Extract resp_eval fields (may be null)
-                "response_llm_judge_complete_score": safe_get_nested(
-                    task, "resp_eval", "complete", "score"
-                ),
-                "response_llm_judge_complete_reason": safe_get_nested(
-                    task, "resp_eval", "complete", "reason"
-                ),
-                "response_llm_judge_correct_score": safe_get_nested(
-                    task, "resp_eval", "correct", "score"
-                ),
-                "response_llm_judge_correct_reason": safe_get_nested(
-                    task, "resp_eval", "correct", "reason"
-                ),
-                "status": task.get("status"),
-                "gen_convs": task.get("gen_convs"),
-            }
-            rows.append(row)
-
-        return rows
-
-
-    def safe_get_nested(data: dict, *keys) -> Optional[any]:
-        """
-        Safely navigate nested dictionaries, returning None if any key is missing.
-
-        Args:
-            data: Dictionary to navigate
-            *keys: Sequence of keys to traverse
-
-        Returns:
-            Value at nested path, or None if path doesn't exist
-        """
-        current = data
-        for key in keys:
-            if current is None or not isinstance(current, dict):
-                return None
-            current = current.get(key)
-        return current
-
-    return parse_experiment_results, parse_timestamp
+# =============================================================================
+# 6. LLM-AS-A-JUDGE ANALYSIS
+# =============================================================================
 
 
 @app.cell(hide_code=True)
+<<<<<<< HEAD
 def _(BASE_DIR, mo, parse_experiment_results, project_dropdown):
     mo.stop(project_dropdown.value is None, None)
     turn_count_df = parse_experiment_results(BASE_DIR.as_posix() + "/" + project_dropdown.value)
@@ -517,94 +415,130 @@ def _(turn_count_df):
         ["model", "timestamp", "memory_strategy", "domain"], 
         )["response_llm_judge_correct_score"].value_counts(dropna=False).unstack(fill_value=0)
     turn_count_domain_grouped
+=======
+def _(mo):
+    """Section header for LLM judge analysis."""
+    mo.md("## LLM-as-a-Judge Evaluation")
+>>>>>>> f9e6443 (Refactor thesis graphics utilities into modular helper functions)
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
+<<<<<<< HEAD
     mo.md(r"""
     ## LLM-as-a-Judge Correctness Evaluation
     """)
+=======
+    """Subsection: Correctness evaluation."""
+    mo.md("### Correctness Scores")
+>>>>>>> f9e6443 (Refactor thesis graphics utilities into modular helper functions)
     return
 
 
 @app.cell
-def _(plt, sns, turn_count_df):
+def _(plot, plt, sns, task_results_df):
+    """Plot LLM judge correctness evaluation."""
+    plot.apply_nature_style()
     sns.set_theme(style="whitegrid")
 
     correctness_plot = sns.catplot(
-        data=turn_count_df, 
-        x='response_llm_judge_correct_score', 
-        hue='memory_strategy', 
-        col='model',
-        kind='count',
-        palette='viridis',
-        height=7, 
+        data=task_results_df,
+        x="response_llm_judge_correct_score",
+        hue="memory_strategy",
+        col="model",
+        kind="count",
+        palette="viridis",
+        height=7,
         aspect=0.8,
     )
 
-    # 3. Refine labels using LaTeX formatting for scientific clarity
-    correctness_plot.set_axis_labels("LLM-as-a-Judge Correctness Evaluation", "Count of Correctness")
+    correctness_plot.set_axis_labels("LLM-as-a-Judge Correctness Score", "Count")
     correctness_plot.set_titles(col_template="{col_name}")
 
-    # Prevent label overlapping
     plt.tight_layout()
     plt.show()
-    return
+    return (correctness_plot,)
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(r"""
-    ## LLM-as-a-Judge Completeness Evaluation
-    """)
+    """Subsection: Completeness evaluation."""
+    mo.md("### Completeness Scores")
     return
 
 
 @app.cell
-def _(plt, sns, turn_count_df):
+def _(plot, plt, sns, task_results_df):
+    """Plot LLM judge completeness evaluation."""
+    plot.apply_nature_style()
     sns.set_theme(style="whitegrid")
 
     completeness_plot = sns.catplot(
-        data=turn_count_df, 
-        x='response_llm_judge_complete_score', 
-        hue='memory_strategy', 
-        col='model',
-        kind='count',
-        palette='viridis',
-        height=7, 
+        data=task_results_df,
+        x="response_llm_judge_complete_score",
+        hue="memory_strategy",
+        col="model",
+        kind="count",
+        palette="viridis",
+        height=7,
         aspect=0.8,
     )
 
-    # 3. Refine labels using LaTeX formatting for scientific clarity
-    completeness_plot.set_axis_labels("LLM-as-a-Judge Completeness Evaluation", "Count of Completeness")
+    completeness_plot.set_axis_labels("LLM-as-a-Judge Completeness Score", "Count")
     completeness_plot.set_titles(col_template="{col_name}")
 
-    # Prevent label overlapping
     plt.tight_layout()
     plt.show()
+    return (completeness_plot,)
+
+
+# =============================================================================
+# 7. TURN COUNT ANALYSIS
+# =============================================================================
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    """Section header for turn analysis."""
+    mo.md("## Turn Count Analysis")
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
+<<<<<<< HEAD
     mo.md(r"""
     ## Metrics per Turn Count
     """)
+=======
+    """Subsection: Turn distribution."""
+    mo.md("### Turn Distribution Histogram")
+>>>>>>> f9e6443 (Refactor thesis graphics utilities into modular helper functions)
     return
 
 
 @app.cell
-def _(sns, turn_count_df):
-    sns.histplot(data=turn_count_df.total_call_num, bins=3)
+def _(sns, task_results_df):
+    """Histogram of total call numbers."""
+    sns.histplot(data=task_results_df["total_call_num"], bins=20)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    """Subsection: Success by turn category."""
+    mo.md("### Success Rate by Turn Category")
     return
 
 
 @app.cell
-def _(pd, turn_count_df):
-    bins = [0, 4, 8, 100]
-    labels = ['few_turns', 'med_turns', 'many_turns']
+def _(plot, plt, sns, task_results_df):
+    """Plot success count by turn category."""
+    # Filter for successful trials
+    success_df = task_results_df[task_results_df["status"] == "Success"].copy()
 
+<<<<<<< HEAD
     turn_count_df['turns_cat'] = pd.cut(turn_count_df['total_call_num'], bins=bins, labels=labels, ordered=True)
     return
 
@@ -641,26 +575,39 @@ def _(plt, sns, turn_count_df):
     success_df = turn_count_df[turn_count_df['status'] == 'Success'].copy()
 
     # 2. Generate the faceted count plot
+=======
+    plot.apply_nature_style()
+>>>>>>> f9e6443 (Refactor thesis graphics utilities into modular helper functions)
     sns.set_theme(style="whitegrid")
 
-    g = sns.catplot(
-        data=success_df, 
-        x='turns_cat', 
-        hue='memory_strategy', 
-        col='model',
-        kind='count',
-        palette='viridis',
-        height=7, 
+    success_by_turns = sns.catplot(
+        data=success_df,
+        x="turns_cat",
+        hue="memory_strategy",
+        col="model",
+        kind="count",
+        palette="viridis",
+        height=7,
         aspect=0.8,
     )
 
-    # 3. Refine labels using LaTeX formatting for scientific clarity
-    g.set_axis_labels("Turns Category", "Count of Successes")
-    g.set_titles(col_template="{col_name}")
+    success_by_turns.set_axis_labels("Turn Category", "Count of Successes")
+    success_by_turns.set_titles(col_template="{col_name}")
 
-    # Prevent label overlapping
     plt.tight_layout()
     plt.show()
+    return (success_by_turns, success_df)
+
+
+# =============================================================================
+# 8. DATA TABLES
+# =============================================================================
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    """Section header for data tables."""
+    mo.md("## Raw Data Tables")
     return
 
 
@@ -673,6 +620,7 @@ def _(mo):
 
 
 @app.cell
+<<<<<<< HEAD
 def _(turn_count_df):
     turn_count_df
     return
@@ -738,6 +686,17 @@ def _(mo):
     - Clustering of pattern for entire dataset
     """)
     return
+=======
+def _(mo, project_dropdown, task_results_df):
+    """Display raw data in tabbed view."""
+    mo.stop(project_dropdown.value is None, None)
+
+    tables = {
+        "Task Results": task_results_df,
+    }
+    mo.ui.tabs(tables) if tables else mo.md("_No tables available_")
+    return (tables,)
+>>>>>>> f9e6443 (Refactor thesis graphics utilities into modular helper functions)
 
 
 if __name__ == "__main__":
