@@ -28,7 +28,7 @@ def _():
     # Configuration
     BASE_DIR = Path("results/cfb")
     OUTPUT_ROOT = Path("thesis_assets")
-    return BASE_DIR, OUTPUT_ROOT, alt, dl, mo, plot, plt, sns, pd
+    return BASE_DIR, OUTPUT_ROOT, Path, alt, dl, mo, pd, plot, plt, sns
 
 
 @app.cell(hide_code=True)
@@ -92,7 +92,7 @@ def _(BASE_DIR, dl, mo, project_dropdown):
     """Load task-level results."""
     mo.stop(project_dropdown.value is None, None)
 
-    # Load task results and add domain column
+    # Load task results and add domain columnK
     task_results_df = dl.load_task_results(BASE_DIR / project_dropdown.value)
     task_results_df = dl.add_domain_column(task_results_df)
 
@@ -217,13 +217,6 @@ def _(OUTPUT_ROOT, dl, metrics_long_df, mo, plot, project_dropdown, save_btn):
 
 
 @app.cell(hide_code=True)
-def _(BASE_DIR, mo, parse_experiment_results, project_dropdown):
-    mo.stop(project_dropdown.value is None, None)
-    turn_count_df = parse_experiment_results(BASE_DIR.as_posix() + "/" + project_dropdown.value)
-    return (turn_count_df,)
-
-
-@app.cell(hide_code=True)
 def _(Path, json, parse_timestamp, pd):
     def parse_experiment_metrics(experiment_path: str) -> pd.DataFrame:
         """
@@ -273,7 +266,9 @@ def _(Path, json, parse_timestamp, pd):
                     model = model_dir.name
 
                     # Find metrics JSON file
-                    for json_file in model_dir.glob(f"metrics_{model}_{memory_strategy}_{timestamp_str}.json"):
+                    for json_file in model_dir.glob(
+                        f"metrics_{model}_{memory_strategy}_{timestamp_str}.json"
+                    ):
                         with open(json_file, "r", encoding="utf-8") as f:
                             metrics = json.load(f)
 
@@ -281,7 +276,9 @@ def _(Path, json, parse_timestamp, pd):
                             "memory_strategy": memory_strategy,
                             "model": model,
                             "timestamp": timestamp_iso,
-                            "domain_success_rate": metrics.get("domain_success_rate", {}),
+                            "domain_success_rate": metrics.get(
+                                "domain_success_rate", {}
+                            ),
                             "domain_turn_acc": metrics.get("domain_turn_acc", {}),
                             "domain_call_acc": metrics.get("domain_call_acc", {}),
                             "overall_success": metrics.get("overall_success"),
@@ -293,14 +290,7 @@ def _(Path, json, parse_timestamp, pd):
 
         return pd.DataFrame(rows)
 
-    return (parse_experiment_metrics,)
-
-
-@app.cell(hide_code=True)
-def _(BASE_DIR, mo, parse_experiment_metrics, project_dropdown):
-    mo.stop(project_dropdown.value is None, None)
-    agg_metrics_df = parse_experiment_metrics(BASE_DIR.as_posix() + "/" + project_dropdown.value)
-    return (agg_metrics_df,)
+    return
 
 
 @app.cell(hide_code=True)
@@ -334,55 +324,6 @@ def _(pd):
             suffixes=("", "_agg"),
         )
 
-    return (join_results_with_metrics,)
-
-
-@app.cell(hide_code=True)
-def _(
-    agg_metrics_df,
-    join_results_with_metrics,
-    mo,
-    project_dropdown,
-    turn_count_df,
-):
-    mo.stop(project_dropdown.value is None, None)
-    _tables = {
-        "Task-Result Table": turn_count_df,
-        "Experiment Metrics Table": agg_metrics_df,
-        "Task and Metrics Table": join_results_with_metrics(
-            details_df=turn_count_df,
-            metrics_df=agg_metrics_df
-        ),
-    }
-    mo.vstack(
-        [
-            mo.md("## View Results as Plain Data"),
-            mo.ui.tabs(_tables)
-            if _tables
-            else mo.md("No tables available"),
-        ])
-    return
-
-
-@app.cell
-def _(turn_count_df):
-    turn_count_df["domain"] = [val.split("-")[0] for val in turn_count_df.task_id]
-    turn_count_df.domain.value_counts()
-    return
-
-
-@app.cell
-def _(turn_count_df):
-    turn_count_df.dtypes
-    return
-
-
-@app.cell
-def _(turn_count_df):
-    turn_count_domain_grouped = turn_count_df.groupby(
-        ["model", "timestamp", "memory_strategy", "domain"], 
-        )["response_llm_judge_correct_score"].value_counts(dropna=False).unstack(fill_value=0)
-    turn_count_domain_grouped
     return
 
 
@@ -395,27 +336,39 @@ def _(mo):
 
 
 @app.cell
-def _(plot, plt, sns, task_results_df):
+def _(alt, task_results_df):
     """Plot LLM judge correctness evaluation."""
-    plot.apply_nature_style()
-    sns.set_theme(style="whitegrid")
-
-    correctness_plot = sns.catplot(
-        data=task_results_df,
-        x="response_llm_judge_correct_score",
-        hue="memory_strategy",
-        col="model",
-        kind="count",
-        palette="viridis",
-        height=7,
-        aspect=0.8,
+    # Defining the chart
+    _chart = alt.Chart(task_results_df).mark_bar().encode(
+        x=alt.X(
+            "response_llm_judge_correct_score:O", 
+            title="LLM-as-a-Judge Correctness Score"
+        ),
+        y=alt.Y(
+            "count():Q", 
+            title="Count"
+        ),
+        color=alt.Color(
+            "memory_strategy:N", 
+            scale=alt.Scale(scheme='viridis'),
+            legend=alt.Legend(title="Memory Strategy")
+        ),
+        column=alt.Column(
+            "model:N", 
+            title="Model Comparison"
+        ),
+        tooltip=[
+            alt.Tooltip("model:N", title="Model"),
+            alt.Tooltip("memory_strategy:N", title="Strategy"),
+            alt.Tooltip("response_llm_judge_correct_score:O", title="Score"),
+            alt.Tooltip("count():Q", title="Total Count")
+        ]
+    ).properties(
+        title="LLM Judge Correctness Evaluation by Memory Strategy",
+        width=200,
+        height=400
     )
-
-    correctness_plot.set_axis_labels("LLM-as-a-Judge Correctness Score", "Count")
-    correctness_plot.set_titles(col_template="{col_name}")
-
-    plt.tight_layout()
-    plt.show()
+    _chart
     return
 
 
@@ -460,16 +413,195 @@ def _(mo):
 
 @app.cell(hide_code=True)
 def _(mo):
+    """Turn metrics summary subsection."""
+    mo.md("### Turn Metrics Summary")
+    return
+
+
+@app.cell
+def _(mo, task_results_df):
+    """Summary statistics of turn metrics by strategy and model."""
+    if task_results_df.empty:
+        _ = mo.callout(mo.md("_No data available_"), kind="warn")
+    else:
+        _summary = (
+            task_results_df.groupby(["memory_strategy", "model"])
+            .agg(
+                {
+                    "total_call_num": ["mean", "std", "min", "max"],
+                    "real_turn_num": ["mean", "std"],
+                    "success_turn_num": ["mean", "std"],
+                }
+            )
+            .round(2)
+        )
+        _summary
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
     mo.md(r"""
-    ## Metrics per Turn Count
+    ### Turn Count Distributions
     """)
     return
 
 
 @app.cell
-def _(sns, task_results_df):
-    """Histogram of total call numbers."""
-    sns.histplot(data=task_results_df["total_call_num"], bins=20)
+def _(alt, mo, task_results_df):
+    """Turn count distribution by model (Altair interactive)."""
+    if task_results_df.empty:
+        _ = mo.callout(mo.md("_No data available_"), kind="warn")
+    else:
+        _dist_chart = (
+            alt.Chart(task_results_df)
+            .mark_bar(opacity=0.7)
+            .encode(
+                x=alt.X(
+                    "total_call_num:Q",
+                    bin=alt.Bin(maxbins=15),
+                    title="Total Call Count",
+                ),
+                y="count()",
+                color="memory_strategy:N",
+            )
+            .facet(column="model:N")
+            .properties(width=200, height=300)
+        )
+        mo.ui.altair_chart(_dist_chart)
+    return
+
+
+@app.cell
+def _(plot, plt, sns, task_results_df):
+    """Turn count distribution by model (Seaborn histplot)."""
+    if not task_results_df.empty:
+        plot.apply_nature_style()
+        _fig = plt.figure(figsize=(10, 6))
+        sns.histplot(
+            data=task_results_df,
+            x="total_call_num",
+            hue="memory_strategy",
+            kde=True,
+            stat="count",
+            palette="deep",
+        )
+        plt.xlabel("Total Call Count")
+        plt.ylabel("Frequency")
+        plt.title("Distribution of Turn Counts")
+        plt.tight_layout()
+        plt.show()
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    """Performance vs turn metrics subsection."""
+    mo.md("### Turn Count vs Performance Metrics")
+    return
+
+
+@app.cell
+def _(alt, mo, task_results_df):
+    """Scatter plot: turn count vs call accuracy (Altair)."""
+    if task_results_df.empty:
+        _ = mo.callout(mo.md("_No data available_"), kind="warn")
+    else:
+        _combined = task_results_df.copy()
+        _combined["call_accuracy"] = (
+            _combined["correct_call_num"] / _combined["total_call_num"]
+        ).fillna(0)
+
+        _scatter = (
+            alt.Chart(_combined)
+            .mark_circle(size=100, opacity=0.6)
+            .encode(
+                x=alt.X("total_call_num:Q", title="Total Call Count"),
+                y=alt.Y("call_accuracy:Q", title="Call Accuracy"),
+                color="memory_strategy:N",
+                tooltip=[
+                    "task_id",
+                    "memory_strategy",
+                    "model",
+                    "total_call_num",
+                    "call_accuracy",
+                ],
+            )
+            .facet(column="model:N")
+            .properties(width=250, height=250)
+        )
+        mo.ui.altair_chart(_scatter)
+    return
+
+
+@app.cell
+def _(plot, plt, sns, task_results_df):
+    """Turn count vs success rate by strategy (Seaborn)."""
+    if not task_results_df.empty:
+        plot.apply_nature_style()
+
+        _combined = task_results_df.copy()
+        _combined["success"] = (_combined["status"] == "Success").astype(int)
+
+        _fig = plt.figure(figsize=(10, 6))
+        sns.scatterplot(
+            data=_combined,
+            x="total_call_num",
+            y="success",
+            hue="memory_strategy",
+            style="model",
+            palette="deep",
+            s=100,
+            alpha=0.6,
+        )
+        plt.ylabel("Success (1=Success, 0=Failed)")
+        plt.xlabel("Total Call Count")
+        plt.title("Task Success vs Turn Count")
+        plt.tight_layout()
+        plt.show()
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    """Turn metrics by domain subsection."""
+    mo.md("### Turn Count by Domain")
+    return
+
+
+@app.cell
+def _(alt, mo, task_results_df):
+    """Average turn count by domain and strategy (Altair)."""
+    if task_results_df.empty:
+        _ = mo.callout(mo.md("_No data available_"), kind="warn")
+    else:
+        _domain_agg = (
+            task_results_df.groupby(["domain", "memory_strategy", "model"])
+            .agg({"total_call_num": "mean", "real_turn_num": "mean"})
+            .reset_index()
+        )
+
+        _chart = (
+        alt.Chart(_domain_agg)
+        .mark_bar()
+        .encode(
+            x=alt.X("domain:N", title="Domain"),
+            y=alt.Y("total_call_num:Q", title="Avg Turn Count"),
+            color="memory_strategy:N",
+            xOffset="memory_strategy:N",
+        )
+        .facet(column="model:N")
+        .properties(width=250, height=300)
+        )
+    mo.ui.altair_chart(_chart)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Metrics per Turn Count
+    """)
     return
 
 
@@ -479,21 +611,31 @@ def _(mo):
     mo.md("### Success Rate by Turn Category")
     return
 
+
 @app.cell
-def _(turn_count_df):
-    #df = turn_count_df[["memory_strategy", "model", "timestamp", "turns_cat", "status"]].groupby(
-    success_count = turn_count_df.groupby(
-        ["model", "timestamp", "memory_strategy"], 
-        )["status"].value_counts(dropna=False).unstack(fill_value=0)
+def _(task_results_df):
+    # df = turn_count_df[["memory_strategy", "model", "timestamp", "turns_cat", "status"]].groupby(
+    turn_count_df = task_results_df
+    success_count = (
+        turn_count_df.groupby(
+            ["model", "timestamp", "memory_strategy"],
+        )["status"]
+        .value_counts(dropna=False)
+        .unstack(fill_value=0)
+    )
     success_count
-    return
+    return (turn_count_df,)
 
 
 @app.cell
 def _(turn_count_df):
-    turn_count_grouped = turn_count_df.groupby(
-        ["model", "timestamp", "memory_strategy"], 
-        )["turns_cat"].value_counts(dropna=False).unstack(fill_value=0)
+    turn_count_grouped = (
+        turn_count_df.groupby(
+            ["model", "timestamp", "memory_strategy"],
+        )["turns_cat"]
+        .value_counts(dropna=False)
+        .unstack(fill_value=0)
+    )
     turn_count_grouped
     return
 
@@ -502,7 +644,7 @@ def _(turn_count_df):
 def _(plt, sns, turn_count_df):
     # 1. Filter for successful trials
     # Ensure your 'turns_cat' is an ordered category for the best visual flow
-    success_df = turn_count_df[turn_count_df['status'] == 'Success'].copy()
+    success_df = turn_count_df[turn_count_df["status"] == "Success"].copy()
 
     # 2. Generate the faceted count plot
     sns.set_theme(style="whitegrid")
@@ -535,74 +677,476 @@ def _(mo):
 
 
 @app.cell(hide_code=True)
+def _(BASE_DIR, dl, mo, project_dropdown):
+    mo.stop(project_dropdown.value is None, None)
+    token_metrics_df = dl.load_compressed_traces(BASE_DIR / project_dropdown.value)
+    return (token_metrics_df,)
+
+
+@app.cell(hide_code=True)
 def _(mo):
-    """Section header for data tables."""
-    mo.md("## Raw Data Tables")
+    mo.md(r"""
+    ### Token Metrics Summary
+    """)
+    return
+
+
+@app.cell
+def _(token_metrics_df):
+    summary = (
+        token_metrics_df.groupby(["memory_strategy", "model"])
+        .agg(
+            {
+                "max_token_count": ["mean", "std", "min", "max"],
+                "avg_token_count": ["mean", "std"],
+                "final_token_count": ["mean", "std"],
+                "token_growth_rate": ["mean", "std"],
+            }
+        )
+        .round(2)
+    )
+    summary
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md("""
+    ### Token Count Distributions
+    """)
+    return
+
+
+@app.cell
+def _(alt, mo, token_metrics_df):
+    dist_chart = (
+        alt.Chart(token_metrics_df)
+        .mark_bar(opacity=0.7)
+        .encode(
+            x=alt.X(
+                "max_token_count:Q",
+                bin=alt.Bin(maxbins=20),
+                title="Max Token Count",
+            ),
+            y="count()",
+            color="memory_strategy:N",
+        )
+        .facet(column="model:N")
+        .properties(width=200, height=300)
+    )
+    mo.ui.altair_chart(dist_chart)
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
     mo.md(r"""
-    ## Metrics per Max Token in Context
+    #### Token count distribution by model (Seaborn histplot).
     """)
     return
 
 
 @app.cell
-def _(turn_count_df):
-    turn_count_df
-    return
-
-
-@app.cell
-def _(BASE_DIR, project_dropdown, tg):
-    tokens_df = tg.load_compressed_project(BASE_DIR, project_dropdown.value)
-    return (tokens_df,)
-
-
-@app.cell
-def _(tokens_df):
-    tokens_df.dtypes
-    return
-
-
-@app.cell
-def _(tokens_df):
-    tokens_df.head()
-    return
-
-
-@app.cell(hide_code=True)
-def _(mo):
-    mo.md(r"""
-    ### Token Usage per Case
-    """)
-    return
-
-
-@app.cell
-def _(pd, plt, sns, tokens_df):
-    # 1. Convert value to numeric (crucial since it's an object/string)
-    tokens_df['value'] = pd.to_numeric(tokens_df['value'], errors='coerce')
-
-    # 2. Filter for the metric of interest
-    plot_df = tokens_df[tokens_df['metric'] == 'max_token_count'].copy()
-
-    # 3. Filter for one task (e.g., Hotels-104) to avoid overcrowding
-    target_task = 'Hotels-104'
-    plot_df_task = plot_df[plot_df['task_id'] == target_task]
-
-    # 4. Create the visualization
-    plt.figure(figsize=(10, 6))
-    sns.barplot(data=plot_df_task, x='memory_strategy', y='value', hue='model')
-
-    plt.title(f'Max Token Count per Strategy and Model (Task: {target_task})')
-    plt.ylabel('Token Count')
-    plt.xlabel('Memory Strategy')
-    plt.legend(title='Model')
-
+def _(plt, sns, token_metrics_df):
+    _fig = plt.figure(figsize=(10, 6))
+    sns.histplot(
+        data=token_metrics_df,
+        x="max_token_count",
+        hue="memory_strategy",
+        kde=True,
+        stat="count",
+        palette="deep",
+    )
+    plt.xlabel("Max Token Count")
+    plt.ylabel("Frequency")
+    plt.title("Distribution of Maximum Token Counts")
+    plt.tight_layout()
     plt.show()
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Token Count vs Performance Metrics
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    #### Scatter plot: token count vs call accuracy (Altair).
+    """)
+    return
+
+
+@app.cell
+def _(pd, task_results_df, token_metrics_df):
+    """Create dataframe, that holds both token and eval stats."""
+    all_metrics_df = pd.merge(
+        token_metrics_df,
+        task_results_df[
+            [
+                "task_id",
+                "memory_strategy",
+                "model",
+                "timestamp",
+                "correct_call_num",
+                "total_call_num",
+                "total_turn_num",
+                "response_llm_judge_correct_score",
+                "response_llm_judge_complete_score",
+            ]
+        ],
+        on=["task_id", "memory_strategy", "model", "timestamp"],
+        how="left",
+    )
+
+    all_metrics_df
+    return (all_metrics_df,)
+
+
+@app.cell
+def _(all_metrics_df, alt, mo):
+    # 1. Prepare the correlation matrix
+    # Note: Keeping your logic for selecting numbers and dropping specific columns
+    corr_matrix = all_metrics_df.select_dtypes(include=['number']).drop(
+        columns=["token_growth_rate", "min_token_count"], 
+        errors='ignore'
+    ).corr()
+
+    # 2. Melt the data into long-form (Altair requirement)
+    # This turns the matrix into: [Variable 1, Variable 2, Correlation]
+    corr_df = corr_matrix.reset_index().melt(id_vars='index')
+    corr_df.columns = ['var1', 'var2', 'correlation']
+
+    # 3. Build the Heatmap
+    base = alt.Chart(corr_df).encode(
+        x=alt.X('var1:N', title=None),
+        y=alt.Y('var2:N', title=None)
+    )
+
+    # The Rectangles (Heatmap cells)
+    heatmap = base.mark_rect().encode(
+        color=alt.Color('correlation:Q',
+            scale=alt.Scale(scheme='redblue', domain=[-1, 1]),
+            legend=alt.Legend(title="Pearson Corr")
+        ),
+        tooltip=[
+            alt.Tooltip('var1:N', title='Variable A'),
+            alt.Tooltip('var2:N', title='Variable B'),
+            alt.Tooltip('correlation:Q', format='.2f', title='Correlation')
+        ]
+    )
+
+    # The Text (Annotations)
+    text = base.mark_text().encode(
+        text=alt.Text('correlation:Q', format='.2f'),
+        # Dynamically switch text color for readability against dark backgrounds
+        color=alt.condition(
+            abs(alt.datum.correlation) > 0.5,
+            alt.value('white'),
+            alt.value('black')
+        )
+    )
+
+    # 4. Combine and Property Tune
+    # In marimo, simply returning this variable will render it
+    _token_corr_chart = (heatmap + text).properties(
+        title='Token Metrics Correlation Heatmap',
+        width=400,
+        height=400
+    ).configure_view(
+        stroke='transparent'
+    ).configure_axis(
+        labelAngle=45
+    )
+
+    mo.ui.altair_chart(_token_corr_chart)
+    return
+
+
+@app.cell
+def _(all_metrics_df, alt, mo):
+    _scatter = (
+        alt.Chart(all_metrics_df)
+        .mark_circle(size=100, opacity=0.6)
+        .encode(
+            x=alt.X("max_token_count:Q", title="Max Token Count"),
+            y=alt.Y("correct_call_num:Q", title="Call Accuracy"),
+            color="memory_strategy:N",
+            tooltip=[
+                "task_id",
+                "memory_strategy",
+                "model",
+                "max_token_count",
+                "correct_call_num",
+            ],
+        )
+        .facet(column="model:N")
+        .properties(width=250, height=250)
+    )
+    mo.ui.altair_chart(_scatter)
+    return
+
+
+@app.cell
+def _(all_metrics_df, alt, mo):
+    _chart = alt.Chart(all_metrics_df).mark_circle(
+        size=50, 
+        opacity=0.6
+    ).encode(
+        x=alt.X("max_token_count", title="Max Token Count"),
+        y=alt.Y("correct_call_num", title="Num. of correct calls"),
+        color=alt.Color("memory_strategy", scale=alt.Scale(scheme="tableau10")),
+        shape="model",
+        # Adding tooltips makes the interactive chart much more useful
+        tooltip=[
+            "max_token_count",
+            "avg_token_count",
+            "memory_strategy", 
+            "model"
+        ]
+    ).properties(
+        title="Correct vs Maximum Token Count",
+        width=750, # Approximate pixel equivalent to 10 inches
+        height=250 # Approximate pixel equivalent to 6 inches
+    ).interactive()
+
+    mo.ui.altair_chart(_chart)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ### Token Metrics by Domain
+    """)
+    return
+
+
+@app.cell
+def _(alt, mo, token_metrics_df):
+    _domain_agg = (
+        token_metrics_df.groupby(["domain", "memory_strategy", "model"])
+        .agg({"max_token_count": "mean", "avg_token_count": "mean"})
+        .reset_index()
+    )
+
+    _chart = (
+        alt.Chart(_domain_agg)
+        .mark_bar()
+        .encode(
+            x=alt.X("domain:N", title="Domain"),
+            y=alt.Y("max_token_count:Q", title="Avg Max Token Count"),
+            color="memory_strategy:N",
+            xOffset="memory_strategy:N",
+        )
+        .facet(column="model:N")
+        .properties(width=250, height=300)
+    )
+    mo.ui.altair_chart(_chart)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Completeness / Correctness Distribution per model
+    """)
+    return
+
+
+@app.cell
+def _(alt, mo, task_results_df):
+    _chart = (
+        alt.Chart(task_results_df.loc[task_results_df["model"] != "claude-sonnet-4-5"])
+        .mark_bar()
+        .encode(
+            x=alt.X("memory_strategy:N", title=""),
+            y=alt.Y("real_turn_num:Q", title="Count of Results"),
+            color="response_llm_judge_complete_score:O",
+            tooltip=[
+                alt.Tooltip("model:N"),
+                alt.Tooltip("memory_strategy:N"),
+                alt.Tooltip("count(response_llm_judge_complete_score):Q", title="Complete Count")
+            ]
+        )
+        .facet(column="model:N")
+        .properties(width=250, height=300,
+                   title="Completeness per Model and Strategy")
+        .configure_axis(
+            labelFontSize=14,
+            titleFontSize=16
+        )
+        .configure_legend(
+            labelFontSize=14,
+            titleFontSize=16
+        )
+        .configure_header( # Adjusts the 'model' facet titles
+            labelFontSize=14
+        )
+    )
+    mo.ui.altair_chart(_chart)
+    return
+
+
+@app.cell
+def _(alt, mo, task_results_df):
+    _chart = (
+        alt.Chart(task_results_df.loc[task_results_df["model"] != "claude-sonnet-4-5"])
+        .mark_bar()
+        .encode(
+            x=alt.X("memory_strategy:N", title=""),
+            y=alt.Y("real_turn_num:Q", title="Count of Results"),
+            color="response_llm_judge_correct_score:O",
+            tooltip=[
+                alt.Tooltip("model:N"),
+                alt.Tooltip("memory_strategy:N"),
+                alt.Tooltip("count(real_turn_num):Q", title="Total Count")
+            ]
+        )
+        .facet(column="model:N")
+        .properties(width=250, height=300,
+                   title="Completeness per Model and Strategy")
+        .configure_axis(
+            labelFontSize=14,
+            titleFontSize=16
+        )
+        .configure_legend(
+            labelFontSize=14,
+            titleFontSize=16
+        )
+        .configure_header( # Adjusts the 'model' facet titles
+            labelFontSize=14
+        )
+    )
+    mo.ui.altair_chart(_chart)
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md(r"""
+    ## Task Error Analysis
+    """)
+    return
+
+
+@app.cell
+def _(task_results_df):
+    task_results_df.loc[task_results_df["model"] == "gpt-4-1"].message_error_reasoning.value_counts()
+    return
+
+
+@app.cell
+def _(task_results_df):
+    task_results_df.loc[task_results_df["model"] == "gemini-2-5-pro"].message_error_type.value_counts()
+    return
+
+
+@app.cell
+def _():
+    return
+
+
+@app.cell
+def _(alt, mo, task_results_df):
+    _agg_df = (
+        task_results_df
+        .groupby(["model", "memory_strategy", "domain", "message_error_type"])
+        .size()
+        .reset_index(name="error_count")
+    )
+
+    # 2. Plot the aggregated data
+    _error_type_chart = {}
+    _models = sorted(_agg_df["model"].unique())
+
+    for _model in _models:
+        _subset = _agg_df[_agg_df["model"] == _model]
+        if _subset.empty:
+            continue
+        
+        _chart = (
+            alt.Chart(_subset)
+            .mark_bar()
+            .encode(
+                x=alt.X("message_error_type:N", title="Error Type", sort="-y"),
+                # Use our explicitly calculated count column!
+                y=alt.Y("error_count:Q", title="Count of Error Type"),
+                # color=alt.Color("domain:N", title="Domain"),
+                # xOffset="domain:N",
+                tooltip=["model", "memory_strategy", "domain", "message_error_type", "error_count"]
+            )
+            .facet(
+                column=alt.Column("memory_strategy:N", title="Memory Strategy"),
+            )
+            .properties(title=_model.replace("_", " ").title())
+            .resolve_scale(y="independent")
+        )
+        _error_type_chart[_model] = mo.ui.altair_chart(_chart)
+
+    mo.vstack(
+        [
+            mo.ui.tabs(_error_type_chart)
+            if _error_type_chart
+            else mo.md("_No charts available_")
+        ]
+    )
+    return
+
+
+@app.cell
+def _(alt, mo, task_results_df):
+    _agg_df = (
+        task_results_df
+        .groupby(["model", "memory_strategy", "domain", "message_error_type"])
+        .size()
+        .reset_index(name="error_count")
+    )
+
+    # 2. Plot the aggregated data
+    error_type_chart_memory_strategy = {}
+    _memory_strategies = sorted(_agg_df["memory_strategy"].unique())
+
+    for _memory_strategy in _memory_strategies:
+        _subset = _agg_df[_agg_df["memory_strategy"] == _memory_strategy]
+        if _subset.empty:
+            continue
+        
+        _chart = (
+            alt.Chart(_subset)
+            .mark_bar()
+            .encode(
+                x=alt.X("message_error_type:N", title="Error Type", sort="-y"),
+                # Use our explicitly calculated count column!
+                y=alt.Y("error_count:Q", title="Count of Error Type"),
+                # color=alt.Color("domain:N", title="Domain"),
+                # xOffset="domain:N",
+                tooltip=["model", "memory_strategy", "domain", "message_error_type", "error_count"]
+            )
+            .facet(
+                column=alt.Column("model:N", title="LLM Model"),
+            )
+            .properties(title=_memory_strategy.replace("_", " ").title())
+            .resolve_scale(y="independent")
+        )
+        error_type_chart_memory_strategy[_memory_strategy] = mo.ui.altair_chart(_chart)
+
+    mo.vstack(
+        [
+            mo.ui.tabs(error_type_chart_memory_strategy)
+            if error_type_chart_memory_strategy
+            else mo.md("_No charts available_")
+        ]
+    )
+    return
+
+
+@app.cell
+def _():
     return
 
 
@@ -616,16 +1160,6 @@ def _(mo):
     """)
     return
 
-@app.cell(hide_code=True)
-def _(mo, project_dropdown, task_results_df):
-    """Display raw data in tabbed view."""
-    mo.stop(project_dropdown.value is None, None)
-
-    tables = {
-        "Task Results": task_results_df,
-    }
-    mo.ui.tabs(tables) if tables else mo.md("_No tables available_")
-    return (tables,)
 
 if __name__ == "__main__":
     app.run()

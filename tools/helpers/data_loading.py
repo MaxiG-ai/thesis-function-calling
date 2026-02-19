@@ -138,6 +138,8 @@ def _parse_task_json_file(
         data = json.load(f)
 
     for task in data:
+        message_error_type, message_error_reasoning = extract_error_message(task)
+
         row = {
             "task_id": task.get("id"),
             "memory_strategy": memory_strategy,
@@ -164,6 +166,8 @@ def _parse_task_json_file(
             ),
             "status": task.get("status"),
             "gen_convs": task.get("gen_convs"),
+            "message_error_type": message_error_type,
+            "message_error_reasoning": message_error_reasoning,
         }
         rows.append(row)
 
@@ -287,6 +291,74 @@ def add_domain_column(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def extract_error_message(task: Any) -> tuple[str, str]:
+    """Extract error type and explanation from the task `message` payload.
+
+    Supported payload formats:
+    - `{"message": {"error_type": str, "content": str}}`
+    - `{"message": [{"error_type": str, "content": str}, ...]}`
+
+    For list payloads, error types are aggregated as count-strings in first-seen
+    order (e.g., "2 value_error; 1 decode_error"), and contents are concatenated
+    with "; " in original order.
+
+    Args:
+        task: Task-level object that may contain a `message` key.
+
+    Returns:
+        Tuple of `(error_type_summary, error_reasoning_summary)`.
+        If payload does not match supported shapes, returns:
+        ("no error detected", "no error detected").
+    """
+    no_error = "no error detected"
+
+    if not isinstance(task, dict):
+        return no_error, no_error
+
+    message = task.get("message")
+
+    if isinstance(message, dict):
+        error_type = message.get("error_type")
+        content = message.get("content")
+        if isinstance(error_type, str) and isinstance(content, str):
+            return error_type, content
+        return no_error, no_error
+
+    if isinstance(message, list):
+        counts: dict[str, int] = {}
+        order: list[str] = []
+        contents: list[str] = []
+
+        for item in message:
+            if not isinstance(item, dict):
+                continue
+
+            error_type = item.get("error_type")
+            content = item.get("content")
+
+            if isinstance(error_type, str):
+                if error_type not in counts:
+                    counts[error_type] = 0
+                    order.append(error_type)
+                counts[error_type] += 1
+
+            if isinstance(content, str):
+                contents.append(content)
+
+        if not counts and not contents:
+            return no_error, no_error
+
+        error_type_summary = (
+            "; ".join(f"{counts[error_type]} {error_type}" for error_type in order)
+            if counts
+            else no_error
+        )
+        error_reasoning_summary = "; ".join(contents) if contents else no_error
+        return error_type_summary, error_reasoning_summary
+
+    return no_error, no_error
+
+
 def add_turn_category(
     df: pd.DataFrame,
     column: str = "total_call_num",
@@ -395,3 +467,178 @@ def save_results_table(metrics_df: pd.DataFrame, output_dir: Path | str) -> Path
     table_path = output_dir / "results_table.csv"
     table.to_csv(table_path)
     return table_path
+
+
+def load_compressed_traces(experiment_path: Path | str) -> pd.DataFrame:
+    """Load compressed token traces and compute token metrics per task.
+
+    Iterates through all subdirectories of an experiment folder structured as:
+    experiment_path/<timestamp>/<memory_strategy>/<model>/compressed_*.json
+
+    Computes the following metrics per task from the compressed_trace array:
+    - max_token_count: Maximum compressed tokens across all steps
+    - avg_token_count: Average compressed tokens across steps
+    - final_token_count: Token count at conversation end
+    - min_token_count: Minimum compressed tokens
+    - num_steps: Total conversation steps
+    - total_input_tokens: Sum of input tokens
+    - avg_compression_ratio: Average compression ratio
+    - max_compression_ratio: Maximum compression achieved
+    - token_growth_rate: Relative growth from first to last step
+    - step_aggregates: JSON string with per-step token counts
+    - domain: Extracted from task_id (e.g., "Hotels-104" -> "Hotels")
+
+    Args:
+        experiment_path: Path to experiment directory
+
+    Returns:
+        DataFrame with columns: task_id, memory_strategy, model, timestamp,
+        domain, and all computed token metrics. Empty if no data found.
+    """
+    experiment_dir = Path(experiment_path)
+    rows = []
+
+    if not experiment_dir.exists():
+        return pd.DataFrame()
+
+    # Iterate through timestamp directories
+    for timestamp_dir in experiment_dir.iterdir():
+        if not timestamp_dir.is_dir():
+            continue
+
+        timestamp_str = timestamp_dir.name
+        timestamp_iso = parse_timestamp(timestamp_str)
+        if timestamp_iso is None:
+            continue
+
+        # Iterate through memory strategy directories
+        for strategy_dir in timestamp_dir.iterdir():
+            if not strategy_dir.is_dir():
+                continue
+
+            memory_strategy = strategy_dir.name
+
+            # Iterate through model directories
+            for model_dir in strategy_dir.iterdir():
+                if not model_dir.is_dir():
+                    continue
+
+                model = model_dir.name
+
+                # Find compressed_*.json files
+                for json_file in model_dir.glob(
+                    f"compressed_{model}_{memory_strategy}_{timestamp_str}.json"
+                ):
+                    try:
+                        with open(json_file, "r", encoding="utf-8") as f:
+                            tasks = json.load(f)
+
+                        for task in tasks:
+                            task_id = task.get("id")
+                            trace = task.get("compressed_trace", [])
+
+                            if not trace:
+                                continue
+
+                            # Extract token counts from each step
+                            token_counts = [
+                                step.get("compressed_token_count", 0) for step in trace
+                            ]
+                            input_tokens = [
+                                step.get("input_token_count", 0) for step in trace
+                            ]
+                            compression_ratios = [
+                                step.get("compression_ratio", 1.0) for step in trace
+                            ]
+
+                            # Compute metrics
+                            num_steps = len(token_counts)
+                            max_token = max(token_counts) if token_counts else 0
+                            min_token = min(token_counts) if token_counts else 0
+                            avg_token = (
+                                sum(token_counts) / num_steps if num_steps > 0 else 0
+                            )
+                            final_token = token_counts[-1] if token_counts else 0
+                            first_token = token_counts[0] if token_counts else 0
+                            total_input = sum(input_tokens)
+                            avg_compression = (
+                                sum(compression_ratios) / num_steps
+                                if num_steps > 0
+                                else 0
+                            )
+                            max_compression = (
+                                max(compression_ratios) if compression_ratios else 1.0
+                            )
+                            token_growth = (
+                                (final_token - first_token) / first_token
+                                if first_token > 0
+                                else 0
+                            )
+
+                            # Step aggregates as JSON string (step number -> token count)
+                            step_agg = {
+                                str(i + 1): int(tc) for i, tc in enumerate(token_counts)
+                            }
+                            step_agg_str = json.dumps(step_agg)
+
+                            # Extract domain from task_id
+                            domain = (
+                                task_id.split("-")[0] if "-" in task_id else "Unknown"
+                            )
+
+                            row = {
+                                "task_id": task_id,
+                                "memory_strategy": memory_strategy,
+                                "model": model,
+                                "timestamp": timestamp_iso,
+                                "domain": domain,
+                                "max_token_count": max_token,
+                                "avg_token_count": avg_token,
+                                "final_token_count": final_token,
+                                "min_token_count": min_token,
+                                "num_steps": num_steps,
+                                "total_input_tokens": total_input,
+                                "avg_compression_ratio": avg_compression,
+                                "max_compression_ratio": max_compression,
+                                "token_growth_rate": token_growth,
+                                "step_aggregates": step_agg_str,
+                            }
+                            rows.append(row)
+                    except (json.JSONDecodeError, ValueError):
+                        # Skip files that can't be parsed
+                        continue
+
+    return pd.DataFrame(rows)
+
+
+def add_token_metrics_to_df(
+    task_df: pd.DataFrame, experiment_path: Path | str
+) -> pd.DataFrame:
+    """Add token metrics columns to task results DataFrame.
+
+    Loads compressed traces and joins computed token metrics to the task
+    results DataFrame on (task_id, memory_strategy, model, timestamp).
+
+    Args:
+        task_df: DataFrame from load_task_results() with task-level data
+        experiment_path: Path to experiment directory for loading compressed traces
+
+    Returns:
+        DataFrame with original task_df columns plus token metric columns.
+        Rows without matching compressed trace data will have NaN for token metrics.
+    """
+    token_df = load_compressed_traces(experiment_path)
+
+    if token_df.empty:
+        # Return original DataFrame if no token data found
+        return task_df
+
+    # Join on task_id, memory_strategy, model, timestamp
+    join_keys = ["task_id", "memory_strategy", "model", "timestamp"]
+
+    return task_df.merge(
+        token_df,
+        on=join_keys,
+        how="left",
+        suffixes=("", "_token"),
+    )
