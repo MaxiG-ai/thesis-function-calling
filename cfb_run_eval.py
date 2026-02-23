@@ -573,7 +573,8 @@ def run_single_configuration(
 
     # Release shared CompareFC and its FlagModel GPU memory
     del shared_compare_class
-    torch.cuda.empty_cache()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
     gc.collect()
     logger.info("🧹 Shared CompareFC released, GPU memory freed")
 
