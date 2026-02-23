@@ -1,18 +1,17 @@
 # --- Experiment Matrix ---
 # The suite will iterate through the Cartesian product of these lists.
 
-experiment_name = "testing"
+experiment_name = "full_run"
 results_dir = "results"
 log_dir = "results/logs"
 logging_level = "INFO"
 weave_deep_logging = false
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
-# Good samples: ["Car-Rental-131", "Cross-131"]
-# selected_test_cases = ["Cross-252"] # ["Car-Rental-131", "Cross-131", "Flights-91"]
-benchmark_sample_size = 5
+# selected_test_cases = ['Cross-252'] # ["Car-Rental-131", "Cross-131", "Flights-91"]
+# benchmark_sample_size = 100
 
-# Token thresholds to test; one experiment run per value (threshold-sensitive strategies only)
-compact_thresholds = [5000, 10_000, 15_000]
+# setting for max. context before compression
+compact_thresholds = [5_000, 10_000, 20_000]
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [
@@ -21,7 +20,7 @@ enabled_models = [
     # "gpt-4-1-mini", 
     # "gpt-5-mini",
     # "claude-sonnet-4-5",
-    # "llama-31-7b",
+    # "gemini-2-5-pro",
     "qwen3-coder",
 ]
 
@@ -44,8 +43,8 @@ type = "no_strategy"
 
 [memory_strategies.progressive_summarization]
 type = "progressive_summarization"
-summarizer_model = "gpt-4-1-mini"
-summary_prompt = "src/strategies/progressive_summarization/prog_sum.prompt.md"
+summarizer_model = "gpt-4-1-mini"  # Model for generating summaries
+summary_prompt = "memorch/strategies/progressive_summarization/prog_sum.prompt.md"
 
 [memory_strategies.ace]
 type = "ace"
