@@ -1,6 +1,8 @@
 # --- Model Registry ---
 # Static definitions of available models and their capabilities.
 
+
+# models going through AI Core Proxy
 [models.gpt-5]
 litellm_name = "openai/gpt-5"
 context_window = 128000
@@ -41,11 +43,14 @@ api_key = "THINKTANK"
 
 # only got it working with setup through litellm
 # see https://docs.litellm.ai/docs/providers/sap#step-2-set-your-credentials for info
+
 [models.gemini-2-5-pro]
 litellm_name = "sap/gemini-2.5-pro"
 context_window = 128000
 temperature = 0
 provider = "aicore"
+
+# models on GPU-Cluster running vLLM
 
 [models.qwen3-coder]
 litellm_name = "openai/Qwen/Qwen3-Coder-480B-A35B-Instruct"
@@ -53,39 +58,4 @@ context_window = 128000
 temperature = 0
 provider = "ollama"
 api_base = "http://10.237.166.249:8000/v1"
-api_key = "THINKTANK"
-
-[models.gpt-4o-2024-08-06]
-litellm_name = "openai/gpt-4o-2024-08-06"
-context_window = 128000
-provider = "aicore"
-api_base = "http://10.237.89.124:3030/v1"
-api_key = "THINKTANK"
-
-[models.glm-4-9b]
-litellm_name = "ollama/glm4:9b"
-context_window = 128000
-provider = "ollama"
-api_base = "http://127.0.0.1:11434"
-api_key = "THINKTANK"
-
-[models.ministral-3-8b]
-litellm_name = "ollama/ministral-3:8b"
-context_window = 128000
-provider = "ollama"
-api_base = "http://127.0.0.1:11434"
-api_key = "THINKTANK"
-
-[models.llama-31-7b]
-litellm_name = "ollama/llama3.1"
-context_window = 128000
-provider = "ollama"
-api_base = "http://127.0.0.1:11434"
-api_key = "THINKTANK"
-
-[models.gpt-oss-20b]
-litellm_name = "ollama/gpt-oss:20b"
-context_window = 128000
-provider = "ollama"
-api_base = "http://127.0.0.1:11434"
 api_key = "THINKTANK"
