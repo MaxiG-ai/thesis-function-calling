@@ -7,12 +7,11 @@ log_dir = "results/logs"
 logging_level = "INFO"
 weave_deep_logging = false
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
-# Good samples: ["Car-Rental-131", "Cross-131"]
 # selected_test_cases = ['Cross-252'] # ["Car-Rental-131", "Cross-131", "Flights-91"]
 # benchmark_sample_size = 100
 
 # setting for max. context before compression
-compact_threshold = [5_000, 10_000, 20_000]
+compact_thresholds = [5_000, 10_000, 20_000]
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [
@@ -22,7 +21,6 @@ enabled_models = [
     # "gpt-5-mini",
     # "claude-sonnet-4-5",
     # "gemini-2-5-pro",
-    # "llama-31-7b",
     "qwen3-coder",
 ]
 
