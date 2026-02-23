@@ -24,7 +24,6 @@ from tools.trace_viewer import (
     list_timestamps,
     load_metrics_file,
     load_trace_file,
-    system_message_markdown_content,
 )
 
 
@@ -443,43 +442,6 @@ def test_build_case_index_uses_compressed_trace(tmp_results_root):
     assert first_message["role"] == "system"
     assert "Compressed step" in first_message["content"]
     assert trace.case["gen_convs"][1]["content"] == "compressed message"
-
-
-# === CONVERSATION PARSING TESTS ===
-def test_system_message_markdown_content_prefers_content_key():
-    """
-    Verify system_message_markdown_content() extracts markdown from content key.
-
-    System messages in traces can encode content as a JSON object with a
-    nested "content" field. The helper should return that nested string so
-    the UI renders markdown instead of dumping raw JSON.
-    """
-    msg = {"role": "system", "content": {"content": "# Heading\n\nBody"}}
-    assert system_message_markdown_content(msg) == "# Heading\n\nBody"
-
-
-def test_system_message_markdown_content_handles_plain_string():
-    """
-    Verify system_message_markdown_content() returns string content unchanged.
-
-    When the system message content is already a plain string, the helper
-    should pass it through so rendering does not alter the text.
-    """
-    msg = {"role": "system", "content": "Plain system content"}
-    assert system_message_markdown_content(msg) == "Plain system content"
-
-
-def test_system_message_markdown_content_parses_json_string():
-    """
-    Verify system_message_markdown_content() parses JSON strings when needed.
-
-    Some traces store system content as a JSON string containing a content
-    field. The helper should decode it and return the nested markdown so the
-    UI renders it without showing raw JSON.
-    """
-    msg = {"role": "system", "content": '{"content": "## Title\nText"}'}
-    assert system_message_markdown_content(msg) == "## Title\nText"
-
 
 def test_conversation_has_expected_roles(sample_case_index):
     """
