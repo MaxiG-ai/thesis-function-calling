@@ -1,3 +1,4 @@
+import gc
 import json
 import os
 import copy
@@ -5,6 +6,8 @@ import random
 import logging
 import weave
 import tomllib
+import torch
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from typing import Dict, List, Optional
 from collections import defaultdict
@@ -15,6 +18,7 @@ from memorch.llm_orchestrator import LLMOrchestrator
 from benchmarks.complex_func_bench.runner.sap_gpt_runner import SAPGPTRunner
 from benchmarks.complex_func_bench.utils.logger import Logger as FileLogger
 from benchmarks.complex_func_bench.runner.response_runner import RespEvalRunner
+from benchmarks.complex_func_bench.utils.compare_method import CompareFC
 from benchmarks.complex_func_bench.utils.utils import load_json
 
 logger = get_logger("CFB_Runner")
@@ -61,8 +65,16 @@ def setup_directories(
     return log_dir
 
 
-def create_runner(log_dir: str, orchestrator: LLMOrchestrator) -> SAPGPTRunner:
-    """Create a CFB runner instance with orchestrator integration."""
+def create_runner(
+    log_dir: str, orchestrator: LLMOrchestrator, compare_class=None
+) -> SAPGPTRunner:
+    """Create a CFB runner instance with orchestrator integration.
+
+    Args:
+        log_dir: Directory for logs
+        orchestrator: LLM Orchestrator instance
+        compare_class: Optional pre-built CompareFC to reuse (avoids reloading FlagModel)
+    """
 
     class RunnerArgs:
         def __init__(self, log_dir):
@@ -83,6 +95,7 @@ def create_runner(log_dir: str, orchestrator: LLMOrchestrator) -> SAPGPTRunner:
         args=RunnerArgs(log_dir),
         logger=runner_logger,
         orchestrator=orchestrator,
+        compare_class=compare_class,
     )
 
     return runner
@@ -305,7 +318,7 @@ def scrub_trace_args(inputs: Dict) -> Dict:
     scrubbed = inputs.copy()
 
     # Remove technical objects that clutter logs
-    keys_to_remove = ["orchestrator", "resp_eval_runner", "log_dir"]
+    keys_to_remove = ["orchestrator", "resp_eval_runner", "log_dir", "compare_class"]
     for key in keys_to_remove:
         if key in scrubbed:
             del scrubbed[key]
@@ -327,6 +340,7 @@ def evaluate_single_case(
     case: Dict,
     orchestrator: LLMOrchestrator,
     resp_eval_runner: RespEvalRunner,
+    compare_class=None,
 ) -> tuple:
     """
     Evaluate a single test case.
@@ -336,7 +350,7 @@ def evaluate_single_case(
         case: Test case dictionary from the dataset
         orchestrator: LLM Orchestrator instance
         resp_eval_runner: Response quality evaluator
-        log_dir: Directory for logs
+        compare_class: Optional pre-built CompareFC to reuse across cases
 
     Returns:
         Result dictionary in backwards-compatible CFB format
@@ -350,7 +364,9 @@ def evaluate_single_case(
 
     # Create runner for this case with orchestrator injection
     runner = create_runner(
-        log_dir=orchestrator.cfg.results_dir, orchestrator=orchestrator
+        log_dir=orchestrator.cfg.results_dir,
+        orchestrator=orchestrator,
+        compare_class=compare_class,
     )
 
     # Extract ground truth metrics
@@ -403,6 +419,36 @@ def evaluate_single_case(
     return result, compressed_trace
 
 
+def batch_log_to_weave(eval_logger, collected_results: List[Dict]):
+    """Log all collected results to Weave after case processing completes.
+
+    Decouples Weave network calls from the benchmark loop so they don't add
+    latency to each case and so thread-safety is simpler.
+
+    Args:
+        eval_logger: Weave EvaluationLogger instance
+        collected_results: List of formatted result dicts (from format_result_for_wandb)
+    """
+    for wandb_data in collected_results:
+        with eval_logger.log_prediction(
+            inputs={"case_id": wandb_data["case_id"], "domain": wandb_data["domain"]},
+            output={
+                "status": wandb_data["status"],
+                "message": wandb_data["message"],
+            },
+        ) as pred:
+            pred.log_score("success", 1.0 if wandb_data["success"] else 0.0)
+            pred.log_score("turn_accuracy", wandb_data.get("turn_accuracy", 0.0))
+            pred.log_score("call_accuracy", wandb_data.get("call_accuracy", 0.0))
+
+            if wandb_data.get("response_complete_score") is not None:
+                pred.log_score(
+                    "response_complete", wandb_data["response_complete_score"]
+                )
+            if wandb_data.get("response_correct_score") is not None:
+                pred.log_score("response_correct", wandb_data["response_correct_score"])
+
+
 def run_single_configuration(
     orchestrator: LLMOrchestrator,
     dataset: List[Dict],
@@ -417,9 +463,10 @@ def run_single_configuration(
 
     This function:
     1. Sets the active context in the orchestrator (model, memory, threshold)
-    2. Processes all test cases
-    3. Calculates and logs metrics to wandb
-    4. Saves results to disk
+    2. Creates a shared CompareFC (FlagModel loaded once, reused across cases)
+    3. Processes all test cases
+    4. Batch-logs results to Weave (after case processing, not inline)
+    5. Saves results to disk
 
     Args:
         orchestrator: LLM Orchestrator instance
@@ -451,6 +498,14 @@ def run_single_configuration(
         logger.error(f"❌ Failed to switch context: {e}")
         return None
 
+    # Create a shared CompareFC for this configuration.
+    # This loads FlagModel (BAAI/bge-large-en-v1.5, ~1.3GB) once instead of per case.
+    # Per-case mutable state (free_functions, error_message) is reset at the start of
+    # each runner.run() call, so reuse is safe.
+    compare_class_args = type("Args", (), {"log_dir": orchestrator.cfg.results_dir})()
+    shared_compare_class = CompareFC(compare_class_args, logger)
+    logger.info("🔧 Shared CompareFC created (FlagModel loaded once for this config)")
+
     # Name this evaluation run including threshold so wandb runs are distinguishable
     eval_name = (
         f"Eval_{model}_{memory}_t{compact_threshold}"
@@ -472,9 +527,10 @@ def run_single_configuration(
         ],
     )
 
-    # Process all cases
+    # Process all cases -- collect results locally for batch Weave logging
     results = []
     compressed_traces = []  # Separate list for memory-processed messages
+    collected_wandb_data = []  # Collected for batch Weave logging after loop
     success_count = 0
 
     for i, case in enumerate(dataset):
@@ -487,6 +543,7 @@ def run_single_configuration(
                 case=case,
                 orchestrator=orchestrator,
                 resp_eval_runner=resp_eval_runner,
+                compare_class=shared_compare_class,
             )
 
             # Track success
@@ -506,33 +563,24 @@ def run_single_configuration(
                 }
             )
 
-            # Log case prediction to wandb
-            wandb_data = format_result_for_wandb(result)
-            with eval_logger.log_prediction(
-                inputs={"case_id": case_id, "domain": wandb_data["domain"]},
-                output={
-                    "status": wandb_data["status"],
-                    "message": wandb_data["message"],
-                },
-            ) as pred:
-                # Log scores for this prediction
-                pred.log_score("success", 1.0 if wandb_data["success"] else 0.0)
-                pred.log_score("turn_accuracy", wandb_data.get("turn_accuracy", 0.0))
-                pred.log_score("call_accuracy", wandb_data.get("call_accuracy", 0.0))
-
-                if wandb_data.get("response_complete_score") is not None:
-                    pred.log_score(
-                        "response_complete", wandb_data["response_complete_score"]
-                    )
-                if wandb_data.get("response_correct_score") is not None:
-                    pred.log_score(
-                        "response_correct", wandb_data["response_correct_score"]
-                    )
+            # Collect formatted result for batch Weave logging (no network calls here)
+            collected_wandb_data.append(format_result_for_wandb(result))
 
         except Exception as e:
             logger.error(f"❌ Failed on case {case_id}: {e}")
             # Continue with remaining cases
             continue
+
+    # Release shared CompareFC and its FlagModel GPU memory
+    del shared_compare_class
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    gc.collect()
+    logger.info("🧹 Shared CompareFC released, GPU memory freed")
+
+    # Batch-log all predictions to Weave (after case processing)
+    logger.info("📡 Batch-logging predictions to Weave...")
+    batch_log_to_weave(eval_logger, collected_wandb_data)
 
     # Calculate aggregate metrics
     logger.info("🧮 Calculating aggregate metrics...")
@@ -568,6 +616,54 @@ def run_single_configuration(
     logger.info(f"✅ Completed evaluation: {model}/{memory}/{threshold_label}")
 
 
+def run_model_configs(
+    model: str,
+    memory_methods: List[str],
+    orchestrator: LLMOrchestrator,
+    dataset: List[Dict],
+    run_timestamp: str,
+    resp_eval_runner: RespEvalRunner,
+    threshold_sensitive: Optional[set] = None,
+):
+    """Run all memory method configurations for a single model.
+
+    This function is the unit of model-level parallelism: each model gets its own
+    thread running this function with its own orchestrator instance.
+
+    Args:
+        model: Model identifier
+        memory_methods: List of memory method keys to evaluate
+        orchestrator: LLM Orchestrator instance (must be unique per thread)
+        dataset: List of test cases
+        run_timestamp: Timestamp string for this run
+        resp_eval_runner: Response quality evaluator (thread-safe, shared)
+        threshold_sensitive: Set of strategy types that require threshold sweeps
+    """
+    if threshold_sensitive is None:
+        threshold_sensitive = {"truncation", "progressive_summarization"}
+
+    for memory in memory_methods:
+        strategy_type = orchestrator.cfg.memory_strategies[memory].type
+
+        # Only threshold-sensitive strategies produce one run per threshold value;
+        # all others (ace, memory_bank, no_strategy) do a single run with no threshold.
+        if strategy_type in threshold_sensitive:
+            thresholds = orchestrator.cfg.compact_thresholds
+        else:
+            thresholds = [None]
+
+        for threshold in thresholds:
+            run_single_configuration(
+                orchestrator=orchestrator,
+                dataset=dataset,
+                model=model,
+                memory=memory,
+                run_timestamp=run_timestamp,
+                resp_eval_runner=resp_eval_runner,
+                compact_threshold=threshold,
+            )
+
+
 def main(experiment_name=None):
     """
     Main orchestration function for ComplexFuncBench evaluation.
@@ -575,10 +671,11 @@ def main(experiment_name=None):
     This function:
     1. Initializes wandb tracking
     2. Loads the orchestrator and dataset
-    3. Iterates through all model/memory configurations
-    4. Aggregates and reports final results
+    3. Runs models in parallel (each model gets its own thread + orchestrator)
+    4. Within each model, memory methods run sequentially (shared gpt-4-1-mini endpoint)
+    5. Aggregates and reports final results
     """
-    # Initialize orchestrator
+    # Initialize orchestrator (used for config reading; each thread gets its own)
     orchestrator = LLMOrchestrator()
     run_timestamp = datetime.now().strftime("%Y%m%d_%H%M")
 
@@ -632,37 +729,57 @@ def main(experiment_name=None):
                 dataset = random.sample(dataset, sample_size)
                 logger.info(f"📊 Sampled {sample_size} cases from dataset")
 
-    # Initialize response evaluator (shared across all configurations)
+    # Initialize response evaluator (shared across all configurations -- thread-safe)
     temp_log_dir = os.path.join(
         "results", "cfb", orchestrator.cfg.experiment_name, run_timestamp, "temp"
     )
     os.makedirs(temp_log_dir, exist_ok=True)
     resp_eval_runner = initialize_response_evaluator(temp_log_dir)
 
-    # Strategies that gate on a token threshold; all others run unconditionally.
-    THRESHOLD_SENSITIVE = {"truncation", "progressive_summarization"}
+    enabled_models = orchestrator.cfg.enabled_models
+    memory_methods = orchestrator.cfg.enabled_memory_methods
 
-    for model in orchestrator.cfg.enabled_models:
-        for memory in orchestrator.cfg.enabled_memory_methods:
-            strategy_type = orchestrator.cfg.memory_strategies[memory].type
-
-            # Only threshold-sensitive strategies produce one run per threshold value;
-            # all others (ace, memory_bank, no_strategy) do a single run with no threshold.
-            if strategy_type in THRESHOLD_SENSITIVE:
-                thresholds = orchestrator.cfg.compact_thresholds
-            else:
-                thresholds = [None]
-
-            for threshold in thresholds:
-                run_single_configuration(
-                    orchestrator=orchestrator,
-                    dataset=dataset,
+    if len(enabled_models) > 1:
+        # Model-level parallelism: each model gets its own thread + orchestrator.
+        # Memory methods within a model run sequentially to avoid rate-limit
+        # spikes on the shared gpt-4-1-mini refinement endpoint.
+        logger.info(
+            f"🔀 Running {len(enabled_models)} models in parallel: {enabled_models}"
+        )
+        with ThreadPoolExecutor(max_workers=len(enabled_models)) as executor:
+            futures = {}
+            for model in enabled_models:
+                # Each thread needs its own orchestrator (mutable per-session state)
+                model_orchestrator = LLMOrchestrator()
+                future = executor.submit(
+                    run_model_configs,
                     model=model,
-                    memory=memory,
+                    memory_methods=memory_methods,
+                    orchestrator=model_orchestrator,
+                    dataset=dataset,
                     run_timestamp=run_timestamp,
                     resp_eval_runner=resp_eval_runner,
-                    compact_threshold=threshold,
                 )
+                futures[future] = model
+
+            # Collect results and report any errors
+            for future in as_completed(futures):
+                model = futures[future]
+                try:
+                    future.result()
+                    logger.info(f"✅ Model '{model}' completed all configurations")
+                except Exception as e:
+                    logger.error(f"❌ Model '{model}' failed: {e}")
+    else:
+        # Single model -- no threading overhead needed
+        run_model_configs(
+            model=enabled_models[0],
+            memory_methods=memory_methods,
+            orchestrator=orchestrator,
+            dataset=dataset,
+            run_timestamp=run_timestamp,
+            resp_eval_runner=resp_eval_runner,
+        )
 
     # Final summary
     logger.info("\n" + "=" * 80)

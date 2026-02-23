@@ -7,61 +7,72 @@ from benchmarks.complex_func_bench.runner.base_runner import ModelRunner
 from memorch.llm_orchestrator import LLMOrchestrator
 
 
-
 class SAPGPTRunner(ModelRunner):
-    def __init__(self, model_name, args, logger, orchestrator:LLMOrchestrator):
+    def __init__(
+        self,
+        model_name,
+        args,
+        logger,
+        orchestrator: LLMOrchestrator,
+        compare_class=None,
+    ):
         """
         Initialize SAP GPT Runner.
-        
+
         Args:
             model_name: Model identifier
             args: Runner arguments
             logger: Logger instance
             orchestrator: Optional LLMOrchestrator for memory processing
+            compare_class: Optional pre-built CompareFC to reuse across cases
         """
-        super().__init__(args, logger)
+        super().__init__(args, logger, compare_class=compare_class)
         self.model_name = orchestrator.active_model_key
         self.model = FunctionCallSAPGPT(self.model_name, orchestrator=orchestrator)
 
     def replace_invalid_chars(self, s):
-        valid_pattern = re.compile(r'[a-zA-Z0-9_-]')
-        result = ''.join([char if valid_pattern.match(char) else '-' for char in s])
+        valid_pattern = re.compile(r"[a-zA-Z0-9_-]")
+        result = "".join([char if valid_pattern.match(char) else "-" for char in s])
         return result[:64]
-    
+
     def get_standard_functions(self, functions):
-        self.name_dict = {api['name']: self.replace_invalid_chars(api['name']) for api in functions}
-        gpt_functions = [{"type": "function", "function": copy.deepcopy(func)} for func in functions]
+        self.name_dict = {
+            api["name"]: self.replace_invalid_chars(api["name"]) for api in functions
+        }
+        gpt_functions = [
+            {"type": "function", "function": copy.deepcopy(func)} for func in functions
+        ]
         for func in gpt_functions:
-            func['function']['name'] = self.name_dict[func['function']['name']]
+            func["function"]["name"] = self.name_dict[func["function"]["name"]]
         return gpt_functions
 
     def get_standard_fc(self, gpt4_tool_call):
         tool_call = copy.deepcopy(gpt4_tool_call)
 
         function_call = {}
-        function_call['name'] = next((k for k, v in self.name_dict.items() if v == tool_call.function.name), None)
-        if function_call['name'] is None:
+        function_call["name"] = next(
+            (k for k, v in self.name_dict.items() if v == tool_call.function.name), None
+        )
+        if function_call["name"] is None:
             return None
         try:
-            function_call['arguments'] = json.loads(tool_call.function.arguments)
+            function_call["arguments"] = json.loads(tool_call.function.arguments)
         except Exception as e:
             self.logger.error(f"JSON decode error: {e}")
             return None
-        if function_call['arguments'] is None:
-            function_call['arguments'] = {}
+        if function_call["arguments"] is None:
+            function_call["arguments"] = {}
 
         return function_call
-    
-    @weave.op(
-            enable_code_capture=False
-    )
+
+    @weave.op(enable_code_capture=False)
     def run(self, data):
-        convs, functions = data['conversations'], data['functions']
+        convs, functions = data["conversations"], data["functions"]
         self.CompareClass.add_free_function(convs)
         gpt_functions = self.get_standard_functions(functions)
 
         messages = []
-        query = convs[0]['content']
+        query = convs[0]["content"]
         messages.append({"role": "user", "content": query})
 
         self.init_golden(convs)
@@ -69,30 +80,59 @@ class SAPGPTRunner(ModelRunner):
         while True:
             llm_response = self.model.generate_response(messages, tools=gpt_functions)
             if llm_response is None:
-                return self.return_result(messages, {"error_type": "unknown_error", "content": "llm_response is None"})
+                return self.return_result(
+                    messages,
+                    {"error_type": "unknown_error", "content": "llm_response is None"},
+                )
 
             if llm_response.tool_calls:
                 if self.golden_fcs == []:
                     # gets called, when model should not call functions, but does so
                     self.logger.error(f"Output FC:\n{llm_response.tool_calls}")
-                    return self.return_result(messages, {"error_type": "func_hallucination", "content": "`self.golden_fcs == []`. Expected to stop. But Model continue to output function call."})
-                self.model.messages.append({"role": "assistant", "content": None, "tool_calls": llm_response.tool_calls})
+                    return self.return_result(
+                        messages,
+                        {
+                            "error_type": "func_hallucination",
+                            "content": "`self.golden_fcs == []`. Expected to stop. But Model continue to output function call.",
+                        },
+                    )
+                self.model.messages.append(
+                    {
+                        "role": "assistant",
+                        "content": None,
+                        "tool_calls": llm_response.tool_calls,
+                    }
+                )
                 tool_calls = llm_response.tool_calls
 
                 function_calls = []
                 for tool_call in tool_calls:
                     function_call = self.get_standard_fc(tool_call)
                     if function_call is None:
-                        return self.return_result(messages, {"error_type": "decode_error", "content": f"{tool_call.function} is not Valid."})
+                        return self.return_result(
+                            messages,
+                            {
+                                "error_type": "decode_error",
+                                "content": f"{tool_call.function} is not Valid.",
+                            },
+                        )
                     function_calls.append(function_call)
-                self.logger.debug(f"Function Calls: \n{json.dumps(function_calls, ensure_ascii=False, indent=4)}\n")
-                self.logger.debug(f"Golden Function Call: \n{json.dumps(self.golden_fcs, ensure_ascii=False, indent=4)}\n")
+                self.logger.debug(
+                    f"Function Calls: \n{json.dumps(function_calls, ensure_ascii=False, indent=4)}\n"
+                )
+                self.logger.debug(
+                    f"Golden Function Call: \n{json.dumps(self.golden_fcs, ensure_ascii=False, indent=4)}\n"
+                )
                 messages.append({"role": "assistant", "function_call": function_calls})
-                
-                self.error_message, success_map, success_matched, format_error = self.CompareClass.compare_turn_prediction(
-                    functions, messages[:-1], 
-                    copy.deepcopy(function_calls), self.golden_fcs, 
-                    self.golden_obs
+
+                self.error_message, success_map, success_matched, format_error = (
+                    self.CompareClass.compare_turn_prediction(
+                        functions,
+                        messages[:-1],
+                        copy.deepcopy(function_calls),
+                        self.golden_fcs,
+                        self.golden_obs,
+                    )
                 )
                 if len(success_map) == 0 and format_error == {}:
                     return self.return_result(messages, self.error_message)
@@ -106,20 +146,22 @@ class SAPGPTRunner(ModelRunner):
                         temp_obs = format_error[t]
                     else:
                         temp_obs = self.unexpect_call_resp
-                        
+
                     real_time_obs.append(temp_obs)
                     self.model.messages.append(
                         {
                             "tool_call_id": tool_calls[t].id,
                             "role": "tool",
-                            "name": self.name_dict[function_call['name']],
-                            "content": json.dumps(temp_obs, ensure_ascii=False)
+                            "name": self.name_dict[function_call["name"]],
+                            "content": json.dumps(temp_obs, ensure_ascii=False),
                         }
                     )
 
                 self.process_matches(success_matched)
-                    
-                self.logger.debug(f"Observations:\n{json.dumps(real_time_obs, ensure_ascii=False, indent=4)}\n")
+
+                self.logger.debug(
+                    f"Observations:\n{json.dumps(real_time_obs, ensure_ascii=False, indent=4)}\n"
+                )
                 messages.append({"role": "observation", "content": real_time_obs})
 
             # TODO: Log the final answer to weave
@@ -131,4 +173,7 @@ class SAPGPTRunner(ModelRunner):
                 return self.return_result(messages, self.error_message)
 
             else:
-                return self.return_result(messages, {"error_type": "unknown_error", "content": "llm_response is None"})
+                return self.return_result(
+                    messages,
+                    {"error_type": "unknown_error", "content": "llm_response is None"},
+                )
