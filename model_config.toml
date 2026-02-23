@@ -47,6 +47,14 @@ context_window = 128000
 temperature = 0
 provider = "aicore"
 
+[models.qwen3-coder]
+litellm_name = "openai/Qwen/Qwen3-Coder-480B-A35B-Instruct"
+context_window = 128000
+temperature = 0
+provider = "ollama"
+api_base = "http://10.237.166.249:8000/v1"
+api_key = "THINKTANK"
+
 [models.gpt-4o-2024-08-06]
 litellm_name = "openai/gpt-4o-2024-08-06"
 context_window = 128000

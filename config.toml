@@ -8,25 +8,26 @@ logging_level = "INFO"
 weave_deep_logging = false
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
 # Good samples: ["Car-Rental-131", "Cross-131"]
-# selected_test_cases = ["Car-Rental-131", "Cross-131", "Flights-91"]
-benchmark_sample_size = 2
+selected_test_cases = ["Cross-252"] # ["Car-Rental-131", "Cross-131", "Flights-91"]
+# benchmark_sample_size = 2
 
-# setting for max. context before compression
-compact_threshold = 6000
+# Token thresholds to test; one experiment run per value (threshold-sensitive strategies only)
+compact_thresholds = [6000]
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [
     # "gpt-5",
     # "gpt-4-1",
-    "gpt-4-1-mini", 
+    # "gpt-4-1-mini", 
     # "gpt-5-mini",
     # "claude-sonnet-4-5",
     # "llama-31-7b",
+    "qwen3-coder",
 ]
 
 # 2. Define Memory Architectures to test
 enabled_memory_methods = [
-    "no_strategy",
+    # "no_strategy",
     "truncation",
     "progressive_summarization",
     "memory_bank",

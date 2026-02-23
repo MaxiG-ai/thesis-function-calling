@@ -27,6 +27,7 @@ dependencies = [
     "wandb",
     "weave",
     "nicegui>=2.0.0",
+    "ruff>=0.15.2",
 ]
 
 [tool.uv.sources]

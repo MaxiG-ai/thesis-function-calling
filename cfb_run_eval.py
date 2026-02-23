@@ -35,11 +35,27 @@ def initialize_response_evaluator(log_dir: str) -> RespEvalRunner:
 
 
 def setup_directories(
-    experiment_name: str, run_timestamp: str, model: str, memory: str
+    experiment_name: str,
+    run_timestamp: str,
+    model: str,
+    memory: str,
+    compact_threshold: Optional[int] = None,
 ) -> str:
     """Create directory structure for results."""
+    # Include threshold in path when it is meaningful (threshold-sensitive strategies)
+    threshold_segment = (
+        f"threshold_{compact_threshold}"
+        if compact_threshold is not None
+        else "no_threshold"
+    )
     log_dir = os.path.join(
-        "results", "cfb", experiment_name, run_timestamp, memory, model
+        "results",
+        "cfb",
+        experiment_name,
+        run_timestamp,
+        memory,
+        threshold_segment,
+        model,
     )
     os.makedirs(log_dir, exist_ok=True)
     return log_dir
@@ -394,12 +410,13 @@ def run_single_configuration(
     memory: str,
     run_timestamp: str,
     resp_eval_runner: RespEvalRunner,
+    compact_threshold: Optional[int] = None,
 ) -> Optional[Dict]:
     """
-    Run evaluation for a single model/memory configuration.
+    Run evaluation for a single model/memory/threshold configuration.
 
     This function:
-    1. Sets the active context in the orchestrator
+    1. Sets the active context in the orchestrator (model, memory, threshold)
     2. Processes all test cases
     3. Calculates and logs metrics to wandb
     4. Saves results to disk
@@ -411,23 +428,40 @@ def run_single_configuration(
         memory: Memory method identifier
         run_timestamp: Timestamp string for this run
         resp_eval_runner: Response quality evaluator
+        compact_threshold: Token threshold for this run. None for threshold-insensitive
+            strategies (ace, memory_bank, no_strategy); a value from
+            config.compact_thresholds for truncation and progressive_summarization.
 
     Returns:
         Summary statistics dictionary, or None if failed
     """
-    logger.info(f"🚀 Starting evaluation: {model}/{memory}")
+    threshold_label = (
+        f"threshold={compact_threshold}"
+        if compact_threshold is not None
+        else "no_threshold"
+    )
+    logger.info(f"🚀 Starting evaluation: {model}/{memory}/{threshold_label}")
 
-    # Set active context
+    # Set active context (including threshold for this run)
     try:
-        orchestrator.set_active_context(model, memory)
+        orchestrator.set_active_context(
+            model, memory, compact_threshold=compact_threshold
+        )
     except Exception as e:
         logger.error(f"❌ Failed to switch context: {e}")
         return None
 
+    # Name this evaluation run including threshold so wandb runs are distinguishable
+    eval_name = (
+        f"Eval_{model}_{memory}_t{compact_threshold}"
+        if compact_threshold is not None
+        else f"Eval_{model}_{memory}"
+    )
+
     # Initialize weave evaluation logger for this configuration
     # Note: experiment config is provided at the global level via weave.init()
     eval_logger = weave.EvaluationLogger(
-        name=f"Eval_{model}_{memory}",
+        name=eval_name,
         dataset="ComplexFuncBench",
         scorers=[
             "success",
@@ -504,9 +538,13 @@ def run_single_configuration(
     logger.info("🧮 Calculating aggregate metrics...")
     metrics = calculate_metrics(results)
 
-    # Setup directories
+    # Setup directories (threshold included in path for threshold-sensitive strategies)
     log_dir = setup_directories(
-        orchestrator.cfg.experiment_name, run_timestamp, model, memory
+        orchestrator.cfg.experiment_name,
+        run_timestamp,
+        model,
+        memory,
+        compact_threshold=compact_threshold,
     )
 
     # Save results to disk (including compressed traces)
@@ -514,11 +552,12 @@ def run_single_configuration(
         results, metrics, model, memory, log_dir, run_timestamp, compressed_traces
     )
 
-    # Log summary to wandb
+    # Log summary to wandb; include compact_threshold so runs are distinguishable
     eval_logger.log_summary(
         {
             "model": model,
             "memory": memory,
+            "compact_threshold": compact_threshold,
             "total_cases": len(dataset),
             "success_count": success_count,
             "pass_rate": (success_count / len(dataset)) * 100 if dataset else 0,
@@ -526,7 +565,7 @@ def run_single_configuration(
         }
     )
 
-    logger.info(f"✅ Completed evaluation: {model}/{memory}")
+    logger.info(f"✅ Completed evaluation: {model}/{memory}/{threshold_label}")
 
 
 def main(experiment_name=None):
@@ -600,17 +639,30 @@ def main(experiment_name=None):
     os.makedirs(temp_log_dir, exist_ok=True)
     resp_eval_runner = initialize_response_evaluator(temp_log_dir)
 
+    # Strategies that gate on a token threshold; all others run unconditionally.
+    THRESHOLD_SENSITIVE = {"truncation", "progressive_summarization"}
+
     for model in orchestrator.cfg.enabled_models:
         for memory in orchestrator.cfg.enabled_memory_methods:
-            # Run one of the cross product results memory - model
-            run_single_configuration(
-                orchestrator=orchestrator,
-                dataset=dataset,
-                model=model,
-                memory=memory,
-                run_timestamp=run_timestamp,
-                resp_eval_runner=resp_eval_runner,
-            )
+            strategy_type = orchestrator.cfg.memory_strategies[memory].type
+
+            # Only threshold-sensitive strategies produce one run per threshold value;
+            # all others (ace, memory_bank, no_strategy) do a single run with no threshold.
+            if strategy_type in THRESHOLD_SENSITIVE:
+                thresholds = orchestrator.cfg.compact_thresholds
+            else:
+                thresholds = [None]
+
+            for threshold in thresholds:
+                run_single_configuration(
+                    orchestrator=orchestrator,
+                    dataset=dataset,
+                    model=model,
+                    memory=memory,
+                    run_timestamp=run_timestamp,
+                    resp_eval_runner=resp_eval_runner,
+                    compact_threshold=threshold,
+                )
 
     # Final summary
     logger.info("\n" + "=" * 80)
