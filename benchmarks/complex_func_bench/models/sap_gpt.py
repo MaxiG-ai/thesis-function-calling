@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, List, Optional
 import json
 import copy
 import weave
@@ -11,19 +11,18 @@ logger = get_logger("CFB.SAPGPT")
 
 
 class SAPGPTModel:
-    def __init__(self, orchestrator:LLMOrchestrator):
+    def __init__(self, orchestrator: LLMOrchestrator):
         super().__init__()
         self.model_name = orchestrator.active_model_key
         # Use centralized client factory instead of hardcoded connection
         self.orchestrator = orchestrator
-        
 
     def __call__(self, prefix, prompt: SimpleTemplatePrompt, **kwargs: Any):
         filled_prompt = prompt(**kwargs)
         prediction = self._predict(prefix, filled_prompt, **kwargs)
         return prediction
-    
-    #@weave.op()
+
+    # @weave.op()
     @retry(max_attempts=10)
     def _predict(self, prefix, text, **kwargs):
         try:
@@ -31,9 +30,9 @@ class SAPGPTModel:
                 model=self.model_name,
                 input_messages=[
                     {"role": "system", "content": prefix},
-                    {"role": "user", "content": text}
+                    {"role": "user", "content": text},
                 ],
-                )
+            )
             return completion.choices[0].message.content
         except Exception as e:
             logger.error(f"SAPGPTModel prediction failed: {e}")
@@ -43,15 +42,15 @@ class SAPGPTModel:
 class FunctionCallSAPGPT(SAPGPTModel):
     """
     Function calling model that can optionally use LLMOrchestrator for memory processing.
-    
+
     When orchestrator is provided, all calls are routed through it with memory techniques applied.
     When orchestrator is None, falls back to direct client calls (for evaluation/comparison).
     """
-    
-    def __init__(self, model_name, orchestrator:LLMOrchestrator):
+
+    def __init__(self, model_name, orchestrator: LLMOrchestrator):
         """
         Initialize function calling model.
-        
+
         Args:
             model_name: Model identifier
             orchestrator: Optional LLMOrchestrator instance for memory processing
@@ -60,8 +59,10 @@ class FunctionCallSAPGPT(SAPGPTModel):
         self.model_name = orchestrator.active_model_key
         self.messages = []
         self.orchestrator = orchestrator
+        # Haystack messages to prepend on first LLM call (set by runner)
+        self.haystack_messages: Optional[List] = None
 
-    #@weave.op()
+    # @weave.op()
     @retry(max_attempts=5, delay=10)
     def generate_response(self, messages, tools=None, **kwargs: Any):
         # The runner manages self.messages directly by appending assistant/tool messages
@@ -69,17 +70,24 @@ class FunctionCallSAPGPT(SAPGPTModel):
         # Only initialize on first call (when self.messages is empty)
         if "function_call" not in json.dumps(messages, ensure_ascii=False):
             self.messages = copy.deepcopy(messages)
-        
+            # Prepend haystack distractor context if available (NIAH experiment).
+            # Haystack messages are pre-computed OpenAI-format tool interactions
+            # from other domains, injected before the actual conversation so the
+            # LLM must find the real task "needle" in the distractor "haystack".
+            if self.haystack_messages:
+                self.messages = copy.deepcopy(self.haystack_messages) + self.messages
+                self.haystack_messages = None  # inject only once
+
         try:
             # Route through orchestrator if available (applies memory processing)
             response = self.orchestrator.generate_with_memory_applied(
                 input_messages=self.messages,
                 tools=tools,
                 tool_choice=kwargs.get("tool_choice", "auto"),
-                max_tokens=kwargs.get("max_tokens", 2048)
+                max_tokens=kwargs.get("max_tokens", 2048),
             )
             return response.choices[0].message
-            
+
         except Exception as e:
             logger.error(f"FunctionCallSAPGPT generate_response failed: {e}")
             return None
@@ -88,5 +96,10 @@ class FunctionCallSAPGPT(SAPGPTModel):
 if __name__ == "__main__":
     llmo = LLMOrchestrator()
     model = SAPGPTModel(llmo)
-    response = model("You are a helpful assistant.", SimpleTemplatePrompt(template=("What is the capital of France?"), args_order=[]))
+    response = model(
+        "You are a helpful assistant.",
+        SimpleTemplatePrompt(
+            template=("What is the capital of France?"), args_order=[]
+        ),
+    )
     print(response)

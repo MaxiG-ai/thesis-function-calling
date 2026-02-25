@@ -52,13 +52,24 @@ def setup_directories(
     model: str,
     memory: str,
     compact_threshold: Optional[int] = None,
+    haystack_threshold: Optional[int] = None,
 ) -> str:
-    """Create directory structure for results."""
-    # Include threshold in path when it is meaningful (threshold-sensitive strategies)
+    """Create directory structure for results.
+
+    Directory layout includes both compact and haystack threshold segments
+    so results are organized by all experimental axes.
+    """
+    # Include compact threshold in path for threshold-sensitive strategies
     threshold_segment = (
         f"threshold_{compact_threshold}"
         if compact_threshold is not None
         else "no_threshold"
+    )
+    # Include haystack threshold to separate NIAH experiment levels
+    haystack_segment = (
+        f"haystack_{haystack_threshold}"
+        if haystack_threshold is not None
+        else "no_haystack"
     )
     log_dir = os.path.join(
         "results",
@@ -67,6 +78,7 @@ def setup_directories(
         run_timestamp,
         memory,
         threshold_segment,
+        haystack_segment,
         model,
     )
     os.makedirs(log_dir, exist_ok=True)
@@ -107,6 +119,46 @@ def create_runner(
     )
 
     return runner
+
+
+def load_haystack_dataset(
+    haystack_threshold: Optional[int],
+    input_file: str = os.path.join(
+        "benchmarks", "complex_func_bench", "data", "ComplexFuncBench.jsonl"
+    ),
+) -> List[Dict]:
+    """Load the appropriate dataset for a haystack threshold.
+
+    For baseline (haystack_threshold=None), loads the original dataset at input_file.
+    For a specific threshold, loads the pre-generated haystack_{threshold}.jsonl file
+    from the same directory as input_file.
+
+    Args:
+        haystack_threshold: Token target for haystack context, or None for baseline.
+        input_file: Path to the original dataset file (from config.input_file).
+            Haystack files are expected in the same directory.
+
+    Returns:
+        List of case dicts, optionally with haystack_messages.
+
+    Raises:
+        FileNotFoundError: If the required data file does not exist.
+    """
+    if haystack_threshold is None:
+        # Baseline: use original dataset without haystack augmentation
+        file_path = input_file
+    else:
+        # Haystack files live alongside the original dataset
+        data_dir = os.path.dirname(input_file)
+        file_path = os.path.join(data_dir, f"haystack_{haystack_threshold}.jsonl")
+
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(
+            f"Dataset file not found: {file_path}. "
+            f"Run the haystack generation script first."
+        )
+
+    return load_json(file_path)
 
 
 def extract_ground_truth_metrics(case: Dict) -> Dict[str, int]:
@@ -465,6 +517,7 @@ def run_single_configuration(
     run_timestamp: str,
     resp_eval_runner: RespEvalRunner,
     compact_threshold: Optional[int] = None,
+    haystack_threshold: Optional[int] = None,
 ) -> Optional[Dict]:
     """
     Run evaluation for a single model/memory/threshold configuration.
@@ -478,7 +531,7 @@ def run_single_configuration(
 
     Args:
         orchestrator: LLM Orchestrator instance
-        dataset: List of test cases
+        dataset: List of test cases (may include haystack_messages)
         model: Model identifier
         memory: Memory method identifier
         run_timestamp: Timestamp string for this run
@@ -486,6 +539,8 @@ def run_single_configuration(
         compact_threshold: Token threshold for this run. None for threshold-insensitive
             strategies (ace, memory_bank, no_strategy); a value from
             config.compact_thresholds for truncation and progressive_summarization.
+        haystack_threshold: NIAH haystack token target for this run. None for baseline
+            (no distractor context injected).
 
     Returns:
         Summary statistics dictionary, or None if failed
@@ -495,7 +550,14 @@ def run_single_configuration(
         if compact_threshold is not None
         else "no_threshold"
     )
-    logger.info(f"🚀 Starting evaluation: {model}/{memory}/{threshold_label}")
+    haystack_label = (
+        f"haystack={haystack_threshold}"
+        if haystack_threshold is not None
+        else "no_haystack"
+    )
+    logger.info(
+        f"🚀 Starting evaluation: {model}/{memory}/{threshold_label}/{haystack_label}"
+    )
 
     # Set active context (including threshold for this run)
     try:
@@ -515,12 +577,12 @@ def run_single_configuration(
         shared_compare_class = CompareFC(compare_class_args, logger)
     logger.info("🔧 Shared CompareFC created (FlagModel loaded once for this config)")
 
-    # Name this evaluation run including threshold so wandb runs are distinguishable
-    eval_name = (
-        f"Eval_{model}_{memory}_t{compact_threshold}"
-        if compact_threshold is not None
-        else f"Eval_{model}_{memory}"
+    # Name this evaluation run including thresholds so wandb runs are distinguishable
+    compact_suffix = f"_t{compact_threshold}" if compact_threshold is not None else ""
+    haystack_suffix = (
+        f"_h{haystack_threshold}" if haystack_threshold is not None else ""
     )
+    eval_name = f"Eval_{model}_{memory}{compact_suffix}{haystack_suffix}"
 
     # Initialize weave evaluation logger for this configuration
     # Note: experiment config is provided at the global level via weave.init()
@@ -602,6 +664,7 @@ def run_single_configuration(
         model,
         memory,
         compact_threshold=compact_threshold,
+        haystack_threshold=haystack_threshold,
     )
 
     # Save results to disk (including compressed traces)
@@ -609,12 +672,14 @@ def run_single_configuration(
         results, metrics, model, memory, log_dir, run_timestamp, compressed_traces
     )
 
-    # Log summary to wandb; include compact_threshold so runs are distinguishable
+    # Log summary to wandb; include compact_threshold and haystack_threshold
+    # so runs are distinguishable
     eval_logger.log_summary(
         {
             "model": model,
             "memory": memory,
             "compact_threshold": compact_threshold,
+            "haystack_threshold": haystack_threshold,
             "total_cases": len(dataset),
             "success_count": success_count,
             "pass_rate": (success_count / len(dataset)) * 100 if dataset else 0,
@@ -622,34 +687,48 @@ def run_single_configuration(
         }
     )
 
-    logger.info(f"✅ Completed evaluation: {model}/{memory}/{threshold_label}")
+    logger.info(
+        f"✅ Completed evaluation: {model}/{memory}/{threshold_label}/{haystack_label}"
+    )
 
 
 def run_model_configs(
     model: str,
     memory_methods: List[str],
     orchestrator: LLMOrchestrator,
-    dataset: List[Dict],
     run_timestamp: str,
     resp_eval_runner: RespEvalRunner,
+    selected_ids: Optional[List[str]] = None,
     threshold_sensitive: Optional[set] = None,
 ):
     """Run all memory method configurations for a single model.
 
-    This function is the unit of model-level parallelism: each model gets its own
-    thread running this function with its own orchestrator instance.
+    Execution order:
+    - Memory methods iterate sequentially (shared gpt-4-1-mini refinement endpoint)
+    - Compact thresholds iterate sequentially within each memory method
+    - Haystack thresholds (including baseline=None) run in PARALLEL within each
+      (memory, compact_threshold) combination. Each parallel thread gets its own
+      LLMOrchestrator instance and loads its own dataset via load_haystack_dataset().
 
     Args:
         model: Model identifier
         memory_methods: List of memory method keys to evaluate
-        orchestrator: LLM Orchestrator instance (must be unique per thread)
-        dataset: List of test cases
+        orchestrator: LLM Orchestrator instance (used for config reading;
+            parallel threads create their own instances)
         run_timestamp: Timestamp string for this run
         resp_eval_runner: Response quality evaluator (thread-safe, shared)
+        selected_ids: Optional list of case IDs to filter to. Applied after
+            loading each dataset. None means use full dataset.
         threshold_sensitive: Set of strategy types that require threshold sweeps
     """
     if threshold_sensitive is None:
         threshold_sensitive = {"truncation", "progressive_summarization"}
+
+    # Build the list of haystack thresholds: baseline (None) + configured values
+    haystack_values = [None] + (orchestrator.cfg.haystack_thresholds or [])
+
+    # Resolve input_file from config for dataset loading
+    input_file = orchestrator.cfg.input_file
 
     for memory in memory_methods:
         strategy_type = orchestrator.cfg.memory_strategies[memory].type
@@ -657,20 +736,66 @@ def run_model_configs(
         # Only threshold-sensitive strategies produce one run per threshold value;
         # all others (ace, memory_bank, no_strategy) do a single run with no threshold.
         if strategy_type in threshold_sensitive:
-            thresholds = orchestrator.cfg.compact_thresholds
+            compact_thresholds = orchestrator.cfg.compact_thresholds
         else:
-            thresholds = [None]
+            compact_thresholds = [None]
 
-        for threshold in thresholds:
-            run_single_configuration(
-                orchestrator=orchestrator,
-                dataset=dataset,
-                model=model,
-                memory=memory,
-                run_timestamp=run_timestamp,
-                resp_eval_runner=resp_eval_runner,
-                compact_threshold=threshold,
-            )
+        for compact_threshold in compact_thresholds:
+            if len(haystack_values) > 1:
+                # Parallel haystack execution: each haystack_threshold gets its own
+                # orchestrator and dataset to avoid shared mutable state.
+                logger.info(
+                    f"🔀 Running {len(haystack_values)} haystack thresholds in "
+                    f"parallel for {model}/{memory}/compact={compact_threshold}"
+                )
+                with ThreadPoolExecutor(max_workers=len(haystack_values)) as executor:
+                    futures = {}
+                    for ht in haystack_values:
+                        # Each thread needs its own orchestrator (mutable per-session
+                        # state) and loads its own dataset for this haystack level
+                        thread_orchestrator = LLMOrchestrator()
+                        dataset = load_haystack_dataset(ht, input_file=input_file)
+                        if selected_ids is not None:
+                            dataset = [
+                                c for c in dataset if c.get("id") in selected_ids
+                            ]
+                        future = executor.submit(
+                            run_single_configuration,
+                            orchestrator=thread_orchestrator,
+                            dataset=dataset,
+                            model=model,
+                            memory=memory,
+                            run_timestamp=run_timestamp,
+                            resp_eval_runner=resp_eval_runner,
+                            compact_threshold=compact_threshold,
+                            haystack_threshold=ht,
+                        )
+                        futures[future] = ht
+
+                    # Collect results and report any errors
+                    for future in as_completed(futures):
+                        ht = futures[future]
+                        ht_label = f"haystack={ht}" if ht is not None else "baseline"
+                        try:
+                            future.result()
+                            logger.info(f"✅ {ht_label} completed")
+                        except Exception as e:
+                            logger.error(f"❌ {ht_label} failed: {e}")
+            else:
+                # No haystack thresholds configured — single baseline run
+                dataset = load_haystack_dataset(None, input_file=input_file)
+                if selected_ids is not None:
+                    dataset = [c for c in dataset if c.get("id") in selected_ids]
+                run_single_configuration(
+                    orchestrator=orchestrator,
+                    dataset=dataset,
+                    model=model,
+                    memory=memory,
+                    run_timestamp=run_timestamp,
+                    resp_eval_runner=resp_eval_runner,
+                    compact_threshold=compact_threshold,
+                    haystack_threshold=None,
+                )
 
 
 def main(experiment_name=None):
@@ -679,12 +804,12 @@ def main(experiment_name=None):
 
     This function:
     1. Initializes wandb tracking
-    2. Loads the orchestrator and dataset
-    3. Runs models in parallel (each model gets its own thread + orchestrator)
-    4. Within each model, memory methods run sequentially (shared gpt-4-1-mini endpoint)
-    5. Aggregates and reports final results
+    2. Loads the orchestrator and determines which case IDs to evaluate
+    3. Runs models sequentially (parallelism is at the haystack threshold level)
+    4. Within each model, memory methods and compact thresholds run sequentially
+    5. Haystack thresholds run in parallel (each thread gets its own orchestrator + dataset)
     """
-    # Initialize orchestrator (used for config reading; each thread gets its own)
+    # Initialize orchestrator (used for config reading; parallel threads create their own)
     orchestrator = LLMOrchestrator()
     run_timestamp = datetime.now().strftime("%Y%m%d_%H%M")
 
@@ -702,41 +827,38 @@ def main(experiment_name=None):
         f"📊 Weave initialized with global attributes: {orchestrator.cfg.experiment_name}"
     )
 
-    # Load dataset
-    data_path = os.path.join(
-        "benchmarks", "complex_func_bench", "data", "ComplexFuncBench.jsonl"
-    )
-    dataset = load_json(data_path)
-
-    if not dataset:
-        logger.error("❌ No data loaded. Exiting.")
-        return
-
-    # Filter by specific test case IDs if configured
+    # Determine which case IDs to run. Datasets are loaded per-haystack-threshold
+    # inside run_model_configs, but filtering/sampling is decided here once.
+    selected_ids = None  # None = use full dataset (no filtering)
+    input_file = orchestrator.cfg.input_file
     selected_test_cases = orchestrator.cfg.selected_test_cases
     if selected_test_cases:
-        dataset = [case for case in dataset if case.get("id") in selected_test_cases]
-        if not dataset:
-            logger.error(
-                f"❌ No test cases found matching the selected IDs: {selected_test_cases}"
-            )
+        # Explicit case IDs from config — validate they exist in the original dataset
+        all_cases = load_json(input_file)
+        all_ids = {case.get("id") for case in all_cases}
+        missing = set(selected_test_cases) - all_ids
+        if missing:
+            logger.error(f"❌ Test case IDs not found in dataset: {missing}")
             return
+        selected_ids = list(selected_test_cases)
         logger.info(
-            f"🎯 Filtered to {len(dataset)} specific test case(s): {selected_test_cases}"
+            f"🎯 Will filter to {len(selected_ids)} specific test case(s): {selected_ids}"
         )
     else:
         # Sample subset if configured (only when not using specific test cases)
         sample_size = orchestrator.cfg.benchmark_sample_size
         if sample_size is not None and sample_size > 0:
-            if sample_size > len(dataset):
+            all_cases = load_json(input_file)
+            if sample_size > len(all_cases):
                 logger.warning(
-                    f"⚠️ Sample size {sample_size} exceeds dataset size {len(dataset)}, "
+                    f"⚠️ Sample size {sample_size} exceeds dataset size {len(all_cases)}, "
                     "using full dataset"
                 )
             else:
                 random.seed(42)
-                dataset = random.sample(dataset, sample_size)
-                logger.info(f"📊 Sampled {sample_size} cases from dataset")
+                sampled = random.sample(all_cases, sample_size)
+                selected_ids = [case.get("id") for case in sampled]
+                logger.info(f"📊 Sampled {sample_size} case IDs from dataset")
 
     # Initialize response evaluator (shared across all configurations -- thread-safe)
     temp_log_dir = os.path.join(
@@ -748,47 +870,20 @@ def main(experiment_name=None):
     enabled_models = orchestrator.cfg.enabled_models
     memory_methods = orchestrator.cfg.enabled_memory_methods
 
-    if len(enabled_models) > 1:
-        # Model-level parallelism: each model gets its own thread + orchestrator.
-        # Memory methods within a model run sequentially to avoid rate-limit
-        # spikes on the shared gpt-4-1-mini refinement endpoint.
-        logger.info(
-            f"🔀 Running {len(enabled_models)} models in parallel: {enabled_models}"
-        )
-        with ThreadPoolExecutor(max_workers=len(enabled_models)) as executor:
-            futures = {}
-            for model in enabled_models:
-                # Each thread needs its own orchestrator (mutable per-session state)
-                model_orchestrator = LLMOrchestrator()
-                future = executor.submit(
-                    run_model_configs,
-                    model=model,
-                    memory_methods=memory_methods,
-                    orchestrator=model_orchestrator,
-                    dataset=dataset,
-                    run_timestamp=run_timestamp,
-                    resp_eval_runner=resp_eval_runner,
-                )
-                futures[future] = model
-
-            # Collect results and report any errors
-            for future in as_completed(futures):
-                model = futures[future]
-                try:
-                    future.result()
-                    logger.info(f"✅ Model '{model}' completed all configurations")
-                except Exception as e:
-                    logger.error(f"❌ Model '{model}' failed: {e}")
-    else:
-        # Single model -- no threading overhead needed
+    # Models run sequentially; parallelism is at the haystack threshold level
+    # inside run_model_configs. This avoids rate-limit spikes from multiple
+    # models hitting the same API concurrently.
+    for model in enabled_models:
+        logger.info(f"🚀 Starting model: {model}")
         run_model_configs(
-            model=enabled_models[0],
+            model=model,
             memory_methods=memory_methods,
             orchestrator=orchestrator,
-            dataset=dataset,
             run_timestamp=run_timestamp,
             resp_eval_runner=resp_eval_runner,
+            selected_ids=selected_ids,
         )
+        logger.info(f"✅ Model '{model}' completed all configurations")
 
     # Final summary
     logger.info("\n" + "=" * 80)

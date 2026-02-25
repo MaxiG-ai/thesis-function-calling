@@ -31,4 +31,4 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-memorch = { git = "https://github.com/MaxiG-ai/memory-orchestrator.git", branch = "main" }
+memorch = { git = "https://github.com/MaxiG-ai/memory-orchestrator.git", branch = "mg/haystack-experiment" }

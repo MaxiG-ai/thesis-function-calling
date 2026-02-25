@@ -71,6 +71,11 @@ class SAPGPTRunner(ModelRunner):
         self.CompareClass.add_free_function(convs)
         gpt_functions = self.get_standard_functions(functions)
 
+        # Pass pre-computed haystack messages to model for NIAH injection.
+        # The model will prepend them to self.messages on the first LLM call.
+        # If absent (original ComplexFuncBench.jsonl), model behaves unchanged.
+        self.model.haystack_messages = data.get("haystack_messages")
+
         messages = []
         query = convs[0]["content"]
         messages.append({"role": "user", "content": query})
