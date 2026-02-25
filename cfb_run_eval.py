@@ -4,6 +4,7 @@ import os
 import copy
 import random
 import logging
+import threading
 import weave
 import tomllib
 import torch
@@ -22,6 +23,13 @@ from benchmarks.complex_func_bench.utils.compare_method import CompareFC
 from benchmarks.complex_func_bench.utils.utils import load_json
 
 logger = get_logger("CFB_Runner")
+
+# Serializes CompareFC construction across threads.  CompareFC.__init__ calls
+# AutoModel.from_pretrained which (via accelerate's init_empty_weights) globally
+# monkey-patches nn.Module.register_parameter to redirect tensors to the meta
+# device.  Concurrent calls cause one thread's model to end up with data-less
+# meta tensors, producing "Cannot copy out of meta tensor" on the next .to().
+_model_load_lock = threading.Lock()
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -503,7 +511,8 @@ def run_single_configuration(
     # Per-case mutable state (free_functions, error_message) is reset at the start of
     # each runner.run() call, so reuse is safe.
     compare_class_args = type("Args", (), {"log_dir": orchestrator.cfg.results_dir})()
-    shared_compare_class = CompareFC(compare_class_args, logger)
+    with _model_load_lock:
+        shared_compare_class = CompareFC(compare_class_args, logger)
     logger.info("🔧 Shared CompareFC created (FlagModel loaded once for this config)")
 
     # Name this evaluation run including threshold so wandb runs are distinguishable
