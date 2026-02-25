@@ -17,9 +17,14 @@ os.environ['TRANSFORMERS_NO_ADVISORY_WARNINGS'] = 'true'
 
 class CompareFCBase:
     def __init__(self, args, logger) -> None:
+        # Pin to a single device to prevent FlagEmbedding from spawning a
+        # multi-process pool on multi-GPU machines, which is not thread-safe
+        # when multiple CompareFC instances are used in parallel threads.
+        _device = "cuda:0" if torch.cuda.is_available() else "cpu"
         self.embedding = FlagModel('BAAI/bge-large-en-v1.5', 
                         query_instruction_for_retrieval="Represent this sentence for searching relevant passages:",
-                        use_fp16=True)
+                        use_fp16=True,
+                        devices=[_device])
 
         with open("benchmarks/complex_func_bench/utils/tool_info.json", 'r') as f:
             tool_info = json.load(f)
