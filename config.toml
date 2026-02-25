@@ -2,7 +2,6 @@
 # The suite will iterate through the Cartesian product of these lists.
 
 experiment_name = "initial_tests"
-parallel_execution = false
 results_dir = "results"
 log_dir = "results/logs"
 logging_level = "INFO"
