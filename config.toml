@@ -1,36 +1,37 @@
 # --- Experiment Matrix ---
 # The suite will iterate through the Cartesian product of these lists.
 
-experiment_name = "full_run"
+experiment_name = "initial_tests"
+parallel_execution = false
 results_dir = "results"
 log_dir = "results/logs"
 logging_level = "INFO"
 weave_deep_logging = false
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
 # selected_test_cases = ['Cross-252'] # ["Car-Rental-131", "Cross-131", "Flights-91"]
-# benchmark_sample_size = 100
+benchmark_sample_size = 1
 
 # setting for max. context before compression
 compact_thresholds = [5_000, 10_000, 20_000]
 
 # 1. Select keys from model_config.toml to test
 enabled_models = [
-    # "gpt-5",
-    # "gpt-4-1",
-    # "gpt-4-1-mini", 
-    # "gpt-5-mini",
-    # "claude-sonnet-4-5",
-    # "gemini-2-5-pro",
-    "qwen3-coder",
+    "gpt-5",
+    "gpt-4-1",
+    "gpt-4-1-mini", 
+    "gpt-5-mini",
+    "claude-sonnet-4-5",
+    "gemini-2-5-pro",
+    # "qwen3-coder",
 ]
 
 # 2. Define Memory Architectures to test
 enabled_memory_methods = [
     "no_strategy",
-    "truncation",
-    "progressive_summarization",
-    "memory_bank",
-    "ace",
+    # "truncation",
+    # "progressive_summarization",
+    # "memory_bank",
+    # "ace",
 ]
 
 # --- Memory Strategy Definitions ---
