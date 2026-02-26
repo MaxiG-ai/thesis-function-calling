@@ -11,7 +11,7 @@ dependencies = [
     "litellm>=1.80.0",
     "marimo>=0.19.7",
     "matplotlib>=3.10.8",
-    "memorch",
+    "memorch>=0.2",
     "numpy>=2.3.5",
     "polars>=1.38.0",
     "pydantic>=2.12.4",
@@ -31,4 +31,4 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-memorch = { git = "https://github.com/MaxiG-ai/memory-orchestrator.git", branch = "mg/haystack-experiment" }
+memorch = { git = "https://github.com/MaxiG-ai/memory-orchestrator.git" }
