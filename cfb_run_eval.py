@@ -177,62 +177,6 @@ def extract_actual_metrics(convs: List[Dict]) -> Dict[str, int]:
     return {"turn_count": turn_count}
 
 
-def format_result_for_wandb(result: Dict) -> Dict:
-    """
-    Convert CFB result format to wandb-friendly format.
-
-    This is a helper to transform the backwards-compatible result structure
-    into a cleaner format for wandb logging.
-    """
-    wandb_result = {
-        "case_id": result["id"],
-        "status": result.get("status", "unknown"),
-        "success": result["message"] == "Success.",
-        "message": result["message"],
-    }
-
-    # Add count metrics
-    count_dict = result.get("count_dict", {})
-    if count_dict:
-        total_turns = count_dict.get("total_turn_num", 1)
-        total_calls = count_dict.get("total_call_num", 1)
-
-        wandb_result.update(
-            {
-                "turn_accuracy": count_dict.get("success_turn_num", 0) / total_turns
-                if total_turns > 0
-                else 0,
-                "call_accuracy": count_dict.get("correct_call_num", 0) / total_calls
-                if total_calls > 0
-                else 0,
-                "success_turns": count_dict.get("success_turn_num", 0),
-                "total_turns": total_turns,
-                "correct_calls": count_dict.get("correct_call_num", 0),
-                "total_calls": total_calls,
-            }
-        )
-
-    # Add response evaluation scores if available
-    resp_eval = result.get("resp_eval")
-    if resp_eval:
-        wandb_result.update(
-            {
-                "response_complete_score": resp_eval.get("complete", {}).get(
-                    "score", None
-                ),
-                "response_correct_score": resp_eval.get("correct", {}).get(
-                    "score", None
-                ),
-            }
-        )
-
-    # Extract domain from case ID (e.g., "Travel-001" -> "Travel")
-    domain = result["id"].rsplit("-", 1)[0]
-    wandb_result["domain"] = domain
-
-    return wandb_result
-
-
 def calculate_metrics(results: List[Dict]) -> Dict:
     """
     Calculate aggregate metrics from evaluation results.
@@ -545,8 +489,9 @@ def run_single_configuration(
     )
     eval_name = f"Eval_{model}_{memory}{compact_suffix}{haystack_suffix}"
 
-    # Initialize weave evaluation logger for this configuration
-    # Note: experiment config is provided at the global level via weave.init()
+    # Initialize weave evaluation logger for this configuration.
+    # experiment_config is attached here (per-eval) instead of globally so each
+    # evaluation carries its own config snapshot without polluting every trace.
     eval_logger = weave.EvaluationLogger(
         name=eval_name,
         dataset="ComplexFuncBench",
@@ -557,9 +502,10 @@ def run_single_configuration(
             "response_complete",
             "response_correct",
         ],
+        eval_attributes={"experiment_config": orchestrator.get_exp_config()},
     )
 
-    # Process all cases 
+    # Process all cases
     results = []
     compressed_traces = []  # Separate list for memory-processed messages
     success_count = 0
@@ -581,7 +527,7 @@ def run_single_configuration(
             if result["message"] == "Success.":
                 success_count += 1
 
-            # Add metadata
+            # Add metadata (kept for on-disk JSON compatibility)
             result["memory_method"] = memory
             results.append(result)
 
@@ -706,7 +652,9 @@ def run_model_configs(
                         # Each thread needs its own orchestrator (mutable per-session
                         # state) and loads its own dataset for this haystack level
                         thread_orchestrator = LLMOrchestrator()
-                        dataset = load_haystack_dataset(haystack_threshold, input_file=input_file)
+                        dataset = load_haystack_dataset(
+                            haystack_threshold, input_file=input_file
+                        )
                         if selected_ids is not None:
                             dataset = [
                                 c for c in dataset if c.get("id") in selected_ids
@@ -727,7 +675,11 @@ def run_model_configs(
                     # Collect results and report any errors
                     for future in as_completed(futures):
                         haystack_threshold = futures[future]
-                        ht_label = f"haystack={haystack_threshold}" if haystack_threshold is not None else "baseline"
+                        ht_label = (
+                            f"haystack={haystack_threshold}"
+                            if haystack_threshold is not None
+                            else "baseline"
+                        )
                         try:
                             future.result()
                             logger.info(f"✅ {ht_label} completed")
@@ -765,12 +717,12 @@ def main(experiment_name=None):
     orchestrator = LLMOrchestrator()
     run_timestamp = datetime.now().strftime("%Y%m%d_%H%M")
 
-    # Initialize weave for the entire experiment and attach experiment-level metadata
-    # (use a clear key name and include a run timestamp so traces can be correlated)
+    # Initialize weave for the entire experiment. Only run_timestamp is attached
+    # globally; experiment_config is attached per-evaluation via eval_attributes
+    # in EvaluationLogger to avoid repeating the full config on every trace.
     weave.init(
         project_name=experiment_name or orchestrator.cfg.experiment_name,
         global_attributes={
-            "experiment_config": orchestrator.get_exp_config(),
             "run_timestamp": run_timestamp,
         },
         settings={"implicitly_patch_integrations": False},

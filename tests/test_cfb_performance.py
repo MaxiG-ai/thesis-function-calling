@@ -1,9 +1,8 @@
 """Tests for cfb_run_eval performance optimizations.
 
-These tests validate three key optimizations:
+These tests validate two key optimizations:
 1. FlagModel/CompareFC reuse across test cases (avoid reloading 1.3GB model per case)
 2. Model-level parallelism (run different models concurrently)
-3. Batch Weave logging (collect results locally, log after completion)
 
 All tests mock external dependencies (LLM calls, FlagModel, Weave) to run
 without GPU or API access.
@@ -11,8 +10,7 @@ without GPU or API access.
 
 from __future__ import annotations
 
-import json
-from unittest.mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch
 from concurrent.futures import ThreadPoolExecutor
 
 import pytest
@@ -95,47 +93,6 @@ def minimal_case():
     }
 
 
-@pytest.fixture
-def sample_results():
-    """Sample evaluation results for metrics and Weave logging tests.
-
-    Contains two results: one success and one failure, covering all metric fields.
-    """
-    return [
-        {
-            "id": "Travel-001",
-            "gen_convs": [],
-            "message": "Success.",
-            "count_dict": {
-                "success_turn_num": 2,
-                "total_turn_num": 2,
-                "correct_call_num": 3,
-                "total_call_num": 3,
-                "real_turn_num": 2,
-            },
-            "resp_eval": {
-                "complete": {"score": 2},
-                "correct": {"score": 1},
-            },
-            "status": "Success",
-        },
-        {
-            "id": "Travel-002",
-            "gen_convs": [],
-            "message": {"error_type": "value_error", "content": "Wrong value"},
-            "count_dict": {
-                "success_turn_num": 1,
-                "total_turn_num": 2,
-                "correct_call_num": 1,
-                "total_call_num": 3,
-                "real_turn_num": 2,
-            },
-            "resp_eval": None,
-            "status": "Failed",
-        },
-    ]
-
-
 # ---------------------------------------------------------------------------
 # Change 1: CompareFC / FlagModel Reuse Tests
 # ---------------------------------------------------------------------------
@@ -203,7 +160,6 @@ class TestCompareFCInjection:
         mock_orchestrator.active_model_key = "test-model"
 
         runner = SAPGPTRunner(
-            model_name="test-model",
             args=mock_args,
             logger=mock_logger,
             orchestrator=mock_orchestrator,
@@ -227,7 +183,6 @@ class TestCompareFCInjection:
 
         runners = [
             SAPGPTRunner(
-                model_name="test-model",
                 args=mock_args,
                 logger=mock_logger,
                 orchestrator=mock_orchestrator,
@@ -281,68 +236,92 @@ class TestModelParallelism:
     def test_run_model_configs_executes_all_memory_methods(self):
         """run_model_configs should call run_single_configuration for each memory method.
 
-        Verifies that the extracted function correctly iterates through all
-        enabled memory methods for a given model, calling run_single_configuration
-        for each one sequentially.
+        Verifies that run_model_configs correctly iterates through all enabled
+        memory methods for a given model, calling run_single_configuration for
+        each (memory, compact_threshold) combination. Threshold-insensitive
+        strategies (e.g. 'ace') produce one call; threshold-sensitive strategies
+        (e.g. 'truncation') produce one call per configured threshold value.
         """
         from cfb_run_eval import run_model_configs
 
-        mock_orchestrator = MagicMock()
         dataset = [{"id": "Test-001", "conversations": [], "functions": []}]
-        memory_methods = ["truncation", "progressive_summarization", "ace"]
 
-        with patch("cfb_run_eval.run_single_configuration") as mock_run:
+        # Orchestrator reports three strategies; 'truncation' needs thresholds,
+        # 'progressive_summarization' needs thresholds, 'ace' does not.
+        mock_orchestrator = MagicMock()
+        mock_orchestrator.cfg.memory_strategies = {
+            "truncation": MagicMock(type="truncation"),
+            "ace": MagicMock(type="ace"),
+        }
+        mock_orchestrator.cfg.compact_thresholds = [500, 1000]
+        mock_orchestrator.cfg.haystack_thresholds = []
+        mock_orchestrator.cfg.input_file = "dummy.jsonl"
+
+        memory_methods = ["truncation", "ace"]
+
+        with (
+            patch("cfb_run_eval.run_single_configuration") as mock_run,
+            patch("cfb_run_eval.load_haystack_dataset", return_value=dataset),
+        ):
             run_model_configs(
                 model="test-model",
                 memory_methods=memory_methods,
                 orchestrator=mock_orchestrator,
-                dataset=dataset,
                 run_timestamp="20260101_0000",
                 resp_eval_runner=MagicMock(),
             )
 
-            # Should be called once per memory method
-            assert mock_run.call_count == len(memory_methods)
+        # truncation: 2 thresholds × 1 haystack(None) = 2 calls
+        # ace: 1 (no threshold) × 1 haystack(None) = 1 call
+        assert mock_run.call_count == 3
 
-            # Each call should have the correct memory method
-            called_memories = [c.kwargs["memory"] for c in mock_run.call_args_list]
-            assert called_memories == memory_methods
+        # Each call must specify the correct model
+        called_models = [c.kwargs["model"] for c in mock_run.call_args_list]
+        assert all(m == "test-model" for m in called_models)
 
     def test_run_model_configs_uses_own_orchestrator(self):
-        """Each model thread must use its own LLMOrchestrator instance.
+        """Each haystack-parallel thread must use its own LLMOrchestrator instance.
 
-        This prevents race conditions on shared mutable state (trace buffers,
-        memory processor state) when models run in parallel.
+        When multiple haystack thresholds are configured, run_model_configs
+        creates a fresh LLMOrchestrator per thread so that mutable per-session
+        state (trace buffers, memory processor state) is never shared.
         """
         from cfb_run_eval import run_model_configs
 
-        orchestrator_a = MagicMock()
-        orchestrator_b = MagicMock()
         dataset = [{"id": "Test-001"}]
+        created_orchestrators = []
 
-        with patch("cfb_run_eval.run_single_configuration") as mock_run:
-            # Simulate two models running (would be parallel in production)
+        mock_orchestrator = MagicMock()
+        mock_orchestrator.cfg.memory_strategies = {
+            "truncation": MagicMock(type="truncation"),
+        }
+        mock_orchestrator.cfg.compact_thresholds = [500]
+        # Two haystack thresholds force parallel execution and per-thread orchestrators
+        mock_orchestrator.cfg.haystack_thresholds = [1000, 2000]
+        mock_orchestrator.cfg.input_file = "dummy.jsonl"
+
+        def mock_run_single(orchestrator, **kwargs):
+            created_orchestrators.append(id(orchestrator))
+
+        with (
+            patch("cfb_run_eval.run_single_configuration", side_effect=mock_run_single),
+            patch("cfb_run_eval.load_haystack_dataset", return_value=dataset),
+            # Each LLMOrchestrator() call returns a distinct MagicMock
+            patch("cfb_run_eval.LLMOrchestrator", side_effect=lambda: MagicMock()),
+        ):
             run_model_configs(
-                model="model-a",
+                model="test-model",
                 memory_methods=["truncation"],
-                orchestrator=orchestrator_a,
-                dataset=dataset,
+                orchestrator=mock_orchestrator,
                 run_timestamp="20260101_0000",
                 resp_eval_runner=MagicMock(),
             )
-            run_model_configs(
-                model="model-b",
-                memory_methods=["truncation"],
-                orchestrator=orchestrator_b,
-                dataset=dataset,
-                run_timestamp="20260101_0000",
-                resp_eval_runner=MagicMock(),
-            )
 
-            # Each call received a different orchestrator
-            orch_a = mock_run.call_args_list[0].kwargs["orchestrator"]
-            orch_b = mock_run.call_args_list[1].kwargs["orchestrator"]
-            assert orch_a is not orch_b
+        # Three haystack levels (None + 1000 + 2000) — all orchestrator ids must differ
+        assert len(created_orchestrators) == 3
+        assert len(set(created_orchestrators)) == 3, (
+            "Each thread must get its own orchestrator"
+        )
 
     def test_parallel_model_execution_completes_all(self):
         """All models should complete when run via ThreadPoolExecutor.
@@ -368,7 +347,6 @@ class TestModelParallelism:
                         model=m,
                         memory_methods=["truncation"],
                         orchestrator=MagicMock(),
-                        dataset=[],
                         run_timestamp="20260101_0000",
                         resp_eval_runner=MagicMock(),
                     )
@@ -379,121 +357,3 @@ class TestModelParallelism:
                     f.result()
 
         assert sorted(completed) == sorted(models)
-
-
-# ---------------------------------------------------------------------------
-# Change 3: Batch Weave Logging Tests
-# ---------------------------------------------------------------------------
-
-
-class TestBatchWeaveLogging:
-    """Tests for collecting evaluation data locally and batching Weave calls.
-
-    Instead of calling eval_logger.log_prediction() inside the case loop
-    (adding network overhead per case), results are collected in a list and
-    logged to Weave after all cases complete.
-    """
-
-    def test_format_result_for_wandb_success_case(self, sample_results):
-        """format_result_for_wandb should produce correct structure for a successful case.
-
-        Verifies all expected keys are present and values are correctly computed
-        from the raw result structure (success flag, accuracy ratios, domain extraction).
-        """
-        from cfb_run_eval import format_result_for_wandb
-
-        result = format_result_for_wandb(sample_results[0])
-
-        assert result["case_id"] == "Travel-001"
-        assert result["success"] is True
-        assert result["domain"] == "Travel"
-        assert result["turn_accuracy"] == 1.0  # 2/2
-        assert result["call_accuracy"] == 1.0  # 3/3
-        assert result["response_complete_score"] == 2
-        assert result["response_correct_score"] == 1
-
-    def test_format_result_for_wandb_failure_case(self, sample_results):
-        """format_result_for_wandb should handle failed cases with partial metrics.
-
-        Failed cases have non-"Success." messages and may have None resp_eval.
-        The formatter must still produce valid output with available metrics.
-        """
-        from cfb_run_eval import format_result_for_wandb
-
-        result = format_result_for_wandb(sample_results[1])
-
-        assert result["success"] is False
-        assert result["turn_accuracy"] == 0.5  # 1/2
-        assert result["call_accuracy"] == pytest.approx(1 / 3)
-        assert result.get("response_complete_score") is None
-        assert result.get("response_correct_score") is None
-
-    def test_batch_log_to_weave_logs_all_collected_results(self, sample_results):
-        """batch_log_to_weave should log every collected result to the eval logger.
-
-        After cases complete, the batch function iterates through collected results
-        and calls eval_logger.log_prediction() for each one. This verifies
-        no results are dropped during batch logging.
-        """
-        from cfb_run_eval import batch_log_to_weave, format_result_for_wandb
-
-        mock_eval_logger = MagicMock()
-        # Make the context manager return a mock prediction
-        mock_pred = MagicMock()
-        mock_eval_logger.log_prediction.return_value.__enter__ = MagicMock(
-            return_value=mock_pred
-        )
-        mock_eval_logger.log_prediction.return_value.__exit__ = MagicMock(
-            return_value=False
-        )
-
-        collected = [format_result_for_wandb(r) for r in sample_results]
-
-        batch_log_to_weave(mock_eval_logger, collected)
-
-        # log_prediction should be called once per result
-        assert mock_eval_logger.log_prediction.call_count == len(collected)
-
-    def test_batch_log_to_weave_scores_are_logged_correctly(self):
-        """batch_log_to_weave should log the correct score values for each prediction.
-
-        Verifies that success, turn_accuracy, call_accuracy, and optional
-        response scores are all passed to pred.log_score() with the right
-        metric names and values.
-        """
-        from cfb_run_eval import batch_log_to_weave
-
-        mock_eval_logger = MagicMock()
-        mock_pred = MagicMock()
-        mock_eval_logger.log_prediction.return_value.__enter__ = MagicMock(
-            return_value=mock_pred
-        )
-        mock_eval_logger.log_prediction.return_value.__exit__ = MagicMock(
-            return_value=False
-        )
-
-        collected = [
-            {
-                "case_id": "Test-001",
-                "domain": "Test",
-                "status": "Success",
-                "message": "Success.",
-                "success": True,
-                "turn_accuracy": 0.8,
-                "call_accuracy": 0.9,
-                "response_complete_score": 2,
-                "response_correct_score": 1,
-            }
-        ]
-
-        batch_log_to_weave(mock_eval_logger, collected)
-
-        # Verify the scores logged
-        score_calls = mock_pred.log_score.call_args_list
-        score_names = [c.args[0] for c in score_calls]
-
-        assert "success" in score_names
-        assert "turn_accuracy" in score_names
-        assert "call_accuracy" in score_names
-        assert "response_complete" in score_names
-        assert "response_correct" in score_names
