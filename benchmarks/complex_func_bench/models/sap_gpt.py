@@ -65,17 +65,13 @@ class FunctionCallSAPGPT(SAPGPTModel):
     # @weave.op()
     @retry(max_attempts=5, delay=10)
     def generate_response(self, messages, tools=None, **kwargs: Any):
-        # The runner manages self.messages directly by appending assistant/tool messages
-        # We should NOT overwrite it here - just use what the runner has built up
-        # Only initialize on first call (when self.messages is empty)
-        if "function_call" not in json.dumps(messages, ensure_ascii=False):
+        
+        # Prior version: check for function callin json dump
+        # if "function_call" not in json.dumps(messages, ensure_ascii=False):
+        if not self.messages:
             self.messages = copy.deepcopy(messages)
-            # Prepend haystack distractor context if available (NIAH experiment).
-            # Haystack messages are pre-computed OpenAI-format tool interactions
-            # from other domains, injected before the actual conversation so the
-            # LLM must find the real task "needle" in the distractor "haystack".
             if self.haystack_messages:
-                self.messages = copy.deepcopy(self.haystack_messages) + self.messages
+                self.messages = self.messages + copy.deepcopy(self.haystack_messages)
                 self.haystack_messages = None  # inject only once
 
         try:
