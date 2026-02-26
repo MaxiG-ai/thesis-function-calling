@@ -104,7 +104,6 @@ def create_runner(
 
     # This routes all benchmark LLM calls through orchestrator with memory processing
     runner = SAPGPTRunner(
-        model_name=orchestrator.active_model_key,
         args=RunnerArgs(log_dir),
         logger=runner_logger,
         orchestrator=orchestrator,
@@ -472,36 +471,6 @@ def evaluate_single_case(
     return result, compressed_trace
 
 
-def batch_log_to_weave(eval_logger, collected_results: List[Dict]):
-    """Log all collected results to Weave after case processing completes.
-
-    Decouples Weave network calls from the benchmark loop so they don't add
-    latency to each case and so thread-safety is simpler.
-
-    Args:
-        eval_logger: Weave EvaluationLogger instance
-        collected_results: List of formatted result dicts (from format_result_for_wandb)
-    """
-    for wandb_data in collected_results:
-        with eval_logger.log_prediction(
-            inputs={"case_id": wandb_data["case_id"], "domain": wandb_data["domain"]},
-            output={
-                "status": wandb_data["status"],
-                "message": wandb_data["message"],
-            },
-        ) as pred:
-            pred.log_score("success", 1.0 if wandb_data["success"] else 0.0)
-            pred.log_score("turn_accuracy", wandb_data.get("turn_accuracy", 0.0))
-            pred.log_score("call_accuracy", wandb_data.get("call_accuracy", 0.0))
-
-            if wandb_data.get("response_complete_score") is not None:
-                pred.log_score(
-                    "response_complete", wandb_data["response_complete_score"]
-                )
-            if wandb_data.get("response_correct_score") is not None:
-                pred.log_score("response_correct", wandb_data["response_correct_score"])
-
-
 def run_single_configuration(
     orchestrator: LLMOrchestrator,
     dataset: List[Dict],
@@ -519,8 +488,7 @@ def run_single_configuration(
     1. Sets the active context in the orchestrator (model, memory, threshold)
     2. Creates a shared CompareFC (FlagModel loaded once, reused across cases)
     3. Processes all test cases
-    4. Batch-logs results to Weave (after case processing, not inline)
-    5. Saves results to disk
+    4. Saves results to disk
 
     Args:
         orchestrator: LLM Orchestrator instance
@@ -591,10 +559,9 @@ def run_single_configuration(
         ],
     )
 
-    # Process all cases -- collect results locally for batch Weave logging
+    # Process all cases 
     results = []
     compressed_traces = []  # Separate list for memory-processed messages
-    collected_wandb_data = []  # Collected for batch Weave logging after loop
     success_count = 0
 
     for i, case in enumerate(dataset):
@@ -627,9 +594,6 @@ def run_single_configuration(
                 }
             )
 
-            # Collect formatted result for batch Weave logging (no network calls here)
-            collected_wandb_data.append(format_result_for_wandb(result))
-
         except Exception as e:
             logger.error(f"❌ Failed on case {case_id}: {e}")
             # Continue with remaining cases
@@ -641,10 +605,6 @@ def run_single_configuration(
         torch.cuda.empty_cache()
     gc.collect()
     logger.info("🧹 Shared CompareFC released, GPU memory freed")
-
-    # Batch-log all predictions to Weave (after case processing)
-    logger.info("📡 Batch-logging predictions to Weave...")
-    batch_log_to_weave(eval_logger, collected_wandb_data)
 
     # Calculate aggregate metrics
     logger.info("🧮 Calculating aggregate metrics...")
@@ -675,7 +635,6 @@ def run_single_configuration(
             "haystack_threshold": haystack_threshold,
             "total_cases": len(dataset),
             "success_count": success_count,
-            "pass_rate": (success_count / len(dataset)) * 100 if dataset else 0,
             **metrics,
         }
     )
@@ -743,11 +702,11 @@ def run_model_configs(
                 )
                 with ThreadPoolExecutor(max_workers=len(haystack_values)) as executor:
                     futures = {}
-                    for ht in haystack_values:
+                    for haystack_threshold in haystack_values:
                         # Each thread needs its own orchestrator (mutable per-session
                         # state) and loads its own dataset for this haystack level
                         thread_orchestrator = LLMOrchestrator()
-                        dataset = load_haystack_dataset(ht, input_file=input_file)
+                        dataset = load_haystack_dataset(haystack_threshold, input_file=input_file)
                         if selected_ids is not None:
                             dataset = [
                                 c for c in dataset if c.get("id") in selected_ids
@@ -761,14 +720,14 @@ def run_model_configs(
                             run_timestamp=run_timestamp,
                             resp_eval_runner=resp_eval_runner,
                             compact_threshold=compact_threshold,
-                            haystack_threshold=ht,
+                            haystack_threshold=haystack_threshold,
                         )
-                        futures[future] = ht
+                        futures[future] = haystack_threshold
 
                     # Collect results and report any errors
                     for future in as_completed(futures):
-                        ht = futures[future]
-                        ht_label = f"haystack={ht}" if ht is not None else "baseline"
+                        haystack_threshold = futures[future]
+                        ht_label = f"haystack={haystack_threshold}" if haystack_threshold is not None else "baseline"
                         try:
                             future.result()
                             logger.info(f"✅ {ht_label} completed")
