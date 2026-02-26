@@ -10,7 +10,6 @@ from memorch.llm_orchestrator import LLMOrchestrator
 class SAPGPTRunner(ModelRunner):
     def __init__(
         self,
-        model_name,
         args,
         logger,
         orchestrator: LLMOrchestrator,
