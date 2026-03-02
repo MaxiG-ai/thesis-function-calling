@@ -205,7 +205,7 @@ class CompareFC(CompareFCBase):
             if k not in golden_call['arguments']:
                 return {'error_type': "param_hallucination", "content": f"Parameter {k} is hallucinated."}
             
-    @weave.op(enable_code_capture=False)
+    # @weave.op(enable_code_capture=False)
     def mapping_call(self, predict, golden, golden_obs):
         def sort_arguments(call_list):
             for value in call_list:
