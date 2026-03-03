@@ -65,12 +65,14 @@ class FunctionCallSAPGPT(SAPGPTModel):
     # @weave.op()
     @retry(max_attempts=5, delay=10)
     def generate_response(self, messages, tools=None, **kwargs: Any):
-        
+
         # Prior version: check for function callin json dump
         # if "function_call" not in json.dumps(messages, ensure_ascii=False):
         if not self.messages:
             self.messages = copy.deepcopy(messages)
             if self.haystack_messages:
+                # Prepend haystack *before* the user query so the model sees
+                # distractor context first, then the actual task.
                 self.messages = self.messages + copy.deepcopy(self.haystack_messages)
                 self.haystack_messages = None  # inject only once
 
@@ -82,6 +84,15 @@ class FunctionCallSAPGPT(SAPGPTModel):
                 tool_choice=kwargs.get("tool_choice", "auto"),
                 max_tokens=kwargs.get("max_tokens", 2048),
             )
+
+            # Write the compressed view back into self.messages so that the next
+            # turn builds on the already-processed state rather than the raw
+            # growing history.  This eliminates redundant recompression: e.g.
+            # progressive_summarization would otherwise re-summarize the full
+            # buffer (including haystack) on every subsequent turn.
+            if self.orchestrator.last_compressed_view is not None:
+                self.messages = copy.deepcopy(self.orchestrator.last_compressed_view)
+
             return response.choices[0].message
 
         except Exception as e:

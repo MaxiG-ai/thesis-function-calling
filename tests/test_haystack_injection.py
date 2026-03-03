@@ -63,10 +63,17 @@ def _make_haystack_messages(n=2):
     return msgs
 
 
-def _make_mock_orchestrator():
-    """Create a mock LLMOrchestrator with required attributes."""
+def _make_mock_orchestrator(compressed_view=None):
+    """Create a mock LLMOrchestrator with required attributes.
+
+    Args:
+        compressed_view: Optional list of messages to return as last_compressed_view,
+            simulating a strategy that has compressed the input. When None the
+            orchestrator behaves like no_strategy (write-back is a no-op guard).
+    """
     orchestrator = MagicMock()
     orchestrator.active_model_key = "test-model"
+    orchestrator.last_compressed_view = compressed_view
     return orchestrator
 
 
@@ -273,7 +280,6 @@ class TestSAPGPTRunnerHaystackPassthrough:
         mock_compare.free_function_list = []
 
         runner = SAPGPTRunner(
-            "test-model",
             mock_args,
             mock_logger,
             orchestrator=orchestrator,
@@ -317,7 +323,6 @@ class TestSAPGPTRunnerHaystackPassthrough:
         mock_compare.free_function_list = []
 
         runner = SAPGPTRunner(
-            "test-model",
             mock_args,
             mock_logger,
             orchestrator=orchestrator,
@@ -365,7 +370,6 @@ class TestEvaluationIntegrity:
         mock_compare.free_function_list = []
 
         runner = SAPGPTRunner(
-            "test-model",
             mock_args,
             mock_logger,
             orchestrator=orchestrator,
@@ -405,3 +409,155 @@ class TestEvaluationIntegrity:
         # No haystack function names should appear in the logical messages
         logical_str = json.dumps(logical)
         assert "Distractor_Func" not in logical_str
+
+
+# ---------------------------------------------------------------------------
+# 4. Compressed-view write-back
+# ---------------------------------------------------------------------------
+
+
+class TestCompressedViewWriteBack:
+    """Tests verifying that generate_response replaces self.messages with the
+    orchestrator's compressed_view after each call.
+
+    This is the core mechanism that prevents redundant recompression: once a
+    strategy has processed the raw buffer (e.g. summarised haystack + history),
+    the next turn starts from the already-compressed state rather than the
+    original growing buffer.
+    """
+
+    def test_write_back_replaces_messages_with_compressed_view(self):
+        """
+        After generate_response() succeeds, self.messages must equal a deep
+        copy of orchestrator.last_compressed_view.
+
+        The orchestrator simulates a compressing strategy by returning a
+        compressed_view that is shorter than the original input. After the
+        call, model.messages should reflect the compressed state, not the
+        original injected messages.
+        """
+        # Simulate what a strategy like progressive_summarization returns:
+        # the full haystack + user input is compressed to a single summary msg.
+        compressed = [{"role": "system", "content": "Summary of prior context."}]
+        orchestrator = _make_mock_orchestrator(compressed_view=compressed)
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message = MagicMock()
+        mock_response.choices[0].message.tool_calls = None
+        mock_response.choices[0].message.content = "answer"
+        orchestrator.generate_with_memory_applied.return_value = mock_response
+
+        model = FunctionCallSAPGPT("test-model", orchestrator=orchestrator)
+        model.haystack_messages = _make_haystack_messages(3)  # 6 distractor msgs
+
+        user_messages = [{"role": "user", "content": "Do something"}]
+        model.generate_response(user_messages, tools=[])
+
+        # model.messages must now be a copy of the compressed view, not the
+        # original 7-message buffer (6 haystack + 1 user).
+        assert model.messages == compressed
+        assert model.messages is not compressed, (
+            "must be a deep copy, not the same object"
+        )
+
+    def test_write_back_is_deep_copy(self):
+        """
+        The write-back must store a deep copy of last_compressed_view, not a
+        reference. Mutating model.messages after the call (e.g. appending new
+        tool turns) must not affect orchestrator.last_compressed_view.
+        """
+        compressed = [{"role": "system", "content": "Summary."}]
+        orchestrator = _make_mock_orchestrator(compressed_view=compressed)
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message = MagicMock()
+        mock_response.choices[0].message.tool_calls = None
+        mock_response.choices[0].message.content = "ok"
+        orchestrator.generate_with_memory_applied.return_value = mock_response
+
+        model = FunctionCallSAPGPT("test-model", orchestrator=orchestrator)
+        model.generate_response([{"role": "user", "content": "hi"}], tools=[])
+
+        # Append a new tool turn (as the runner would do between turns)
+        model.messages.append({"role": "assistant", "content": None, "tool_calls": []})
+
+        # The original compressed list must be unaffected
+        assert len(orchestrator.last_compressed_view) == 1
+
+    def test_no_write_back_when_compressed_view_is_none(self):
+        """
+        When orchestrator.last_compressed_view is None (e.g. for no_strategy
+        or a mock that does not set it), self.messages must be left untouched
+        after the call. This guards against overwriting messages with None.
+        """
+        orchestrator = _make_mock_orchestrator(compressed_view=None)
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message = MagicMock()
+        mock_response.choices[0].message.tool_calls = None
+        mock_response.choices[0].message.content = "ok"
+        orchestrator.generate_with_memory_applied.return_value = mock_response
+
+        model = FunctionCallSAPGPT("test-model", orchestrator=orchestrator)
+        user_messages = [{"role": "user", "content": "hello"}]
+        model.generate_response(user_messages, tools=[])
+
+        # With no compressed view, messages stays as the deep-copied input
+        assert model.messages == user_messages
+
+    def test_second_turn_builds_on_compressed_state(self):
+        """
+        After a first call with write-back, the second call must send the
+        compressed buffer (plus any new turns appended by the runner) to the
+        orchestrator — not the original raw buffer.
+
+        This is the core guarantee of the write-back mechanism: subsequent
+        turns never see the original haystack again.
+        """
+        compressed_after_turn1 = [
+            {"role": "system", "content": "Compressed history."},
+            {"role": "user", "content": "Do something"},
+        ]
+        orchestrator = _make_mock_orchestrator(compressed_view=compressed_after_turn1)
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock()]
+        mock_response.choices[0].message = MagicMock()
+        mock_response.choices[0].message.tool_calls = None
+        mock_response.choices[0].message.content = "done"
+        orchestrator.generate_with_memory_applied.return_value = mock_response
+
+        model = FunctionCallSAPGPT("test-model", orchestrator=orchestrator)
+        model.haystack_messages = _make_haystack_messages(5)  # 10 distractor msgs
+
+        # Turn 1
+        model.generate_response([{"role": "user", "content": "Do something"}], tools=[])
+        # model.messages is now compressed_after_turn1 (2 messages)
+
+        # Runner appends new tool-call turn (as sap_gpt_runner.py lines 114-173 do)
+        new_tool_call = {"role": "assistant", "content": None, "tool_calls": []}
+        new_tool_result = {"role": "tool", "tool_call_id": "tc_1", "content": "result"}
+        model.messages.append(new_tool_call)
+        model.messages.append(new_tool_result)
+
+        # Turn 2 — capture what the orchestrator actually receives
+        captured_input = []
+        original_call = orchestrator.generate_with_memory_applied
+
+        def capturing_call(input_messages, **kwargs):
+            captured_input.append(copy.deepcopy(input_messages))
+            return original_call(input_messages, **kwargs)
+
+        orchestrator.generate_with_memory_applied.side_effect = capturing_call
+
+        model.generate_response([{"role": "user", "content": "Do something"}], tools=[])
+
+        # The orchestrator must have received compressed(2) + 2 new turns = 4 msgs,
+        # NOT the original 10 haystack + 1 user + 2 new turns = 13 msgs.
+        # (captured_input may contain multiple entries due to the @retry decorator,
+        # but every entry must reflect the compressed state.)
+        assert len(captured_input) >= 1
+        first_call_input = captured_input[0]
+        assert len(first_call_input) == 4
+        # Haystack content must not appear in what was sent
+        sent_str = json.dumps(first_call_input)
+        assert "Distractor_Func" not in sent_str
