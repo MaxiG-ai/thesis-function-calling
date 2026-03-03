@@ -790,7 +790,7 @@ def main(experiment_name=None):
         logger.info(f"✅ Model '{model}' completed all configurations")
 
     # Final summary
-    logger.info("\n" + "=" * 80)
+    logger.info("=" * 80)
     logger.info("🎉 All configurations completed!")
     logger.info("=" * 80)
 
