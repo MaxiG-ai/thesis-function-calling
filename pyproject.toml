@@ -5,7 +5,6 @@ description = "Repository to run the benchmark execution for memory tests on Com
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "fastapi[standard]>=0.121.2",
     "flagembedding>=1.3.5",
     "jsonlines>=4.0.0",
     "litellm>=1.80.0",
@@ -28,7 +27,8 @@ dependencies = [
     "weave",
     "nicegui>=2.0.0",
     "ruff>=0.15.2",
+    "pandas>=2.3.3",
 ]
 
 [tool.uv.sources]
-memorch = { git = "https://github.com/MaxiG-ai/memory-orchestrator.git" , branch = "haystack-experiment" }
+memorch = { git = "https://github.com/MaxiG-ai/memory-orchestrator.git", branch = "haystack-experiment" }

@@ -1,45 +1,42 @@
 # --- Experiment Matrix ---
 # The suite will iterate through the Cartesian product of these lists.
 
-experiment_name = "haystack_tests"
+experiment_name = "full_haystack_run"
 results_dir = "results"
 log_dir = "results/logs"
 logging_level = "INFO"
 weave_deep_logging = false
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
 # selected_test_cases = ['Cross-252'] # ["Car-Rental-131", "Cross-131", "Flights-91"]
-benchmark_sample_size = 20
+# benchmark_sample_size = 20
 # Max messages to retain after compression (for applicable strategies)
 # max_messages_after_compression = 150
 
 # setting for max. context before compression
-# compact_thresholds = [10_000, 20_000, 50_000]
-compact_thresholds = [50_000, 100_000]
+compact_thresholds = [5_000, 10_000, 20_000, 30_000, 50_000, 75_000, 100_000]
+# compact_thresholds = [50_000, 100_000]
 
 # NIAH haystack experiment: token count targets for distractor context injection.
 # Each threshold generates a separate dataset file (haystack_{N}.jsonl).
 # Baseline (no haystack) always runs alongside these. Comment out to disable.
-# haystack_thresholds = [20_000, 40_000, 60_000, 80_000, 100_000]
-haystack_thresholds = [20_000, 60_000, 100_000]
+haystack_thresholds = [20_000, 40_000, 60_000, 80_000, 100_000]
+# haystack_thresholds = [20_000, 100_000]
 
-# 1. Select keys from model_config.toml to test
 enabled_models = [
     # "gpt-5",
     # "gpt-4-1",
-    "gpt-4-1-mini",
+    # "gpt-4-1-mini",
     # "gpt-5-mini",
     # "claude-sonnet-4-5",
     # "gemini-2-5-pro",
-    # "qwen3-coder",
+    "qwen3-coder",
 ]
 
-# 2. Define Memory Architectures to test
 enabled_memory_methods = [
     # "no_strategy",
-    # "truncation",
-    "progressive_summarization",
-    "memory_bank",
-    # "ace",
+    "truncation",
+    # "progressive_summarization",
+    # "memory_bank",
 ]
 
 # --- Memory Strategy Definitions ---
