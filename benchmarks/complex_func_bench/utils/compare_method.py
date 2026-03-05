@@ -54,7 +54,6 @@ class CompareFCBase:
             missing_param = set(func_call['arguments'].keys()) - set(used_func['parameters']['properties'].keys())
             return {"error":f"Function {used_func['name']} does not have parameters {missing_param}" }
         
-        # 参数类型验证
         for param_name, param_value in func_call['arguments'].items():
             if used_func['parameters']['properties'][param_name]['type'] == "string":
                 if not isinstance(param_value, str):
@@ -88,7 +87,6 @@ class CompareFCBase:
                             "obs": convs[i+1]['content'][j]
                         }
 
-    # @weave.op(enable_code_capture=False)
     def rule_based(self, predict, golden):
         """
         Rule-based Match.
@@ -108,7 +106,6 @@ class CompareFCBase:
         
         return True
 
-    # @weave.op(enable_code_capture=False)
     def response_based(self, predict, golden):
         try:
             resp_1 = self.api_call._call(predict)
@@ -129,7 +126,6 @@ class CompareFCBase:
         
         return resp_1 == resp_2
 
-    # @weave.op(enable_code_capture=False)
     def similarity_based(self, predict, golden):
         embedding_1 = self.embedding.encode([json.dumps(predict, ensure_ascii=False)])
         embedding_2 = self.embedding.encode([json.dumps(golden, ensure_ascii=False)])
@@ -140,7 +136,6 @@ class CompareFCBase:
         self.logger.debug(f"Similarity-based comparison output: {similarity[0][0]}")
         return similarity[0][0] > 0.98
 
-    # @weave.op(enable_code_capture=False)
     def llm_based(self, functions, history, predict, golden):
         kwargs = {
             "functions": json.dumps(functions, ensure_ascii=False),
@@ -205,7 +200,6 @@ class CompareFC(CompareFCBase):
             if k not in golden_call['arguments']:
                 return {'error_type': "param_hallucination", "content": f"Parameter {k} is hallucinated."}
             
-    # @weave.op(enable_code_capture=False)
     def mapping_call(self, predict, golden, golden_obs):
         def sort_arguments(call_list):
             for value in call_list:
