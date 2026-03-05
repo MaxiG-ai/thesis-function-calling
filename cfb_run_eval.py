@@ -14,6 +14,7 @@ from collections import defaultdict
 
 from memorch.utils import model_load_lock
 from memorch.utils.logger import get_logger
+from memorch.utils.config import load_configs
 from memorch.llm_orchestrator import LLMOrchestrator
 
 from benchmarks.complex_func_bench.runner.sap_gpt_runner import SAPGPTRunner
@@ -424,6 +425,7 @@ def run_single_configuration(
     resp_eval_runner: RespEvalRunner,
     compact_threshold: Optional[int] = None,
     haystack_threshold: Optional[int] = None,
+    shared_compare_class=None,
 ) -> Optional[Dict]:
     """
     Run evaluation for a single model/memory/threshold configuration.
@@ -446,6 +448,10 @@ def run_single_configuration(
             config.compact_thresholds for truncation and progressive_summarization.
         haystack_threshold: NIAH haystack token target for this run. None for baseline
             (no distractor context injected).
+        shared_compare_class: Optional pre-built CompareFC instance. When provided,
+            skips internal CompareFC creation (avoids redundant FlagModel loading).
+            Each thread must receive its own instance since CompareFC has mutable
+            per-case state (free_functions, error_message).
 
     Returns:
         Summary statistics dictionary, or None if failed
@@ -473,14 +479,17 @@ def run_single_configuration(
         logger.error(f"❌ Failed to switch context: {e}")
         return None
 
-    # Create a shared CompareFC for this configuration.
-    # This loads FlagModel (BAAI/bge-large-en-v1.5, ~1.3GB) once instead of per case.
-    # Per-case mutable state (free_functions, error_message) is reset at the start of
-    # each runner.run() call, so reuse is safe.
-    compare_class_args = type("Args", (), {"log_dir": orchestrator.cfg.results_dir})()
-    with model_load_lock:
-        shared_compare_class = CompareFC(compare_class_args, logger)
-    logger.info("🔧 Shared CompareFC created (FlagModel loaded once for this config)")
+    # Use caller-provided CompareFC or create one for this configuration.
+    # CompareFC loads FlagModel (BAAI/bge-large-en-v1.5, ~1.3GB) which is expensive.
+    # When running haystack thresholds in parallel, the caller pre-creates one
+    # CompareFC per thread to avoid redundant FlagModel copies on the GPU.
+    if shared_compare_class is None:
+        compare_class_args = type("Args", (), {"log_dir": orchestrator.cfg.results_dir})()
+        with model_load_lock:
+            shared_compare_class = CompareFC(compare_class_args, logger)
+        logger.info("🔧 CompareFC created (FlagModel loaded for this config)")
+    else:
+        logger.info("🔧 Using pre-built CompareFC (FlagModel shared)")
 
     # Name this evaluation run including thresholds so wandb runs are distinguishable
     compact_suffix = f"_t{compact_threshold}" if compact_threshold is not None else ""
@@ -628,6 +637,11 @@ def run_model_configs(
     # Resolve input_file from config for dataset loading
     input_file = orchestrator.cfg.input_file
 
+    # Cache the shared config to avoid redundant file I/O when creating
+    # per-thread orchestrators. ExperimentConfig is a Pydantic BaseModel
+    # and is effectively immutable after creation.
+    shared_config = orchestrator.cfg
+
     for memory in memory_methods:
         strategy_type = orchestrator.cfg.memory_strategies[memory].type
 
@@ -640,37 +654,67 @@ def run_model_configs(
 
         for compact_threshold in compact_thresholds:
             if len(haystack_values) > 1:
-                # Parallel haystack execution: each haystack_threshold gets its own
-                # orchestrator and dataset to avoid shared mutable state.
+                # --- Pre-create all per-thread resources SEQUENTIALLY ---
+                # This avoids the RuntimeError from concurrent set_global_log_level
+                # calls and eliminates redundant file I/O / FlagModel loading.
                 logger.info(
-                    f"🔀 Running {len(haystack_values)} haystack thresholds in "
-                    f"parallel for {model}/{memory}/compact={compact_threshold}"
+                    f"🔀 Preparing {len(haystack_values)} haystack thresholds "
+                    f"for {model}/{memory}/compact={compact_threshold}"
                 )
+
+                # 1. Pre-load datasets (one per haystack threshold)
+                preloaded_datasets = {}
+                for ht in haystack_values:
+                    dataset = load_haystack_dataset(ht, input_file=input_file)
+                    if selected_ids is not None:
+                        dataset = [
+                            c for c in dataset if c.get("id") in selected_ids
+                        ]
+                    preloaded_datasets[ht] = dataset
+
+                # 2. Pre-create per-thread orchestrators using shared config.
+                #    Each thread needs its own orchestrator for mutable session
+                #    state, but they all share the same immutable config.
+                thread_orchestrators = {
+                    ht: LLMOrchestrator(config=shared_config)
+                    for ht in haystack_values
+                }
+
+                # 3. Pre-create per-thread CompareFC instances under model_load_lock.
+                #    CompareFC has mutable per-case state (free_functions, error_message)
+                #    so each thread needs its own instance, but FlagModel loading is
+                #    serialized to avoid CUDA/accelerate race conditions.
+                compare_class_args = type(
+                    "Args", (), {"log_dir": shared_config.results_dir}
+                )()
+                thread_compare_classes = {}
+                for ht in haystack_values:
+                    with model_load_lock:
+                        thread_compare_classes[ht] = CompareFC(
+                            compare_class_args, logger
+                        )
+                logger.info(
+                    f"🔧 Pre-created {len(haystack_values)} orchestrators, "
+                    f"datasets, and CompareFC instances"
+                )
+
+                # --- Submit to thread pool ---
                 with ThreadPoolExecutor(max_workers=len(haystack_values)) as executor:
                     futures = {}
-                    for haystack_threshold in haystack_values:
-                        # Each thread needs its own orchestrator (mutable per-session
-                        # state) and loads its own dataset for this haystack level
-                        thread_orchestrator = LLMOrchestrator()
-                        dataset = load_haystack_dataset(
-                            haystack_threshold, input_file=input_file
-                        )
-                        if selected_ids is not None:
-                            dataset = [
-                                c for c in dataset if c.get("id") in selected_ids
-                            ]
+                    for ht in haystack_values:
                         future = executor.submit(
                             run_single_configuration,
-                            orchestrator=thread_orchestrator,
-                            dataset=dataset,
+                            orchestrator=thread_orchestrators[ht],
+                            dataset=preloaded_datasets[ht],
                             model=model,
                             memory=memory,
                             run_timestamp=run_timestamp,
                             resp_eval_runner=resp_eval_runner,
                             compact_threshold=compact_threshold,
-                            haystack_threshold=haystack_threshold,
+                            haystack_threshold=ht,
+                            shared_compare_class=thread_compare_classes[ht],
                         )
-                        futures[future] = haystack_threshold
+                        futures[future] = ht
 
                     # Collect results and report any errors
                     for future in as_completed(futures):
@@ -685,6 +729,14 @@ def run_model_configs(
                             logger.info(f"✅ {ht_label} completed")
                         except Exception as e:
                             logger.error(f"❌ {ht_label} failed: {e}")
+
+                # Clean up pre-created CompareFC instances after all threads finish
+                del thread_compare_classes
+                del thread_orchestrators
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                gc.collect()
+                logger.info("🧹 Thread resources released, GPU memory freed")
             else:
                 # No haystack thresholds configured — single baseline run
                 dataset = load_haystack_dataset(None, input_file=input_file)

@@ -306,8 +306,10 @@ class TestModelParallelism:
         with (
             patch("cfb_run_eval.run_single_configuration", side_effect=mock_run_single),
             patch("cfb_run_eval.load_haystack_dataset", return_value=dataset),
-            # Each LLMOrchestrator() call returns a distinct MagicMock
-            patch("cfb_run_eval.LLMOrchestrator", side_effect=lambda: MagicMock()),
+            # Each LLMOrchestrator() call returns a distinct MagicMock;
+            # accept **kwargs since the refactored code passes config= kwarg
+            patch("cfb_run_eval.LLMOrchestrator", side_effect=lambda **kw: MagicMock()),
+            patch("cfb_run_eval.CompareFC", return_value=MagicMock()),
         ):
             run_model_configs(
                 model="test-model",
