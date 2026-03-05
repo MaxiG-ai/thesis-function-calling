@@ -73,7 +73,7 @@ class FunctionCallSAPGPT(SAPGPTModel):
             if self.haystack_messages:
                 # Prepend haystack *before* the user query so the model sees
                 # distractor context first, then the actual task.
-                self.messages = self.messages + copy.deepcopy(self.haystack_messages)
+                self.messages = copy.deepcopy(self.haystack_messages) + self.messages
                 self.haystack_messages = None  # inject only once
 
         try:
