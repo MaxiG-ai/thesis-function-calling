@@ -230,6 +230,12 @@ def test_load_metrics_from_real_structure():
 
     This integration test verifies the picker works with the real experiment
     data by loading at least one valid metrics file from the structure.
+
+    Directory layout (after haystack refactor):
+        results/cfb/{project}/{timestamp}/{strategy}/{threshold_X}/{haystack_X}/{model}/metrics_*.json
+
+    Older experiments may use a flatter layout without threshold/haystack segments.
+    A recursive glob handles both cases.
     """
     results_dir = Path("results/cfb")
 
@@ -253,37 +259,17 @@ def test_load_metrics_from_real_structure():
     timestamp = timestamps[0]
     exp_path = project_path / timestamp
 
-    # Load metrics
-    loaded = {}
-    for strategy_d in exp_path.iterdir():
-        if not strategy_d.is_dir():
-            continue
-        strategy_name = strategy_d.name
-        loaded[strategy_name] = {}
+    # Recursively find all metrics files under the experiment path.
+    # The directory depth varies: older runs use strategy/model/,
+    # newer runs use strategy/threshold_X/haystack_X/model/.
+    metrics_files = list(exp_path.rglob("metrics_*.json"))
 
-        for model_d in strategy_d.iterdir():
-            if not model_d.is_dir():
-                continue
-            model_name = model_d.name
+    assert len(metrics_files) > 0, (
+        f"Failed to find any metrics_*.json files under {project}/{timestamp}"
+    )
 
-            json_files = list(model_d.glob("metrics_*.json"))
-            if json_files:
-                with open(json_files[0], "r") as f:
-                    try:
-                        loaded[strategy_name][model_name] = {
-                            "metrics": json.load(f),
-                            "filepath": str(json_files[0]),
-                        }
-                    except json.JSONDecodeError:
-                        pass
-
-    # Should have loaded at least one configuration
-    # (some strategies might be empty, so we check if ANY strategy has models)
-    total_models = sum(len(models) for models in loaded.values())
-    assert total_models > 0, f"Failed to load any metrics from {project}/{timestamp}"
-
-    # Verify we can access metrics data from strategies that have models
-    for strategy, models in loaded.items():
-        for model, data in models.items():
-            assert "metrics" in data
-            assert isinstance(data["metrics"], dict)
+    # Verify each file contains valid JSON with dict content
+    for mf in metrics_files:
+        with open(mf, "r") as f:
+            data = json.load(f)
+            assert isinstance(data, dict), f"Expected dict in {mf}, got {type(data)}"
