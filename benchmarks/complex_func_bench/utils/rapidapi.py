@@ -2,6 +2,7 @@ import json
 import requests
 import copy
 import os
+import logging
 from benchmarks.complex_func_bench.utils.utils import retry
 
 
@@ -33,7 +34,7 @@ class RapidAPICall:
         try:
             response = requests.get(self.url, headers=self.headers, params=params_copy)
         except Exception as e:
-            print(f"Request failed: {e}")
+            logging.error(f"Request failed: {e}")
             return None
 
         if response.status_code == 200:
@@ -83,4 +84,4 @@ if __name__ == "__main__":
         },
     }
     response = api_call._call(func_call)
-    print(response)
+    logging.info(response)

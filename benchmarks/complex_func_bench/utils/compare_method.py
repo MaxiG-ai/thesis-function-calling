@@ -58,16 +58,7 @@ class CompareFCBase:
         used_func = name_to_func[func_call["name"]]
         required_params = used_func["parameters"]["required"]
         if not set(required_params).issubset(set(func_call["arguments"].keys())):
-            # 找到在required_params中，但不在func_call['arguments'].keys()中的参数
-            missing_param = set(required_params) - set(func_call['arguments'].keys())
-            return {"error": f"Function {used_func['name']} requires parameters {required_params}, but {list(func_call['arguments'].keys())} do not provide {missing_param}"}
-        
-        if not set(func_call['arguments'].keys()).issubset(set(used_func['parameters']['properties'].keys())):
-            missing_param = set(func_call['arguments'].keys()) - set(used_func['parameters']['properties'].keys())
-            return {"error":f"Function {used_func['name']} does not have parameters {missing_param}" }
-        
-        for param_name, param_value in func_call['arguments'].items():
-            if used_func['parameters']['properties'][param_name]['type'] == "string":
+            # Find parameters in required_params but not in func_call['arguments'].keys()
             missing_param = set(required_params) - set(func_call["arguments"].keys())
             return {
                 "error": f"Function {used_func['name']} requires parameters {required_params}, but {list(func_call['arguments'].keys())} do not provide {missing_param}"
@@ -83,7 +74,7 @@ class CompareFCBase:
                 "error": f"Function {used_func['name']} does not have parameters {missing_param}"
             }
 
-        # 参数类型验证
+        # Parameter type validation
         for param_name, param_value in func_call["arguments"].items():
             if used_func["parameters"]["properties"][param_name]["type"] == "string":
                 if not isinstance(param_value, str):
@@ -259,10 +250,6 @@ class CompareFC(CompareFCBase):
                 }
 
         # hallucination
-        for k, v in pred_call['arguments'].items():
-            if k not in golden_call['arguments']:
-                return {'error_type': "param_hallucination", "content": f"Parameter {k} is hallucinated."}
-            
         for k, v in pred_call["arguments"].items():
             if k not in golden_call["arguments"]:
                 return {
@@ -270,7 +257,6 @@ class CompareFC(CompareFCBase):
                     "content": f"Parameter {k} is hallucinated.",
                 }
 
-    # @weave.op(enable_code_capture=False)
     def mapping_call(self, predict, golden, golden_obs):
         def sort_arguments(call_list):
             for value in call_list:

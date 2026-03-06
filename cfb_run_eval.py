@@ -466,7 +466,9 @@ def run_single_configuration(
     # When running haystack thresholds in parallel, the caller pre-creates one
     # CompareFC per thread to avoid redundant FlagModel copies on the GPU.
     if shared_compare_class is None:
-        compare_class_args = type("Args", (), {"log_dir": orchestrator.cfg.results_dir})()
+        compare_class_args = type(
+            "Args", (), {"log_dir": orchestrator.cfg.results_dir}
+        )()
         with model_load_lock:
             shared_compare_class = CompareFC(compare_class_args, logger)
         logger.info("🔧 CompareFC created (FlagModel loaded for this config)")
@@ -630,17 +632,14 @@ def run_model_configs(
                 for ht in haystack_values:
                     dataset = load_haystack_dataset(ht, input_file=input_file)
                     if selected_ids is not None:
-                        dataset = [
-                            c for c in dataset if c.get("id") in selected_ids
-                        ]
+                        dataset = [c for c in dataset if c.get("id") in selected_ids]
                     preloaded_datasets[ht] = dataset
 
                 # 2. Pre-create per-thread orchestrators using shared config.
                 #    Each thread needs its own orchestrator for mutable session
                 #    state, but they all share the same immutable config.
                 thread_orchestrators = {
-                    ht: LLMOrchestrator(config=shared_config)
-                    for ht in haystack_values
+                    ht: LLMOrchestrator(config=shared_config) for ht in haystack_values
                 }
 
                 # 3. Pre-create per-thread CompareFC instances under model_load_lock.
@@ -734,9 +733,42 @@ def main(experiment_name=None):
     orchestrator = LLMOrchestrator()
     run_timestamp = datetime.now().strftime("%Y%m%d_%H%M")
 
+    # Redirect all logs to timestamped file so Rich dashboard displays cleanly
+    log_file = f"experiment_run_{run_timestamp}.log"
+    os.makedirs("logs", exist_ok=True)
+    log_path = os.path.join("logs", log_file)
+
+    # Print to console before redirecting (so user knows where logs go)
+    print(f"📝 Logs will be written to: {log_path}")
+    print(f"📊 Starting live progress dashboard...\n")
+
+    # Configure root logger to write to file instead of stdout
+    file_handler = logging.FileHandler(log_path, mode="w")
+    file_handler.setFormatter(
+        logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
+    )
+
+    # Remove all existing handlers and add file handler
+    root_logger = logging.getLogger()
+    root_logger.handlers.clear()
+    root_logger.addHandler(file_handler)
+    root_logger.setLevel(logging.INFO)
+
+    # Also configure all memorch loggers
+    for name in list(logging.Logger.manager.loggerDict):
+        if isinstance(logging.Logger.manager.loggerDict[name], logging.Logger):
+            log_obj = logging.getLogger(name)
+            log_obj.handlers.clear()
+            log_obj.addHandler(file_handler)
+            log_obj.propagate = False
+
     # Start the live Rich dashboard — shows active evaluations and completed results
     progress = ExperimentProgress()
     progress.start_experiment()
+
+    # Log initial messages (now safely to file without interrupting dashboard)
+    logger.info(f"Experiment run started: {run_timestamp}")
+    logger.info(f"Logs written to: {log_path}")
     logger.info(
         f"📊 Progress dashboard started for: {orchestrator.cfg.experiment_name}"
     )

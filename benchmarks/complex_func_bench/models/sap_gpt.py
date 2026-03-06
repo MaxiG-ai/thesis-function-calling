@@ -108,4 +108,4 @@ if __name__ == "__main__":
             template=("What is the capital of France?"), args_order=[]
         ),
     )
-    print(response)
+    logger.info(response)
