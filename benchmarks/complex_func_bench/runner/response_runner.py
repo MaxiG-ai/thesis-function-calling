@@ -1,5 +1,4 @@
 import json
-import weave
 from benchmarks.complex_func_bench.utils.utils import retry, decode_json
 from benchmarks.complex_func_bench.models.sap_gpt import SAPGPTModel
 
@@ -12,20 +11,6 @@ from benchmarks.complex_func_bench.prompts.response import (
     correct_system_prompt,
     correct_user_prompt,
 )
-
-
-def _scrub_resp_eval_inputs(inputs: dict) -> dict:
-    """Strip full case conversations from Weave trace inputs for RespEvalRunner.
-
-    RespEvalRunner.run receives the full case dict; logging it verbatim duplicates
-    the conversation history already captured by the parent evaluate_single_case
-    trace. Only the case ID and the generated response are retained.
-    """
-    data = inputs.get("data", {})
-    return {
-        "data": {"id": data.get("id", "unknown")},
-        "gen_response": inputs.get("gen_response", ""),
-    }
 
 
 class RespEvalRunner:
@@ -67,7 +52,6 @@ class RespEvalRunner:
             return None
         return decoded_correct_result
 
-    @weave.op(postprocess_inputs=_scrub_resp_eval_inputs, enable_code_capture=False)
     def run(self, data, gen_response):
         if gen_response == "":
             return {

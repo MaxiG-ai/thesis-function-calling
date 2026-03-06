@@ -5,7 +5,6 @@ experiment_name = "full_haystack_run"
 results_dir = "results"
 log_dir = "results/logs"
 logging_level = "INFO"
-weave_deep_logging = false
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
 # selected_test_cases = ['Cross-252'] # ["Car-Rental-131", "Cross-131", "Flights-91"]
 # benchmark_sample_size = 20

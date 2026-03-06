@@ -1,21 +1,9 @@
 import re
 import copy
 import json
-import weave
 from benchmarks.complex_func_bench.models.sap_gpt import FunctionCallSAPGPT
 from benchmarks.complex_func_bench.runner.base_runner import ModelRunner
 from memorch.llm_orchestrator import LLMOrchestrator
-
-
-def _scrub_runner_inputs(inputs: dict) -> dict:
-    """Strip heavy conversation/function data from Weave trace inputs.
-
-    SAPGPTRunner.run receives the full case dict (conversations + functions).
-    Logging that verbatim would duplicate data already captured in the parent
-    evaluate_single_case trace. Only the case ID is retained for traceability.
-    """
-    data = inputs.get("data", {})
-    return {"data": {"id": data.get("id", "unknown")}}
 
 
 class SAPGPTRunner(ModelRunner):
@@ -75,7 +63,6 @@ class SAPGPTRunner(ModelRunner):
 
         return function_call
 
-    @weave.op(postprocess_inputs=_scrub_runner_inputs, enable_code_capture=False)
     def run(self, data):
         convs, functions = data["conversations"], data["functions"]
         self.CompareClass.add_free_function(convs)

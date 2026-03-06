@@ -1,7 +1,6 @@
 from typing import Any, List, Optional
 import json
 import copy
-import weave
 from benchmarks.complex_func_bench.prompts.prompts import SimpleTemplatePrompt
 from benchmarks.complex_func_bench.utils.utils import retry
 from memorch.llm_orchestrator import LLMOrchestrator
