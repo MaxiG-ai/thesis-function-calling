@@ -4,7 +4,6 @@ import os
 import copy
 import random
 import logging
-import weave
 import tomllib
 import torch
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -22,6 +21,7 @@ from benchmarks.complex_func_bench.utils.logger import Logger as FileLogger
 from benchmarks.complex_func_bench.runner.response_runner import RespEvalRunner
 from benchmarks.complex_func_bench.utils.compare_method import CompareFC
 from benchmarks.complex_func_bench.utils.utils import load_json
+from tools.progress_dashboard import ConfigKey, ExperimentProgress
 
 logger = get_logger("CFB_Runner")
 
@@ -307,32 +307,6 @@ def save_results(
         logger.info(f"🧠 Compressed traces saved to {compressed_file}")
 
 
-def scrub_trace_args(inputs: Dict) -> Dict:
-    """
-    Filter out technical objects and redundant data from Weave logs.
-    Used in postprocess_inputs for evaluate_single_case.
-    """
-    scrubbed = inputs.copy()
-
-    # Remove technical objects that clutter logs
-    keys_to_remove = ["orchestrator", "resp_eval_runner", "log_dir", "compare_class"]
-    for key in keys_to_remove:
-        if key in scrubbed:
-            del scrubbed[key]
-
-    # Simplify the 'case' object to avoid logging full conversation history at the root level
-    if "case" in scrubbed and isinstance(scrubbed["case"], dict):
-        # Only keep the ID and domain, remove the heavy 'conversations' list
-        # This forces you to look at the child 'generate' trace for the actual messages
-        scrubbed["case"] = {
-            "id": scrubbed["case"].get("id"),
-            "domain": scrubbed["case"].get("id", "").split("-")[0],
-        }
-
-    return scrubbed
-
-
-@weave.op(postprocess_inputs=scrub_trace_args, enable_code_capture=False)
 def evaluate_single_case(
     case: Dict,
     orchestrator: LLMOrchestrator,
@@ -353,11 +327,6 @@ def evaluate_single_case(
         Result dictionary in backwards-compatible CFB format
     """
     case_id = case.get("id", "unknown")
-
-    # Set the trace name
-    weave.require_current_call().display_name = (
-        f"{case_id}_{orchestrator.active_model_key}_{orchestrator.active_memory_key}"
-    )
 
     # Create runner for this case with orchestrator injection
     runner = create_runner(
@@ -426,6 +395,7 @@ def run_single_configuration(
     compact_threshold: Optional[int] = None,
     haystack_threshold: Optional[int] = None,
     shared_compare_class=None,
+    progress: Optional[ExperimentProgress] = None,
 ) -> Optional[Dict]:
     """
     Run evaluation for a single model/memory/threshold configuration.
@@ -433,7 +403,7 @@ def run_single_configuration(
     This function:
     1. Sets the active context in the orchestrator (model, memory, threshold)
     2. Creates a shared CompareFC (FlagModel loaded once, reused across cases)
-    3. Processes all test cases
+    3. Processes all test cases, updating the live progress dashboard per case
     4. Saves results to disk
 
     Args:
@@ -452,6 +422,8 @@ def run_single_configuration(
             skips internal CompareFC creation (avoids redundant FlagModel loading).
             Each thread must receive its own instance since CompareFC has mutable
             per-case state (free_functions, error_message).
+        progress: Optional live dashboard instance. When provided, progress is
+            reported per-case and per-configuration.
 
     Returns:
         Summary statistics dictionary, or None if failed
@@ -469,6 +441,16 @@ def run_single_configuration(
     logger.info(
         f"🚀 Starting evaluation: {model}/{memory}/{threshold_label}/{haystack_label}"
     )
+
+    # Register this configuration in the live dashboard
+    config_key = ConfigKey(
+        model=model,
+        memory=memory,
+        compact_threshold=compact_threshold,
+        haystack_threshold=haystack_threshold,
+    )
+    if progress is not None:
+        progress.start_configuration(config_key, total_cases=len(dataset))
 
     # Set active context (including threshold for this run)
     try:
@@ -491,29 +473,6 @@ def run_single_configuration(
     else:
         logger.info("🔧 Using pre-built CompareFC (FlagModel shared)")
 
-    # Name this evaluation run including thresholds so wandb runs are distinguishable
-    compact_suffix = f"_t{compact_threshold}" if compact_threshold is not None else ""
-    haystack_suffix = (
-        f"_h{haystack_threshold}" if haystack_threshold is not None else ""
-    )
-    eval_name = f"Eval_{model}_{memory}{compact_suffix}{haystack_suffix}"
-
-    # Initialize weave evaluation logger for this configuration.
-    # experiment_config is attached here (per-eval) instead of globally so each
-    # evaluation carries its own config snapshot without polluting every trace.
-    eval_logger = weave.EvaluationLogger(
-        name=eval_name,
-        dataset="ComplexFuncBench",
-        scorers=[
-            "success",
-            "turn_accuracy",
-            "call_accuracy",
-            "response_complete",
-            "response_correct",
-        ],
-        eval_attributes={"experiment_config": orchestrator.get_exp_config()},
-    )
-
     # Process all cases
     results = []
     compressed_traces = []  # Separate list for memory-processed messages
@@ -532,9 +491,17 @@ def run_single_configuration(
                 compare_class=shared_compare_class,
             )
 
+            case_success = result["message"] == "Success."
+
             # Track success
-            if result["message"] == "Success.":
+            if case_success:
                 success_count += 1
+
+            # Update live dashboard with this case result
+            if progress is not None:
+                progress.complete_case(
+                    config_key, case_id=str(case_id), success=case_success
+                )
 
             # Add metadata (kept for on-disk JSON compatibility)
             result["memory_method"] = memory
@@ -551,6 +518,9 @@ def run_single_configuration(
 
         except Exception as e:
             logger.error(f"❌ Failed on case {case_id}: {e}")
+            # Report the failure to the dashboard so case counts stay accurate
+            if progress is not None:
+                progress.complete_case(config_key, case_id=str(case_id), success=False)
             # Continue with remaining cases
             continue
 
@@ -580,19 +550,9 @@ def run_single_configuration(
         results, metrics, model, memory, log_dir, run_timestamp, compressed_traces
     )
 
-    # Log summary to wandb; include compact_threshold and haystack_threshold
-    # so runs are distinguishable
-    eval_logger.log_summary(
-        {
-            "model": model,
-            "memory": memory,
-            "compact_threshold": compact_threshold,
-            "haystack_threshold": haystack_threshold,
-            "total_cases": len(dataset),
-            "success_count": success_count,
-            **metrics,
-        }
-    )
+    # Mark this configuration complete in the live dashboard
+    if progress is not None:
+        progress.complete_configuration(config_key, metrics=metrics)
 
     logger.info(
         f"✅ Completed evaluation: {model}/{memory}/{threshold_label}/{haystack_label}"
@@ -607,6 +567,7 @@ def run_model_configs(
     resp_eval_runner: RespEvalRunner,
     selected_ids: Optional[List[str]] = None,
     threshold_sensitive: Optional[set] = None,
+    progress: Optional[ExperimentProgress] = None,
 ):
     """Run all memory method configurations for a single model.
 
@@ -627,6 +588,8 @@ def run_model_configs(
         selected_ids: Optional list of case IDs to filter to. Applied after
             loading each dataset. None means use full dataset.
         threshold_sensitive: Set of strategy types that require threshold sweeps
+        progress: Optional live dashboard instance passed through to each
+            run_single_configuration call.
     """
     if threshold_sensitive is None:
         threshold_sensitive = {"truncation", "progressive_summarization"}
@@ -713,6 +676,7 @@ def run_model_configs(
                             compact_threshold=compact_threshold,
                             haystack_threshold=ht,
                             shared_compare_class=thread_compare_classes[ht],
+                            progress=progress,
                         )
                         futures[future] = ht
 
@@ -751,6 +715,7 @@ def run_model_configs(
                     resp_eval_runner=resp_eval_runner,
                     compact_threshold=compact_threshold,
                     haystack_threshold=None,
+                    progress=progress,
                 )
 
 
@@ -759,7 +724,7 @@ def main(experiment_name=None):
     Main orchestration function for ComplexFuncBench evaluation.
 
     This function:
-    1. Initializes wandb tracking
+    1. Starts the live progress dashboard
     2. Loads the orchestrator and determines which case IDs to evaluate
     3. Runs models sequentially (parallelism is at the haystack threshold level)
     4. Within each model, memory methods and compact thresholds run sequentially
@@ -769,18 +734,11 @@ def main(experiment_name=None):
     orchestrator = LLMOrchestrator()
     run_timestamp = datetime.now().strftime("%Y%m%d_%H%M")
 
-    # Initialize weave for the entire experiment. Only run_timestamp is attached
-    # globally; experiment_config is attached per-evaluation via eval_attributes
-    # in EvaluationLogger to avoid repeating the full config on every trace.
-    weave.init(
-        project_name=experiment_name or orchestrator.cfg.experiment_name,
-        global_attributes={
-            "run_timestamp": run_timestamp,
-        },
-        settings={"implicitly_patch_integrations": False},
-    )
+    # Start the live Rich dashboard — shows active evaluations and completed results
+    progress = ExperimentProgress()
+    progress.start_experiment()
     logger.info(
-        f"📊 Weave initialized with global attributes: {orchestrator.cfg.experiment_name}"
+        f"📊 Progress dashboard started for: {orchestrator.cfg.experiment_name}"
     )
 
     # Determine which case IDs to run. Datasets are loaded per-haystack-threshold
@@ -838,10 +796,12 @@ def main(experiment_name=None):
             run_timestamp=run_timestamp,
             resp_eval_runner=resp_eval_runner,
             selected_ids=selected_ids,
+            progress=progress,
         )
         logger.info(f"✅ Model '{model}' completed all configurations")
 
-    # Final summary
+    # Stop the live dashboard and print final summary panel
+    progress.finish_experiment()
     logger.info("=" * 80)
     logger.info("🎉 All configurations completed!")
     logger.info("=" * 80)
