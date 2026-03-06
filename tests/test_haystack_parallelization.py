@@ -50,7 +50,6 @@ def _make_exp_config(
         "results_dir": "results",
         "log_dir": "logs",
         "logging_level": "WARNING",
-        "weave_logging": False,
         "input_file": "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl",
         "enabled_models": ["gpt-test"],
         "enabled_memory_methods": [strategy_type],
