@@ -2,12 +2,13 @@
 Enhanced logger for ComplexFuncBench that combines file logging with centralized config.
 Extends the project's standardized logger system while preserving benchmark functionality.
 """
+
 import logging
 import sys
 import os
 
 # Import base logger from project's utils
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../..'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../.."))
 from memorch.utils.logger import get_logger as get_base_logger
 
 
@@ -16,10 +17,11 @@ class Logger:
     Enhanced logger that combines file logging with centralized config.
     Maintains backward compatibility with benchmark code while using unified logging.
     """
-    def __init__(self, name='cfb_logger', log_file='test.log', level=None):
+
+    def __init__(self, name="cfb_logger", log_file="test.log", level=None):
         """
         Initialize logger with file output capability.
-        
+
         Args:
             name: Logger name
             log_file: Path to log file for persistent logging
@@ -27,22 +29,33 @@ class Logger:
         """
         # Get base logger with config-driven level management
         self.logger = get_base_logger(name, level)
-        
+
+        # Remove all StreamHandlers to prevent console output (only file logging)
+        # This ensures logs don't interrupt the Rich dashboard
+        handlers_to_remove = [
+            h for h in self.logger.handlers if isinstance(h, logging.StreamHandler)
+        ]
+        for handler in handlers_to_remove:
+            self.logger.removeHandler(handler)
+
         # Add file handler for benchmark-specific file logging
         if log_file:
             # Ensure directory exists
             log_dir = os.path.dirname(log_file)
             if log_dir and not os.path.exists(log_dir):
                 os.makedirs(log_dir, exist_ok=True)
-            
+
             file_handler = logging.FileHandler(log_file)
             file_handler.setLevel(self.logger.level)
             formatter = logging.Formatter(
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
             )
             file_handler.setFormatter(formatter)
             self.logger.addHandler(file_handler)
-    
+
+        # Prevent propagation to parent loggers (which may have StreamHandlers)
+        self.logger.propagate = False
+
     def debug(self, msg):
         """Log debug message."""
         self.logger.debug(msg)

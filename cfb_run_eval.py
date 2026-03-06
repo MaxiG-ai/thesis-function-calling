@@ -766,77 +766,89 @@ def main(experiment_name=None):
     progress = ExperimentProgress()
     progress.start_experiment()
 
-    # Log initial messages (now safely to file without interrupting dashboard)
-    logger.info(f"Experiment run started: {run_timestamp}")
-    logger.info(f"Logs written to: {log_path}")
-    logger.info(
-        f"📊 Progress dashboard started for: {orchestrator.cfg.experiment_name}"
-    )
-
-    # Determine which case IDs to run. Datasets are loaded per-haystack-threshold
-    # inside run_model_configs, but filtering/sampling is decided here once.
-    selected_ids = None  # None = use full dataset (no filtering)
-    input_file = orchestrator.cfg.input_file
-    selected_test_cases = orchestrator.cfg.selected_test_cases
-    if selected_test_cases:
-        # Explicit case IDs from config — validate they exist in the original dataset
-        all_cases = load_json(input_file)
-        all_ids = {case.get("id") for case in all_cases}
-        missing = set(selected_test_cases) - all_ids
-        if missing:
-            logger.error(f"❌ Test case IDs not found in dataset: {missing}")
-            return
-        selected_ids = list(selected_test_cases)
+    try:
+        # Log initial messages (now safely to file without interrupting dashboard)
+        logger.info(f"Experiment run started: {run_timestamp}")
+        logger.info(f"Logs written to: {log_path}")
         logger.info(
-            f"🎯 Will filter to {len(selected_ids)} specific test case(s): {selected_ids}"
+            f"📊 Progress dashboard started for: {orchestrator.cfg.experiment_name}"
         )
-    else:
-        # Sample subset if configured (only when not using specific test cases)
-        sample_size = orchestrator.cfg.benchmark_sample_size
-        if sample_size is not None and sample_size > 0:
+
+        # Determine which case IDs to run. Datasets are loaded per-haystack-threshold
+        # inside run_model_configs, but filtering/sampling is decided here once.
+        selected_ids = None  # None = use full dataset (no filtering)
+        input_file = orchestrator.cfg.input_file
+        selected_test_cases = orchestrator.cfg.selected_test_cases
+        if selected_test_cases:
+            # Explicit case IDs from config — validate they exist in the original dataset
             all_cases = load_json(input_file)
-            if sample_size > len(all_cases):
-                logger.warning(
-                    f"⚠️ Sample size {sample_size} exceeds dataset size {len(all_cases)}, "
-                    "using full dataset"
-                )
-            else:
-                random.seed(42)
-                sampled = random.sample(all_cases, sample_size)
-                selected_ids = [case.get("id") for case in sampled]
-                logger.info(f"📊 Sampled {sample_size} case IDs from dataset")
+            all_ids = {case.get("id") for case in all_cases}
+            missing = set(selected_test_cases) - all_ids
+            if missing:
+                logger.error(f"❌ Test case IDs not found in dataset: {missing}")
+                return
+            selected_ids = list(selected_test_cases)
+            logger.info(
+                f"🎯 Will filter to {len(selected_ids)} specific test case(s): {selected_ids}"
+            )
+        else:
+            # Sample subset if configured (only when not using specific test cases)
+            sample_size = orchestrator.cfg.benchmark_sample_size
+            if sample_size is not None and sample_size > 0:
+                all_cases = load_json(input_file)
+                if sample_size > len(all_cases):
+                    logger.warning(
+                        f"⚠️ Sample size {sample_size} exceeds dataset size {len(all_cases)}, "
+                        "using full dataset"
+                    )
+                else:
+                    random.seed(42)
+                    sampled = random.sample(all_cases, sample_size)
+                    selected_ids = [case.get("id") for case in sampled]
+                    logger.info(f"📊 Sampled {sample_size} case IDs from dataset")
 
-    # Initialize response evaluator (shared across all configurations -- thread-safe)
-    temp_log_dir = os.path.join(
-        "results", "cfb", orchestrator.cfg.experiment_name, run_timestamp, "temp"
-    )
-    os.makedirs(temp_log_dir, exist_ok=True)
-    resp_eval_runner = initialize_response_evaluator(temp_log_dir)
-
-    enabled_models = orchestrator.cfg.enabled_models
-    memory_methods = orchestrator.cfg.enabled_memory_methods
-
-    # Models run sequentially; parallelism is at the haystack threshold level
-    # inside run_model_configs. This avoids rate-limit spikes from multiple
-    # models hitting the same API concurrently.
-    for model in enabled_models:
-        logger.info(f"🚀 Starting model: {model}")
-        run_model_configs(
-            model=model,
-            memory_methods=memory_methods,
-            orchestrator=orchestrator,
-            run_timestamp=run_timestamp,
-            resp_eval_runner=resp_eval_runner,
-            selected_ids=selected_ids,
-            progress=progress,
+        # Initialize response evaluator (shared across all configurations -- thread-safe)
+        temp_log_dir = os.path.join(
+            "results", "cfb", orchestrator.cfg.experiment_name, run_timestamp, "temp"
         )
-        logger.info(f"✅ Model '{model}' completed all configurations")
+        os.makedirs(temp_log_dir, exist_ok=True)
+        resp_eval_runner = initialize_response_evaluator(temp_log_dir)
 
-    # Stop the live dashboard and print final summary panel
-    progress.finish_experiment()
-    logger.info("=" * 80)
-    logger.info("🎉 All configurations completed!")
-    logger.info("=" * 80)
+        enabled_models = orchestrator.cfg.enabled_models
+        memory_methods = orchestrator.cfg.enabled_memory_methods
+
+        # Models run sequentially; parallelism is at the haystack threshold level
+        # inside run_model_configs. This avoids rate-limit spikes from multiple
+        # models hitting the same API concurrently.
+        for model in enabled_models:
+            logger.info(f"🚀 Starting model: {model}")
+            run_model_configs(
+                model=model,
+                memory_methods=memory_methods,
+                orchestrator=orchestrator,
+                run_timestamp=run_timestamp,
+                resp_eval_runner=resp_eval_runner,
+                selected_ids=selected_ids,
+                progress=progress,
+            )
+            logger.info(f"✅ Model '{model}' completed all configurations")
+
+        # Stop the live dashboard and print final summary panel
+        progress.finish_experiment()
+        logger.info("=" * 80)
+        logger.info("🎉 All configurations completed!")
+        logger.info("=" * 80)
+
+    except KeyboardInterrupt:
+        # Handle Ctrl+C gracefully - ensure terminal is restored
+        logger.info("\n⚠️ Experiment interrupted by user (Ctrl+C)")
+        progress._cleanup_alternate_screen()
+        raise
+    except Exception as e:
+        # Handle any other exception - ensure terminal is restored
+        logger.error(f"❌ Experiment failed with error: {e}")
+        progress._cleanup_alternate_screen()
+        raise
 
 
 if __name__ == "__main__":

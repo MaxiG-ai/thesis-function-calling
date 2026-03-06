@@ -187,9 +187,7 @@ def test_datasets_preloaded_before_thread_submission():
 
     with (
         patch.object(cfb_run_eval, "run_single_configuration", side_effect=tracked_run),
-        patch.object(
-            cfb_run_eval, "load_haystack_dataset", side_effect=tracked_load
-        ),
+        patch.object(cfb_run_eval, "load_haystack_dataset", side_effect=tracked_load),
         patch("memorch.llm_orchestrator.LLMOrchestrator", return_value=MagicMock()),
     ):
         cfb_run_eval.run_model_configs(
@@ -208,8 +206,7 @@ def test_datasets_preloaded_before_thread_submission():
     assert len(load_indices) > 0, "load_haystack_dataset was never called"
     assert len(run_indices) > 0, "run_single_configuration was never called"
     assert max(load_indices) < min(run_indices), (
-        f"Some dataset loads happened after thread submission. "
-        f"Call order: {call_order}"
+        f"Some dataset loads happened after thread submission. Call order: {call_order}"
     )
 
 
@@ -244,7 +241,10 @@ def test_parallel_haystack_passes_distinct_orchestrators():
     with (
         patch.object(cfb_run_eval, "run_single_configuration", side_effect=capture_run),
         patch.object(cfb_run_eval, "load_haystack_dataset", return_value=[]),
-        patch("memorch.llm_orchestrator.LLMOrchestrator", side_effect=lambda **kw: MagicMock()),
+        patch(
+            "memorch.llm_orchestrator.LLMOrchestrator",
+            side_effect=lambda **kw: MagicMock(),
+        ),
     ):
         cfb_run_eval.run_model_configs(
             model="gpt-test",
@@ -340,21 +340,30 @@ def test_run_single_configuration_skips_compare_creation_when_provided():
     mock_compare = MagicMock()  # Pre-built CompareFC
 
     with (
-        patch.object(cfb_run_eval, "evaluate_single_case", return_value=(
-            {"id": "t-1", "message": "Success.", "count_dict": {
-                "success_turn_num": 1, "total_turn_num": 1,
-                "correct_call_num": 1, "total_call_num": 1,
-            }, "resp_eval": None, "status": "Success"},
-            [],
-        )),
+        patch.object(
+            cfb_run_eval,
+            "evaluate_single_case",
+            return_value=(
+                {
+                    "id": "t-1",
+                    "message": "Success.",
+                    "count_dict": {
+                        "success_turn_num": 1,
+                        "total_turn_num": 1,
+                        "correct_call_num": 1,
+                        "total_call_num": 1,
+                    },
+                    "resp_eval": None,
+                    "status": "Success",
+                },
+                [],
+            ),
+        ),
         patch.object(cfb_run_eval, "CompareFC") as mock_compare_cls,
         patch.object(cfb_run_eval, "calculate_metrics", return_value={}),
         patch.object(cfb_run_eval, "setup_directories", return_value="/tmp/test"),
         patch.object(cfb_run_eval, "save_results"),
-        patch("weave.EvaluationLogger") as mock_eval_logger,
     ):
-        mock_eval_logger.return_value = MagicMock()
-
         cfb_run_eval.run_single_configuration(
             orchestrator=mock_orchestrator,
             dataset=[{"id": "t-1", "conversations": [], "functions": []}],
