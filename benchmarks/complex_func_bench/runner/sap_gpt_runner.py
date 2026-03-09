@@ -10,7 +10,6 @@ class SAPGPTRunner(ModelRunner):
     def __init__(
         self,
         args,
-        logger,
         orchestrator: LLMOrchestrator,
         compare_class=None,
     ):
@@ -20,11 +19,10 @@ class SAPGPTRunner(ModelRunner):
         Args:
             model_name: Model identifier
             args: Runner arguments
-            logger: Logger instance
             orchestrator: Optional LLMOrchestrator for memory processing
             compare_class: Optional pre-built CompareFC to reuse across cases
         """
-        super().__init__(args, logger, compare_class=compare_class)
+        super().__init__(args, compare_class=compare_class)
         self.model_name = orchestrator.active_model_key
         self.model = FunctionCallSAPGPT(self.model_name, orchestrator=orchestrator)
 

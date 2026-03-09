@@ -1,11 +1,12 @@
 import json
 import copy
 from benchmarks.complex_func_bench.utils.compare_method import CompareFC
+from memorch.utils.logger import get_logger
 
 
 class ModelRunner:
-    def __init__(self, args, logger, compare_class=None):
-        self.logger = logger
+    def __init__(self, args, compare_class=None):
+        self.logger = get_logger("MODELRUNNER")
 
         self.error_message = None
         self.unexpect_call_resp = {
