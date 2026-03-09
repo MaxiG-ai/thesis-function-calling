@@ -124,6 +124,10 @@ class ExperimentProgress:
     Designed to be constructed once in ``main()`` and shared across all
     threads.  All state mutations are protected by a single lock to handle
     the parallel haystack threshold execution.
+
+    Uses alternate screen buffer to prevent terminal scroll/resize issues.
+    The dashboard runs in a full-screen mode (like vim/less) and automatically
+    restores normal terminal view on exit.
     """
 
     def __init__(self) -> None:
@@ -139,6 +143,7 @@ class ExperimentProgress:
         # Rich Live display internals (None until start_experiment is called)
         self._live: Optional[Live] = None
         self._console = Console()
+        self._alternate_screen_active: bool = False
 
         # Per-configuration Rich Progress bars shown inside the active panel
         self._progress = Progress(
@@ -156,7 +161,17 @@ class ExperimentProgress:
     # ------------------------------------------------------------------
 
     def start_experiment(self) -> None:
-        """Start the Rich Live display.  Call once from main()."""
+        """Start the Rich Live display in alternate screen buffer.
+
+        Uses alternate screen buffer (like vim/less) to prevent scroll/resize issues.
+        The dashboard will take over the full terminal and restore normal view on exit.
+        """
+        # Enter alternate screen buffer before starting Live display
+        # This prevents terminal scrollback from interfering with the dashboard
+        self._console.file.write("\033[?1049h")  # Enable alternate screen
+        self._console.file.flush()
+        self._alternate_screen_active = True
+
         self._live = Live(
             self._build_layout(),
             console=self._console,
@@ -167,10 +182,36 @@ class ExperimentProgress:
         self._live.start()
 
     def finish_experiment(self) -> None:
-        """Stop the Live display and print a final summary."""
+        """Stop the Live display and restore normal terminal.
+
+        Exits alternate screen buffer and prints final summary to normal scrollback.
+        """
         if self._live is not None:
             self._live.stop()
+
+        # Exit alternate screen buffer (restore normal terminal view)
+        if self._alternate_screen_active:
+            self._console.file.write("\033[?1049l")  # Disable alternate screen
+            self._console.file.flush()
+            self._alternate_screen_active = False
+
+        # Print final summary to normal terminal (will be in scrollback)
         self._console.print(self._build_final_summary())
+
+    def _cleanup_alternate_screen(self) -> None:
+        """Emergency cleanup of alternate screen buffer.
+
+        Called on exception/interrupt to ensure terminal is restored to normal state.
+        Safe to call multiple times.
+        """
+        if self._alternate_screen_active:
+            try:
+                self._console.file.write("\033[?1049l")  # Disable alternate screen
+                self._console.file.flush()
+                self._alternate_screen_active = False
+            except Exception:
+                # Best-effort cleanup, don't raise during error handling
+                pass
 
     # ------------------------------------------------------------------
     # Configuration lifecycle
