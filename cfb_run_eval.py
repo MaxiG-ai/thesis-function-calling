@@ -106,7 +106,6 @@ def create_runner(
     # This routes all benchmark LLM calls through orchestrator with memory processing
     runner = SAPGPTRunner(
         args=RunnerArgs(log_dir),
-        logger=runner_logger,
         orchestrator=orchestrator,
         compare_class=compare_class,
     )

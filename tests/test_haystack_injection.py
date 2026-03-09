@@ -275,13 +275,11 @@ class TestSAPGPTRunnerHaystackPassthrough:
         """
         orchestrator = _make_mock_orchestrator()
         mock_args = MagicMock()
-        mock_logger = MagicMock()
         mock_compare = MagicMock()
         mock_compare.free_function_list = []
 
         runner = SAPGPTRunner(
             mock_args,
-            mock_logger,
             orchestrator=orchestrator,
             compare_class=mock_compare,
         )
@@ -318,13 +316,11 @@ class TestSAPGPTRunnerHaystackPassthrough:
         """
         orchestrator = _make_mock_orchestrator()
         mock_args = MagicMock()
-        mock_logger = MagicMock()
         mock_compare = MagicMock()
         mock_compare.free_function_list = []
 
         runner = SAPGPTRunner(
             mock_args,
-            mock_logger,
             orchestrator=orchestrator,
             compare_class=mock_compare,
         )
@@ -365,13 +361,11 @@ class TestEvaluationIntegrity:
         """
         orchestrator = _make_mock_orchestrator()
         mock_args = MagicMock()
-        mock_logger = MagicMock()
         mock_compare = MagicMock()
         mock_compare.free_function_list = []
 
         runner = SAPGPTRunner(
             mock_args,
-            mock_logger,
             orchestrator=orchestrator,
             compare_class=mock_compare,
         )

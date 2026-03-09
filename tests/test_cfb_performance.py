@@ -40,12 +40,6 @@ def mock_compare_class():
 
 
 @pytest.fixture
-def mock_logger():
-    """Create a mock logger for runner construction."""
-    return MagicMock()
-
-
-@pytest.fixture
 def mock_args():
     """Create mock args with a log_dir attribute."""
 
@@ -107,7 +101,7 @@ class TestCompareFCInjection:
     """
 
     def test_model_runner_uses_injected_compare_class(
-        self, mock_compare_class, mock_args, mock_logger
+        self, mock_compare_class, mock_args
     ):
         """ModelRunner should use the provided compare_class instead of creating a new one.
 
@@ -117,14 +111,14 @@ class TestCompareFCInjection:
         """
         from benchmarks.complex_func_bench.runner.base_runner import ModelRunner
 
-        runner = ModelRunner(mock_args, mock_logger, compare_class=mock_compare_class)
+        runner = ModelRunner(mock_args, compare_class=mock_compare_class)
 
         # Must be the exact same object, not a copy
         assert runner.CompareClass is mock_compare_class
         assert runner.free_function_list == mock_compare_class.free_function_list
 
     def test_model_runner_creates_own_compare_class_when_none_provided(
-        self, mock_args, mock_logger
+        self, mock_args
     ):
         """ModelRunner should create its own CompareFC when no compare_class is given.
 
@@ -140,14 +134,14 @@ class TestCompareFCInjection:
             mock_instance.free_function_list = ["Location_to_Lat_Long"]
             MockCompareFC.return_value = mock_instance
 
-            runner = ModelRunner(mock_args, mock_logger)
+            runner = ModelRunner(mock_args)
 
             # CompareFC constructor should have been called
-            MockCompareFC.assert_called_once_with(mock_args, mock_logger)
+            MockCompareFC.assert_called_once_with(mock_args)
             assert runner.CompareClass is mock_instance
 
     def test_sap_gpt_runner_forwards_compare_class_to_base(
-        self, mock_compare_class, mock_args, mock_logger
+        self, mock_compare_class, mock_args
     ):
         """SAPGPTRunner should forward the compare_class parameter to ModelRunner.
 
@@ -161,7 +155,6 @@ class TestCompareFCInjection:
 
         runner = SAPGPTRunner(
             args=mock_args,
-            logger=mock_logger,
             orchestrator=mock_orchestrator,
             compare_class=mock_compare_class,
         )
@@ -169,7 +162,7 @@ class TestCompareFCInjection:
         assert runner.CompareClass is mock_compare_class
 
     def test_shared_compare_class_identity_across_multiple_runners(
-        self, mock_compare_class, mock_args, mock_logger
+        self, mock_compare_class, mock_args
     ):
         """Multiple runners created with the same compare_class share the exact instance.
 
@@ -184,7 +177,6 @@ class TestCompareFCInjection:
         runners = [
             SAPGPTRunner(
                 args=mock_args,
-                logger=mock_logger,
                 orchestrator=mock_orchestrator,
                 compare_class=mock_compare_class,
             )
