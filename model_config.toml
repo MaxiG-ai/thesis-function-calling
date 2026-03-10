@@ -54,3 +54,11 @@ temperature = 0
 provider = "ollama"
 api_base = "http://10.237.166.249:8000/v1"
 api_key = "THINKTANK"
+
+[models.glm-4-7]
+litellm_name = "openai/zai-org/GLM-4.7"
+context_window = 200000
+temperature = 0
+provider = "ollama"
+api_base = "http://10.237.166.249:8000/v1"
+api_key = "THINKTANK"

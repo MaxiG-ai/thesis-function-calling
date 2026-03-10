@@ -10,7 +10,7 @@ dependencies = [
     "litellm>=1.80.0",
     "marimo>=0.19.7",
     "matplotlib>=3.10.8",
-    "memorch>=0.2",
+    "memorch>=0.2.1",
     "numpy>=2.3.5",
     "pydantic>=2.12.4",
     "pytest>=7.4.0",
@@ -27,8 +27,8 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-memorch = { git = "https://github.com/MaxiG-ai/memory-orchestrator.git", branch = "haystack-experiment" }
-flagembedding = { git = "https://github.com/FlagOpen/FlagEmbedding.git", rev = "master" }
+memorch = { git = "https://github.com/MaxiG-ai/memory-orchestrator.git", branch = "main" }
+flagembedding = { git = "https://github.com/FlagOpen/FlagEmbedding.git", rev = "dbc6005" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

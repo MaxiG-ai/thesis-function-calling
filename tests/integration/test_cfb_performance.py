@@ -123,21 +123,31 @@ class TestCompareFCInjection:
         """ModelRunner should create its own CompareFC when no compare_class is given.
 
         This ensures backwards compatibility -- existing code that doesn't pass
-        compare_class still works. We patch CompareFC to avoid loading FlagModel.
+        compare_class still works. We patch CompareFC to avoid loading FlagModel
+        and inject the imported module logger expected by the runner.
         """
         from benchmarks.complex_func_bench.runner.base_runner import ModelRunner
 
-        with patch(
-            "benchmarks.complex_func_bench.runner.base_runner.CompareFC"
-        ) as MockCompareFC:
+        imported_logger = MagicMock()
+
+        with (
+            patch(
+                "benchmarks.complex_func_bench.runner.base_runner.CompareFC"
+            ) as MockCompareFC,
+            patch(
+                "benchmarks.complex_func_bench.runner.base_runner.logger",
+                imported_logger,
+                create=True,
+            ),
+        ):
             mock_instance = MagicMock()
             mock_instance.free_function_list = ["Location_to_Lat_Long"]
             MockCompareFC.return_value = mock_instance
 
             runner = ModelRunner(mock_args)
 
-            # CompareFC constructor should have been called
-            MockCompareFC.assert_called_once_with(mock_args)
+            # CompareFC constructor should receive the runner args and imported logger
+            MockCompareFC.assert_called_once_with(mock_args, imported_logger)
             assert runner.CompareClass is mock_instance
 
     def test_sap_gpt_runner_forwards_compare_class_to_base(
