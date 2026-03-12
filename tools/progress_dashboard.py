@@ -149,9 +149,9 @@ class ExperimentProgress:
         self._progress = Progress(
             SpinnerColumn(),
             TextColumn("[bold]{task.description}"),
-            BarColumn(bar_width=30),
+            BarColumn(bar_width=25),
             TextColumn("{task.completed}/{task.total}"),
-            TextColumn("[green]{task.fields[success_rate]:.0f}%✓"),
+            TextColumn("[green]SR:{task.fields[success_rate]:.0f}%✓"),
             console=self._console,
             transient=False,
         )
@@ -175,7 +175,7 @@ class ExperimentProgress:
         self._live = Live(
             self._build_layout(),
             console=self._console,
-            refresh_per_second=2,
+            refresh_per_second=10,
             # redirect_stderr keeps non-Live log output visible in the console
             redirect_stderr=False,
         )

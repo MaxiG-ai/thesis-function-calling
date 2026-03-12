@@ -33,7 +33,7 @@ temperature = 0
 provider = "aicore"
 
 [models.claude-sonnet-4-6]
-litellm_name = "sap/anthropic--claude-4.6-sonnet_automatisch erstellt"
+litellm_name = "sap/anthropic--claude-4.6-sonnet"
 context_window = 200000
 temperature = 0
 provider = "aicore"

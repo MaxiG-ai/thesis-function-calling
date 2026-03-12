@@ -4,7 +4,7 @@ log_dir = "results/logs"
 logging_level = "INFO"
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
 # selected_test_cases = ['Cross-252'] # ["Car-Rental-131", "Cross-131", "Flights-91"]
-benchmark_sample_size = 3
+# benchmark_sample_size = 3
 
 # setting for max. context before compression
 compact_thresholds = [5_000, 10_000, 25_000, 50_000, 100_000, 150_000]
@@ -20,10 +20,10 @@ enabled_models = [
     # "gpt-4-1",
     # "gpt-4-1-mini",
     # "gpt-5-mini",
-    # "claude-sonnet-4-5",
     "claude-sonnet-4-6",
     # "gemini-2-5-pro",
     # "qwen3-coder",
+    # "glm-4-7",
 ]
 
 enabled_memory_methods = [
