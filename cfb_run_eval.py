@@ -4,10 +4,12 @@ import os
 import copy
 import random
 import logging
-import tomllib
+import shutil
+import sys
 import torch
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, List, Optional
 from collections import defaultdict
 
@@ -25,19 +27,83 @@ from tools.progress_dashboard import ConfigKey, ExperimentProgress
 
 logger = get_logger("CFB_Runner")
 
+CONFIGS_DIR = Path("configs")
+MODEL_CONFIG_NAME = "model_config.toml"
+
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
 
 
-def initialize_response_evaluator(log_dir: str) -> RespEvalRunner:
+def normalize_experiment_config_name(experiment_config: str) -> str:
+    """Normalize a CLI selector to a config file stem."""
+    config_name = Path(experiment_config).name
+    if config_name.endswith("_config.toml"):
+        return config_name[: -len("_config.toml")]
+    if config_name.endswith(".toml"):
+        return config_name[: -len(".toml")]
+    return experiment_config
+
+
+def resolve_config_paths(
+    experiment_config: str,
+    config_dir: Path = CONFIGS_DIR,
+) -> tuple[Path, Path]:
+    """Resolve experiment and model config paths under the configs directory."""
+    experiment_stem = normalize_experiment_config_name(experiment_config)
+    experiment_config_path = config_dir / f"{experiment_stem}_config.toml"
+    model_config_path = config_dir / MODEL_CONFIG_NAME
+
+    if not experiment_config_path.exists():
+        raise FileNotFoundError(
+            f"Experiment config not found: {experiment_config_path}"
+        )
+    if not model_config_path.exists():
+        raise FileNotFoundError(f"Model config not found: {model_config_path}")
+
+    return experiment_config_path, model_config_path
+
+
+def load_runtime_config(
+    experiment_config: str,
+    config_dir: Path = CONFIGS_DIR,
+):
+    """Load the experiment-specific config and the shared model config."""
+    experiment_config_path, model_config_path = resolve_config_paths(
+        experiment_config,
+        config_dir=config_dir,
+    )
+    config = load_configs(str(experiment_config_path), str(model_config_path))
+    return config, experiment_config_path, model_config_path
+
+
+def build_log_path(logs_dir: Path | str, experiment_name: str, run_timestamp: str) -> Path:
+    """Build a log path that includes the experiment name."""
+    safe_experiment_name = experiment_name.replace(os.sep, "_").replace(" ", "_")
+    return Path(logs_dir) / f"experiment_run_{safe_experiment_name}_{run_timestamp}.log"
+
+
+def save_config_snapshot(
+    run_dir: Path | str,
+    experiment_config_path: Path,
+    model_config_path: Path,
+) -> None:
+    """Copy the exact TOML inputs used for a run into the run directory."""
+    snapshot_dir = Path(run_dir) / "used_configs"
+    snapshot_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(experiment_config_path, snapshot_dir / experiment_config_path.name)
+    shutil.copy2(model_config_path, snapshot_dir / model_config_path.name)
+
+
+def initialize_response_evaluator(log_dir: str, config) -> RespEvalRunner:
     """Initialize the response quality evaluator."""
 
     class RespEvalArgs:
-        def __init__(self, log_dir):
+        def __init__(self, log_dir, config):
             self.log_dir = log_dir
+            self.config = config
 
-    return RespEvalRunner(args=RespEvalArgs(log_dir), logger=logger)
+    return RespEvalRunner(args=RespEvalArgs(log_dir, config), logger=logger)
 
 
 def setup_directories(
@@ -466,7 +532,7 @@ def run_single_configuration(
     # CompareFC per thread to avoid redundant FlagModel copies on the GPU.
     if shared_compare_class is None:
         compare_class_args = type(
-            "Args", (), {"log_dir": orchestrator.cfg.results_dir}
+            "Args", (), {"log_dir": orchestrator.cfg.results_dir, "config": orchestrator.cfg}
         )()
         with model_load_lock:
             shared_compare_class = CompareFC(compare_class_args, logger)
@@ -646,7 +712,7 @@ def run_model_configs(
                 #    so each thread needs its own instance, but FlagModel loading is
                 #    serialized to avoid CUDA/accelerate race conditions.
                 compare_class_args = type(
-                    "Args", (), {"log_dir": shared_config.results_dir}
+                    "Args", (), {"log_dir": shared_config.results_dir, "config": shared_config}
                 )()
                 thread_compare_classes = {}
                 for ht in haystack_values:
@@ -717,7 +783,7 @@ def run_model_configs(
                 )
 
 
-def main(experiment_name=None):
+def main(experiment_config: str):
     """
     Main orchestration function for ComplexFuncBench evaluation.
 
@@ -728,14 +794,29 @@ def main(experiment_name=None):
     4. Within each model, memory methods and compact thresholds run sequentially
     5. Haystack thresholds run in parallel (each thread gets its own orchestrator + dataset)
     """
+    config, experiment_config_path, model_config_path = load_runtime_config(
+        experiment_config
+    )
+
     # Initialize orchestrator (used for config reading; parallel threads create their own)
-    orchestrator = LLMOrchestrator()
+    orchestrator = LLMOrchestrator(config=config)
     run_timestamp = datetime.now().strftime("%Y%m%d_%H%M")
 
     # Redirect all logs to timestamped file so Rich dashboard displays cleanly
-    log_file = f"experiment_run_{run_timestamp}.log"
     os.makedirs("logs", exist_ok=True)
-    log_path = os.path.join("logs", log_file)
+    log_path = build_log_path(
+        logs_dir="logs",
+        experiment_name=orchestrator.cfg.experiment_name,
+        run_timestamp=run_timestamp,
+    )
+
+    run_dir = (
+        Path(orchestrator.cfg.results_dir)
+        / "cfb"
+        / orchestrator.cfg.experiment_name
+        / run_timestamp
+    )
+    save_config_snapshot(run_dir, experiment_config_path, model_config_path)
 
     # Print to console before redirecting (so user knows where logs go)
     print(f"📝 Logs will be written to: {log_path}")
@@ -769,6 +850,9 @@ def main(experiment_name=None):
         # Log initial messages (now safely to file without interrupting dashboard)
         logger.info(f"Experiment run started: {run_timestamp}")
         logger.info(f"Logs written to: {log_path}")
+        logger.info(
+            f"Saved config snapshot from {experiment_config_path} and {model_config_path}"
+        )
         logger.info(
             f"📊 Progress dashboard started for: {orchestrator.cfg.experiment_name}"
         )
@@ -811,7 +895,7 @@ def main(experiment_name=None):
             "results", "cfb", orchestrator.cfg.experiment_name, run_timestamp, "temp"
         )
         os.makedirs(temp_log_dir, exist_ok=True)
-        resp_eval_runner = initialize_response_evaluator(temp_log_dir)
+        resp_eval_runner = initialize_response_evaluator(temp_log_dir, orchestrator.cfg)
 
         enabled_models = orchestrator.cfg.enabled_models
         memory_methods = orchestrator.cfg.enabled_memory_methods
@@ -851,9 +935,10 @@ def main(experiment_name=None):
 
 
 if __name__ == "__main__":
-    # import experiment name from toml config if available
-    experiment_name = tomllib.load(open("config.toml", "rb")).get("experiment_name")
-    if experiment_name:
-        main(experiment_name=experiment_name)
-    else:
-        main(experiment_name="No_Experiment_Name")
+    if len(sys.argv) < 2:
+        raise SystemExit(
+            "Usage: uv run cfb_run_eval.py <experiment_config_name>\n"
+            "Example: uv run cfb_run_eval.py full_haystack_run_claude"
+        )
+
+    main(experiment_config=sys.argv[1])

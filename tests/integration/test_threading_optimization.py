@@ -24,9 +24,17 @@ import json
 import pytest
 from unittest.mock import MagicMock, patch, call
 from typing import List, Dict, Optional
+from pathlib import Path
 
 import cfb_run_eval
 from memorch.utils.config import ExperimentConfig, MemoryDef, ModelDef, load_configs
+
+
+CONFIG_DIR = Path("configs")
+MODEL_CONFIG_PATH = CONFIG_DIR / "model_config.toml"
+EXPERIMENT_CONFIG_PATH = next(
+    path for path in sorted(CONFIG_DIR.glob("*_config.toml")) if path.name != MODEL_CONFIG_PATH.name
+)
 
 
 # ---------------------------------------------------------------------------
@@ -78,7 +86,7 @@ def test_orchestrator_accepts_preloaded_config():
     """
     from memorch.llm_orchestrator import LLMOrchestrator
 
-    cfg = load_configs("config.toml", "model_config.toml")
+    cfg = load_configs(str(EXPERIMENT_CONFIG_PATH), str(MODEL_CONFIG_PATH))
 
     # Patch load_configs to verify it is NOT called when config is passed
     with patch("memorch.llm_orchestrator.load_configs") as mock_load:

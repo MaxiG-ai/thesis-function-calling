@@ -16,7 +16,11 @@ from benchmarks.complex_func_bench.prompts.response import (
 class RespEvalRunner:
     def __init__(self, args, logger):
         self.logger = logger
-        self.model = SAPGPTModel(LLMOrchestrator())
+        config = getattr(args, "config", None)
+        orchestrator = (
+            LLMOrchestrator(config=config) if config is not None else LLMOrchestrator()
+        )
+        self.model = SAPGPTModel(orchestrator)
 
     @retry(max_attempts=10)
     def completeness_eval(self, **kwargs):

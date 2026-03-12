@@ -32,7 +32,11 @@ class CompareFCBase:
             tool_info = json.load(f)
         tool_info = tool_info["booking-com15"]
         self.api_call = RapidAPICall(tool="booking-com15", tool_info=tool_info)
-        self.model = SAPGPTModel(LLMOrchestrator())
+        config = getattr(args, "config", None)
+        orchestrator = (
+            LLMOrchestrator(config=config) if config is not None else LLMOrchestrator()
+        )
+        self.model = SAPGPTModel(orchestrator)
         self.logger = logger
         self.error_message = []
         self.exact_match_dict = load_json(

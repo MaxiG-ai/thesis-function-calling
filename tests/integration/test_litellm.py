@@ -1,7 +1,7 @@
 """
 Integration tests for litellm model availability and completions.
 
-These tests verify that each model defined in model_config.toml:
+These tests verify that each model defined in configs/model_config.toml:
 1. Is properly recognized by litellm
 2. Can successfully execute litellm.completion() calls
 3. Returns valid ChatCompletion responses
@@ -12,13 +12,21 @@ basic functionality similar to how the LLMOrchestrator uses the models.
 
 import pytest
 import litellm
+from pathlib import Path
 from memorch.utils.config import load_configs
+
+
+CONFIG_DIR = Path("configs")
+MODEL_CONFIG_PATH = CONFIG_DIR / "model_config.toml"
+EXPERIMENT_CONFIG_PATH = next(
+    path for path in sorted(CONFIG_DIR.glob("*_config.toml")) if path.name != MODEL_CONFIG_PATH.name
+)
 
 
 @pytest.fixture(scope="module")
 def config():
     """Load the experiment and model configuration for the test suite."""
-    return load_configs("config.toml", "model_config.toml")
+    return load_configs(str(EXPERIMENT_CONFIG_PATH), str(MODEL_CONFIG_PATH))
 
 
 def test_gpt_5_available(config):
