@@ -71,6 +71,20 @@ def _build_report(rows: list[tuple[str, str, str]]) -> str:
     return "\n".join(lines)
 
 
+def _build_full_error_details(failures: list[tuple[str, str]]) -> str:
+    """Render full, untruncated error text for failed model checks."""
+    if not failures:
+        return ""
+
+    lines = ["Full Error Details", "------------------"]
+    for model_key, error_text in failures:
+        lines.append(f"{model_key}:")
+        lines.append(error_text)
+        lines.append("")
+
+    return "\n".join(lines).rstrip() + "\n"
+
+
 def test_all_configured_models_are_callable_with_report(config: Any, capsys: Any) -> None:
     """Verify every configured model can respond and print a terminal report.
 
@@ -118,11 +132,13 @@ def test_all_configured_models_are_callable_with_report(config: Any, capsys: Any
             failures.append((model_key, error_text))
 
     report = _build_report(rows)
+    full_error_details = _build_full_error_details(failures)
+    full_output = report + ("\n" + full_error_details if full_error_details else "")
     with capsys.disabled():
-        print(report)
+        print(full_output)
 
     assert not failures, (
         "One or more configured models are not callable. "
         f"Failed models: {', '.join(model for model, _ in failures)}\n"
-        f"{report}"
+        f"{full_output}"
     )
