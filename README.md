@@ -26,6 +26,18 @@ Currently integrated: **ComplexFuncBench** (CFB)
 
 ## Tools
 
+## Testing
+
+### Model Availability Report Test
+
+Run the integration test below to check all models from `configs/model_config.toml` and print a pass/fail report in the terminal:
+
+```bash
+uv run pytest tests/integration/test_model_registry_report.py -q
+```
+
+This test performs real model calls and fails if one or more configured models are not callable.
+
 ### Trace Viewer
 
 A privacy-friendly, local-first web interface for inspecting experiment traces. Replaces cloud-based solutions for offline trace analysis.
