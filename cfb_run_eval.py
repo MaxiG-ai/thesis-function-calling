@@ -220,6 +220,16 @@ def load_haystack_dataset(
     return load_json(file_path)
 
 
+def filter_dataset_by_ids(
+    dataset: List[Dict], selected_ids: Optional[List[str]]
+) -> List[Dict]:
+    """Filter dataset by selected case IDs."""
+    if selected_ids is None:
+        return dataset
+    selected_id_set = set(selected_ids)
+    return [case for case in dataset if case.get("id") in selected_id_set]
+
+
 def normalize_haystack_threshold(haystack_threshold: int) -> Optional[int]:
     """Map config-level sentinel values to runtime haystack thresholds."""
     return None if haystack_threshold == BASELINE_HAYSTACK_SENTINEL else haystack_threshold
@@ -534,7 +544,7 @@ def run_single_configuration(
         f"🚀 Starting evaluation: {model}/{memory}/{threshold_label}/{haystack_label}"
     )
 
-    # Register this configuration in the live dashboard
+    # Register configuration in dashboard.
     config_key = ConfigKey(
         model=model,
         memory=memory,
@@ -544,7 +554,7 @@ def run_single_configuration(
     if progress is not None:
         progress.start_configuration(config_key, total_cases=len(dataset))
 
-    # Set active context (including threshold for this run)
+    # Set active run context.
     try:
         orchestrator.set_active_context(
             model, memory, compact_threshold=compact_threshold
@@ -553,10 +563,7 @@ def run_single_configuration(
         logger.error(f"❌ Failed to switch context: {e}")
         return None
 
-    # Use caller-provided CompareFC or create one for this configuration.
-    # CompareFC loads FlagModel (BAAI/bge-large-en-v1.5, ~1.3GB) which is expensive.
-    # When running haystack thresholds in parallel, the caller pre-creates one
-    # CompareFC per thread to avoid redundant FlagModel copies on the GPU.
+    # Build or reuse CompareFC for this configuration.
     if shared_compare_class is None:
         compare_class_args = type(
             "Args", (), {"log_dir": orchestrator.cfg.results_dir, "config": orchestrator.cfg}
@@ -567,10 +574,9 @@ def run_single_configuration(
     else:
         logger.info("🔧 Using pre-built CompareFC (FlagModel shared)")
 
-    # Process all cases
+    # Process all cases.
     results = []
-    compressed_traces = []  # Separate list for memory-processed messages
-    success_count = 0
+    compressed_traces = []  # Memory-processed messages.
 
     for i, case in enumerate(dataset):
         orchestrator.reset_session()
@@ -587,21 +593,14 @@ def run_single_configuration(
 
             case_success = result["message"] == "Success."
 
-            # Track success
-            if case_success:
-                success_count += 1
-
-            # Update live dashboard with this case result
             if progress is not None:
                 progress.complete_case(
                     config_key, case_id=str(case_id), success=case_success
                 )
 
-            # Add metadata (kept for on-disk JSON compatibility)
             result["memory_method"] = memory
             results.append(result)
 
-            # Collect compressed trace with case ID for reference
             compressed_traces.append(
                 {
                     "id": case_id,
@@ -612,24 +611,20 @@ def run_single_configuration(
 
         except Exception as e:
             logger.error(f"❌ Failed on case {case_id}: {e}")
-            # Report the failure to the dashboard so case counts stay accurate
             if progress is not None:
                 progress.complete_case(config_key, case_id=str(case_id), success=False)
-            # Continue with remaining cases
             continue
 
-    # Release shared CompareFC and its FlagModel GPU memory
+    # Release CompareFC and CUDA cache.
     del shared_compare_class
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
     gc.collect()
     logger.info("🧹 Shared CompareFC released, GPU memory freed")
 
-    # Calculate aggregate metrics
     logger.info("🧮 Calculating aggregate metrics...")
     metrics = calculate_metrics(results)
 
-    # Setup directories (threshold included in path for threshold-sensitive strategies)
     log_dir = setup_directories(
         orchestrator.cfg.experiment_name,
         run_timestamp,
@@ -639,12 +634,10 @@ def run_single_configuration(
         haystack_threshold=haystack_threshold,
     )
 
-    # Save results to disk (including compressed traces)
     save_results(
         results, metrics, model, memory, log_dir, run_timestamp, compressed_traces
     )
 
-    # Mark this configuration complete in the live dashboard
     if progress is not None:
         progress.complete_configuration(config_key, metrics=metrics)
 
@@ -688,8 +681,7 @@ def run_model_configs(
     if threshold_sensitive is None:
         threshold_sensitive = {"truncation", "progressive_summarization"}
 
-    # Build the list of haystack thresholds from explicit config values.
-    # Baseline must be configured as sentinel 0, then mapped to runtime None.
+    # Build haystack threshold list from config.
     haystack_values = validate_haystack_thresholds_config(
         orchestrator.cfg.haystack_thresholds
     )
@@ -697,9 +689,7 @@ def run_model_configs(
     # Resolve input_file from config for dataset loading
     input_file = orchestrator.cfg.input_file
 
-    # Cache the shared config to avoid redundant file I/O when creating
-    # per-thread orchestrators. ExperimentConfig is a Pydantic BaseModel
-    # and is effectively immutable after creation.
+    # Reuse immutable config for thread-specific orchestrators.
     shared_config = orchestrator.cfg
 
     for memory in memory_methods:
@@ -714,42 +704,35 @@ def run_model_configs(
             compact_thresholds = [None]
 
         for compact_threshold in compact_thresholds:
+            runtime_haystack_values = [
+                normalize_haystack_threshold(ht) for ht in haystack_values
+            ]
+
             if len(haystack_values) > 1 and not force_sequential_haystack:
-                # --- Pre-create all per-thread resources SEQUENTIALLY ---
-                # This avoids the RuntimeError from concurrent set_global_log_level
-                # calls and eliminates redundant file I/O / FlagModel loading.
+                # Pre-create per-thread resources sequentially.
                 logger.info(
                     f"🔀 Preparing {len(haystack_values)} haystack thresholds "
                     f"for {model}/{memory}/compact={compact_threshold}"
                 )
 
-                # 1. Pre-load datasets (one per haystack threshold)
-                preloaded_datasets = {}
-                for ht in haystack_values:
-                    runtime_ht = normalize_haystack_threshold(ht)
-                    dataset = load_haystack_dataset(runtime_ht, input_file=input_file)
-                    if selected_ids is not None:
-                        dataset = [c for c in dataset if c.get("id") in selected_ids]
-                    preloaded_datasets[runtime_ht] = dataset
-
-                # 2. Pre-create per-thread orchestrators using shared config.
-                #    Each thread needs its own orchestrator for mutable session
-                #    state, but they all share the same immutable config.
+                # Pre-load datasets and orchestrators.
                 thread_orchestrators = {
-                    normalize_haystack_threshold(ht): LLMOrchestrator(config=shared_config)
-                    for ht in haystack_values
+                    runtime_ht: LLMOrchestrator(config=shared_config)
+                    for runtime_ht in runtime_haystack_values
+                }
+                preloaded_datasets = {
+                    runtime_ht: filter_dataset_by_ids(
+                        load_haystack_dataset(runtime_ht, input_file=input_file),
+                        selected_ids,
+                    )
+                    for runtime_ht in runtime_haystack_values
                 }
 
-                # 3. Pre-create per-thread CompareFC instances under model_load_lock.
-                #    CompareFC has mutable per-case state (free_functions, error_message)
-                #    so each thread needs its own instance, but FlagModel loading is
-                #    serialized to avoid CUDA/accelerate race conditions.
                 compare_class_args = type(
                     "Args", (), {"log_dir": shared_config.results_dir, "config": shared_config}
                 )()
                 thread_compare_classes = {}
-                for ht in haystack_values:
-                    runtime_ht = normalize_haystack_threshold(ht)
+                for runtime_ht in runtime_haystack_values:
                     with model_load_lock:
                         thread_compare_classes[runtime_ht] = CompareFC(
                             compare_class_args, logger
@@ -759,11 +742,9 @@ def run_model_configs(
                     f"datasets, and CompareFC instances"
                 )
 
-                # --- Submit to thread pool ---
                 with ThreadPoolExecutor(max_workers=len(haystack_values)) as executor:
                     futures = {}
-                    for ht in haystack_values:
-                        runtime_ht = normalize_haystack_threshold(ht)
+                    for runtime_ht in runtime_haystack_values:
                         future = executor.submit(
                             run_single_configuration,
                             orchestrator=thread_orchestrators[runtime_ht],
@@ -779,7 +760,6 @@ def run_model_configs(
                         )
                         futures[future] = runtime_ht
 
-                    # Collect results and report any errors
                     for future in as_completed(futures):
                         haystack_threshold = futures[future]
                         ht_label = (
@@ -793,7 +773,6 @@ def run_model_configs(
                         except Exception as e:
                             logger.error(f"❌ {ht_label} failed: {e}")
 
-                # Clean up pre-created CompareFC instances after all threads finish
                 del thread_compare_classes
                 del thread_orchestrators
                 if torch.cuda.is_available():
@@ -801,16 +780,15 @@ def run_model_configs(
                 gc.collect()
                 logger.info("🧹 Thread resources released, GPU memory freed")
             else:
-                # Sequential path (forced for memory_bank): run each haystack
-                # level in-order using config-declared thresholds.
-                for haystack_threshold in haystack_values:
-                    runtime_ht = normalize_haystack_threshold(haystack_threshold)
-                    dataset = load_haystack_dataset(
-                        runtime_ht,
-                        input_file=input_file,
+                # Run haystack thresholds sequentially.
+                for runtime_ht in runtime_haystack_values:
+                    dataset = filter_dataset_by_ids(
+                        load_haystack_dataset(
+                            runtime_ht,
+                            input_file=input_file,
+                        ),
+                        selected_ids,
                     )
-                    if selected_ids is not None:
-                        dataset = [c for c in dataset if c.get("id") in selected_ids]
                     run_single_configuration(
                         orchestrator=orchestrator,
                         dataset=dataset,
@@ -839,11 +817,11 @@ def main(experiment_config: str):
         experiment_config
     )
 
-    # Initialize orchestrator (used for config reading; parallel threads create their own)
+    # Initialize base orchestrator.
     orchestrator = LLMOrchestrator(config=config)
     run_timestamp = datetime.now().strftime("%Y%m%d_%H%M")
 
-    # Redirect all logs to timestamped file so Rich dashboard displays cleanly
+    # Route logs to timestamped file.
     os.makedirs("logs", exist_ok=True)
     log_path = build_log_path(
         logs_dir="logs",
@@ -859,23 +837,21 @@ def main(experiment_config: str):
     )
     save_config_snapshot(run_dir, experiment_config_path, model_config_path)
 
-    # Print to console before redirecting (so user knows where logs go)
     print(f"📝 Logs will be written to: {log_path}")
     print(f"📊 Starting live progress dashboard...\n")
 
-    # Configure root logger to write to file instead of stdout
+    # Configure root logger to write to file.
     file_handler = logging.FileHandler(log_path, mode="w")
     file_handler.setFormatter(
         logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
     )
 
-    # Remove all existing handlers and add file handler
     root_logger = logging.getLogger()
     root_logger.handlers.clear()
     root_logger.addHandler(file_handler)
     root_logger.setLevel(logging.INFO)
 
-    # Also configure all memorch loggers
+    # Configure all existing loggers.
     for name in list(logging.Logger.manager.loggerDict):
         if isinstance(logging.Logger.manager.loggerDict[name], logging.Logger):
             log_obj = logging.getLogger(name)
@@ -883,12 +859,11 @@ def main(experiment_config: str):
             log_obj.addHandler(file_handler)
             log_obj.propagate = False
 
-    # Start the live Rich dashboard — shows active evaluations and completed results
+    # Start live dashboard.
     progress = ExperimentProgress()
     progress.start_experiment()
 
     try:
-        # Log initial messages (now safely to file without interrupting dashboard)
         logger.info(f"Experiment run started: {run_timestamp}")
         logger.info(f"Logs written to: {log_path}")
         logger.info(
@@ -898,13 +873,11 @@ def main(experiment_config: str):
             f"📊 Progress dashboard started for: {orchestrator.cfg.experiment_name}"
         )
 
-        # Determine which case IDs to run. Datasets are loaded per-haystack-threshold
-        # inside run_model_configs, but filtering/sampling is decided here once.
+        # Resolve optional case filtering/sampling.
         selected_ids = None  # None = use full dataset (no filtering)
         input_file = orchestrator.cfg.input_file
         selected_test_cases = orchestrator.cfg.selected_test_cases
         if selected_test_cases:
-            # Explicit case IDs from config — validate they exist in the original dataset
             all_cases = load_json(input_file)
             all_ids = {case.get("id") for case in all_cases}
             missing = set(selected_test_cases) - all_ids
@@ -916,7 +889,6 @@ def main(experiment_config: str):
                 f"🎯 Will filter to {len(selected_ids)} specific test case(s): {selected_ids}"
             )
         else:
-            # Sample subset if configured (only when not using specific test cases)
             sample_size = orchestrator.cfg.benchmark_sample_size
             if sample_size is not None and sample_size > 0:
                 all_cases = load_json(input_file)
@@ -931,7 +903,7 @@ def main(experiment_config: str):
                     selected_ids = [case.get("id") for case in sampled]
                     logger.info(f"📊 Sampled {sample_size} case IDs from dataset")
 
-        # Initialize response evaluator (shared across all configurations -- thread-safe)
+        # Initialize shared response evaluator.
         temp_log_dir = os.path.join(
             "results", "cfb", orchestrator.cfg.experiment_name, run_timestamp, "temp"
         )
@@ -941,9 +913,7 @@ def main(experiment_config: str):
         enabled_models = orchestrator.cfg.enabled_models
         memory_methods = orchestrator.cfg.enabled_memory_methods
 
-        # Models run sequentially; parallelism is at the haystack threshold level
-        # inside run_model_configs. This avoids rate-limit spikes from multiple
-        # models hitting the same API concurrently.
+        # Run models sequentially.
         for model in enabled_models:
             logger.info(f"🚀 Starting model: {model}")
             run_model_configs(
@@ -957,19 +927,16 @@ def main(experiment_config: str):
             )
             logger.info(f"✅ Model '{model}' completed all configurations")
 
-        # Stop the live dashboard and print final summary panel
         progress.finish_experiment()
         logger.info("=" * 80)
         logger.info("🎉 All configurations completed!")
         logger.info("=" * 80)
 
     except KeyboardInterrupt:
-        # Handle Ctrl+C gracefully - ensure terminal is restored
         logger.info("\n⚠️ Experiment interrupted by user (Ctrl+C)")
         progress._cleanup_alternate_screen()
         raise
     except Exception as e:
-        # Handle any other exception - ensure terminal is restored
         logger.error(f"❌ Experiment failed with error: {e}")
         progress._cleanup_alternate_screen()
         raise
