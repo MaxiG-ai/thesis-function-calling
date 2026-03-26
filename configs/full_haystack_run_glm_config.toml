@@ -8,12 +8,11 @@ input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
 
 # setting for max. context before compression
 compact_thresholds = [5_000, 10_000, 25_000, 50_000, 100_000, 150_000]
+# compact_thresholds = [100_000, 150_000]
 
 # NIAH haystack experiment: token count targets for distractor context injection.
-# Each threshold generates a separate dataset file (haystack_{N}.jsonl).
-# Baseline (no haystack) always runs alongside these. Comment out to disable.
-haystack_thresholds = [15_000, 50_000, 100_000, 150_000]
-# haystack_thresholds = [20_000, 40_000, 60_000, 80_000, 100_000]
+haystack_thresholds = [0, 15_000, 50_000, 100_000, 150_000]
+# haystack_thresholds = [0, 20_000, 40_000, 60_000, 80_000, 100_000]
 
 enabled_models = [
     # "gpt-5",
@@ -27,10 +26,10 @@ enabled_models = [
 ]
 
 enabled_memory_methods = [
-    "no_strategy",
-    "truncation",
+#    "no_strategy",
+#    "truncation",
     "progressive_summarization",
-    "memory_bank",
+#    "memory_bank",
 ]
 
 # --- Memory Strategy Definitions ---
@@ -52,13 +51,3 @@ observer_model = "gpt-4-1-mini"             # Model for summarizing tool outputs
 embedding_model = "BAAI/bge-large-en-v1.5"  # Model for vector embeddings
 top_k = 3                                   # Number of past interactions to retrieve
 max_chars_per_record = 2000                 # Max characters per stored record
-
-
-# [memory_strategies.ace]
-# type = "ace"
-# generator_model = "gpt-4-1-mini"          # Model for generating next actions
-# reflector_model = "gpt-4-1-mini"          # Model for analyzing mistakes
-# curator_model = "gpt-4-1-mini"            # Model for updating playbook
-# max_reflection_rounds = 1                 # Reflection iterations per step
-# curator_frequency = 1                     # Curate every N steps
-# playbook_token_budget = 4096

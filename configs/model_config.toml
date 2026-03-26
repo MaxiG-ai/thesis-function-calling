@@ -47,9 +47,9 @@ provider = "aicore"
 
 # models on GPU-Cluster running vLLM
 
-[models.qwen3-coder]
-litellm_name = "openai/Qwen/Qwen3-Coder-480B-A35B-Instruct"
-context_window = 128000
+[models.qwen-35]
+litellm_name = "openai/Qwen/Qwen3.5-397B-A17B"
+context_window = 200000
 temperature = 0
 provider = "ollama"
 api_base = "http://10.237.166.249:8000/v1"

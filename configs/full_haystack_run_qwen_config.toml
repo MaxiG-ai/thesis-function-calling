@@ -8,26 +8,21 @@ input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
 
 # setting for max. context before compression
 compact_thresholds = [5_000, 10_000, 25_000, 50_000, 100_000, 150_000]
+# compact_thresholds = [100_000, 150_000]
 
 # NIAH haystack experiment: token count targets for distractor context injection.
 haystack_thresholds = [0, 15_000, 50_000, 100_000, 150_000]
+# haystack_thresholds = [0, 20_000, 40_000, 60_000, 80_000, 100_000]
 
 enabled_models = [
-    # "gpt-5",
-    # "gpt-4-1",
-    # "gpt-4-1-mini",
-    # "gpt-5-mini",
-    "claude-sonnet-4-6",
-    # "gemini-2-5-pro",
-    # "qwen3-coder",
-    # "glm-4-7",
+    "qwen-35",
 ]
 
 enabled_memory_methods = [
-    # "no_strategy",
-    # "truncation",
-    # "progressive_summarization",
-    "memory_bank",
+    "no_strategy",
+#    "truncation",
+#    "progressive_summarization",
+#    "memory_bank",
 ]
 
 # --- Memory Strategy Definitions ---
