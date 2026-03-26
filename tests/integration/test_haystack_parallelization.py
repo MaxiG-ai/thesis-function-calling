@@ -3,7 +3,7 @@ Tests for the haystack parallelization refactor in cfb_run_eval.
 
 These tests verify the restructured execution flow where:
 - Models, strategies, and compact_thresholds iterate SEQUENTIALLY
-- Haystack thresholds (including baseline=None) run in PARALLEL
+- Haystack thresholds (including explicit baseline sentinel 0) run in PARALLEL
 - Each parallel haystack thread gets its own LLMOrchestrator instance
 - Each haystack_threshold loads its own dataset file
 
@@ -183,9 +183,9 @@ def test_setup_directories_baseline_haystack(tmp_path):
 
 def test_haystack_thresholds_run_in_parallel():
     """
-    For a configuration with haystack_thresholds=[20000, 40000], plus
-    baseline (None), the runner must submit 3 parallel tasks — one per
-    haystack threshold value including the baseline.
+    For a configuration with haystack_thresholds=[0, 20000, 40000], the
+    runner must submit 3 tasks total. The baseline sentinel 0 must map to
+    runtime haystack_threshold=None, while numeric values stay numeric.
 
     We mock run_single_configuration and verify it is called with the
     correct haystack_threshold values. The ThreadPoolExecutor is patched
@@ -193,7 +193,7 @@ def test_haystack_thresholds_run_in_parallel():
     """
     cfg = _make_exp_config(
         compact_thresholds=[5000],
-        haystack_thresholds=[20000, 40000],
+        haystack_thresholds=[0, 20000, 40000],
         strategy_type="truncation",
     )
 
@@ -218,9 +218,13 @@ def test_haystack_thresholds_run_in_parallel():
         patch.object(cfb_run_eval, "load_haystack_dataset", return_value=[]),
         patch("memorch.llm_orchestrator.LLMOrchestrator"),
     ):
-        # Simulate the inner loop: for a single (model, memory, compact_threshold),
-        # run haystack thresholds (including baseline=None) in parallel
-        haystack_values = [None] + (cfg.haystack_thresholds or [])
+        # Simulate baseline normalization used by runner logic.
+        haystack_values = [
+            cfb_run_eval.normalize_haystack_threshold(ht)
+            for ht in cfb_run_eval.validate_haystack_thresholds_config(
+                cfg.haystack_thresholds
+            )
+        ]
         for ht in haystack_values:
             cfb_run_eval.run_single_configuration(
                 orchestrator=MagicMock(),
@@ -244,19 +248,15 @@ def test_haystack_thresholds_run_in_parallel():
 
 def test_no_haystack_thresholds_runs_baseline_only():
     """
-    When haystack_thresholds is None or empty in config, the runner must
-    execute only the baseline (haystack_threshold=None) without attempting
-    to load any haystack files. This preserves backward compatibility.
+    The explicit baseline contract requires haystack_thresholds to include
+    sentinel 0. Missing or empty haystack_thresholds must raise ValueError
+    with an actionable message.
     """
-    cfg = _make_exp_config(
-        compact_thresholds=[5000],
-        haystack_thresholds=None,
-        strategy_type="truncation",
-    )
+    with pytest.raises(ValueError, match="include baseline 0"):
+        cfb_run_eval.validate_haystack_thresholds_config(None)
 
-    # haystack_thresholds is None, so only baseline should run
-    haystack_values = [None] + (cfg.haystack_thresholds or [])
-    assert haystack_values == [None]
+    with pytest.raises(ValueError, match="include baseline 0"):
+        cfb_run_eval.validate_haystack_thresholds_config([])
 
 
 # ---------------------------------------------------------------------------

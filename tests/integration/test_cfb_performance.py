@@ -256,7 +256,7 @@ class TestModelParallelism:
             "ace": MagicMock(type="ace"),
         }
         mock_orchestrator.cfg.compact_thresholds = [500, 1000]
-        mock_orchestrator.cfg.haystack_thresholds = []
+        mock_orchestrator.cfg.haystack_thresholds = [0]
         mock_orchestrator.cfg.input_file = "dummy.jsonl"
 
         memory_methods = ["truncation", "ace"]
@@ -298,8 +298,8 @@ class TestModelParallelism:
             "truncation": MagicMock(type="truncation"),
         }
         mock_orchestrator.cfg.compact_thresholds = [500]
-        # Two haystack thresholds force parallel execution and per-thread orchestrators
-        mock_orchestrator.cfg.haystack_thresholds = [1000, 2000]
+        # Baseline sentinel + two haystack thresholds force parallel execution.
+        mock_orchestrator.cfg.haystack_thresholds = [0, 1000, 2000]
         mock_orchestrator.cfg.input_file = "dummy.jsonl"
 
         def mock_run_single(orchestrator, **kwargs):
@@ -321,7 +321,7 @@ class TestModelParallelism:
                 resp_eval_runner=MagicMock(),
             )
 
-        # Three haystack levels (None + 1000 + 2000) — all orchestrator ids must differ
+        # Three runtime haystack levels (None + 1000 + 2000) — all ids must differ
         assert len(created_orchestrators) == 3
         assert len(set(created_orchestrators)) == 3, (
             "Each thread must get its own orchestrator"

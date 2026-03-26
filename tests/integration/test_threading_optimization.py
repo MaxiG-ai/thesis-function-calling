@@ -110,7 +110,7 @@ def test_run_model_configs_does_not_construct_orchestrators_in_threads():
 
     cfg = _make_exp_config(
         compact_thresholds=[5000],
-        haystack_thresholds=[20000, 40000],
+        haystack_thresholds=[0, 20000, 40000],
         strategy_type="truncation",
     )
 
@@ -177,7 +177,7 @@ def test_datasets_preloaded_before_thread_submission():
     """
     cfg = _make_exp_config(
         compact_thresholds=[5000],
-        haystack_thresholds=[20000],
+        haystack_thresholds=[0, 20000],
         strategy_type="truncation",
     )
 
@@ -234,7 +234,7 @@ def test_parallel_haystack_passes_distinct_orchestrators():
     """
     cfg = _make_exp_config(
         compact_thresholds=[5000],
-        haystack_thresholds=[20000, 40000],
+        haystack_thresholds=[0, 20000, 40000],
         strategy_type="truncation",
     )
 
@@ -263,7 +263,7 @@ def test_parallel_haystack_passes_distinct_orchestrators():
             selected_ids=None,
         )
 
-    # 3 haystack values: None, 20000, 40000 -> 3 distinct orchestrators
+    # 3 runtime haystack values: None, 20000, 40000 -> 3 distinct orchestrators
     assert len(orchestrator_ids) == 3
     assert len(set(orchestrator_ids)) == 3, (
         "All parallel threads must receive distinct orchestrator instances"
@@ -278,7 +278,7 @@ def test_parallel_haystack_correct_threshold_values():
     """
     cfg = _make_exp_config(
         compact_thresholds=[5000],
-        haystack_thresholds=[20000, 40000],
+        haystack_thresholds=[0, 20000, 40000],
         strategy_type="truncation",
     )
 
@@ -305,6 +305,57 @@ def test_parallel_haystack_correct_threshold_values():
         )
 
     assert set(submitted_thresholds) == {None, 20000, 40000}
+
+
+def test_memory_bank_haystack_runs_sequentially_without_thread_pool():
+    """
+    memory_bank executions must always run sequentially, even when
+    haystack_thresholds are configured. The runner must bypass
+    ThreadPoolExecutor and invoke run_single_configuration once per
+    threshold in deterministic order: baseline first, then configured
+    haystack thresholds.
+    """
+    cfg = _make_exp_config(
+        compact_thresholds=[5000],
+        haystack_thresholds=[0, 20000, 40000],
+        strategy_type="memory_bank",
+    )
+
+    orchestrator = MagicMock()
+    orchestrator.cfg = cfg
+
+    call_order = []
+
+    def tracked_load(haystack_threshold, input_file=None):
+        call_order.append(("load", haystack_threshold))
+        return [{"id": f"case-{haystack_threshold}", "conversations": [], "functions": []}]
+
+    def tracked_run(**kwargs):
+        call_order.append(("run", kwargs.get("haystack_threshold")))
+
+    with (
+        patch.object(cfb_run_eval, "load_haystack_dataset", side_effect=tracked_load),
+        patch.object(cfb_run_eval, "run_single_configuration", side_effect=tracked_run),
+        patch.object(cfb_run_eval, "ThreadPoolExecutor") as mock_executor,
+    ):
+        cfb_run_eval.run_model_configs(
+            model="gpt-test",
+            memory_methods=["memory_bank"],
+            orchestrator=orchestrator,
+            run_timestamp="20260305_0000",
+            resp_eval_runner=MagicMock(),
+            selected_ids=None,
+        )
+
+    mock_executor.assert_not_called()
+    assert call_order == [
+        ("load", None),
+        ("run", None),
+        ("load", 20000),
+        ("run", 20000),
+        ("load", 40000),
+        ("run", 40000),
+    ]
 
 
 # ---------------------------------------------------------------------------
