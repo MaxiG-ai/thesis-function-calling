@@ -29,6 +29,7 @@ logger = get_logger("CFB_Runner")
 
 CONFIGS_DIR = Path("configs")
 MODEL_CONFIG_NAME = "model_config.toml"
+BASELINE_HAYSTACK_SENTINEL = 0
 
 # ============================================================================
 # HELPER FUNCTIONS
@@ -217,6 +218,32 @@ def load_haystack_dataset(
         )
 
     return load_json(file_path)
+
+
+def normalize_haystack_threshold(haystack_threshold: int) -> Optional[int]:
+    """Map config-level sentinel values to runtime haystack thresholds."""
+    return None if haystack_threshold == BASELINE_HAYSTACK_SENTINEL else haystack_threshold
+
+
+def validate_haystack_thresholds_config(haystack_thresholds: Optional[List[int]]) -> List[int]:
+    """Validate explicit haystack config and return the ordered threshold list.
+
+    The config must explicitly include baseline via 0, for example:
+    haystack_thresholds = [0, 15000, 50000]
+    """
+    if not haystack_thresholds:
+        raise ValueError(
+            "haystack_thresholds must be explicitly configured and include baseline 0. "
+            "Example: haystack_thresholds = [0, 15000]"
+        )
+
+    if BASELINE_HAYSTACK_SENTINEL not in haystack_thresholds:
+        raise ValueError(
+            "haystack_thresholds must include baseline 0. "
+            "Example: haystack_thresholds = [0, 15000]"
+        )
+
+    return list(haystack_thresholds)
 
 
 def extract_ground_truth_metrics(case: Dict) -> Dict[str, int]:
@@ -638,10 +665,10 @@ def run_model_configs(
 ):
     """Run all memory method configurations for a single model.
 
-    Execution order:
+        Execution order:
     - Memory methods iterate sequentially (shared gpt-4-1-mini refinement endpoint)
     - Compact thresholds iterate sequentially within each memory method
-    - Haystack thresholds (including baseline=None) run in PARALLEL within each
+        - Haystack thresholds (baseline explicitly configured as 0) run in PARALLEL within each
       (memory, compact_threshold) combination. Each parallel thread gets its own
       LLMOrchestrator instance and loads its own dataset via load_haystack_dataset().
 
@@ -661,8 +688,11 @@ def run_model_configs(
     if threshold_sensitive is None:
         threshold_sensitive = {"truncation", "progressive_summarization"}
 
-    # Build the list of haystack thresholds: baseline (None) + configured values
-    haystack_values = [None] + (orchestrator.cfg.haystack_thresholds or [])
+    # Build the list of haystack thresholds from explicit config values.
+    # Baseline must be configured as sentinel 0, then mapped to runtime None.
+    haystack_values = validate_haystack_thresholds_config(
+        orchestrator.cfg.haystack_thresholds
+    )
 
     # Resolve input_file from config for dataset loading
     input_file = orchestrator.cfg.input_file
@@ -674,6 +704,7 @@ def run_model_configs(
 
     for memory in memory_methods:
         strategy_type = orchestrator.cfg.memory_strategies[memory].type
+        force_sequential_haystack = strategy_type == "memory_bank"
 
         # Only threshold-sensitive strategies produce one run per threshold value;
         # all others (ace, memory_bank, no_strategy) do a single run with no threshold.
@@ -683,7 +714,7 @@ def run_model_configs(
             compact_thresholds = [None]
 
         for compact_threshold in compact_thresholds:
-            if len(haystack_values) > 1:
+            if len(haystack_values) > 1 and not force_sequential_haystack:
                 # --- Pre-create all per-thread resources SEQUENTIALLY ---
                 # This avoids the RuntimeError from concurrent set_global_log_level
                 # calls and eliminates redundant file I/O / FlagModel loading.
@@ -695,16 +726,18 @@ def run_model_configs(
                 # 1. Pre-load datasets (one per haystack threshold)
                 preloaded_datasets = {}
                 for ht in haystack_values:
-                    dataset = load_haystack_dataset(ht, input_file=input_file)
+                    runtime_ht = normalize_haystack_threshold(ht)
+                    dataset = load_haystack_dataset(runtime_ht, input_file=input_file)
                     if selected_ids is not None:
                         dataset = [c for c in dataset if c.get("id") in selected_ids]
-                    preloaded_datasets[ht] = dataset
+                    preloaded_datasets[runtime_ht] = dataset
 
                 # 2. Pre-create per-thread orchestrators using shared config.
                 #    Each thread needs its own orchestrator for mutable session
                 #    state, but they all share the same immutable config.
                 thread_orchestrators = {
-                    ht: LLMOrchestrator(config=shared_config) for ht in haystack_values
+                    normalize_haystack_threshold(ht): LLMOrchestrator(config=shared_config)
+                    for ht in haystack_values
                 }
 
                 # 3. Pre-create per-thread CompareFC instances under model_load_lock.
@@ -716,8 +749,9 @@ def run_model_configs(
                 )()
                 thread_compare_classes = {}
                 for ht in haystack_values:
+                    runtime_ht = normalize_haystack_threshold(ht)
                     with model_load_lock:
-                        thread_compare_classes[ht] = CompareFC(
+                        thread_compare_classes[runtime_ht] = CompareFC(
                             compare_class_args, logger
                         )
                 logger.info(
@@ -729,20 +763,21 @@ def run_model_configs(
                 with ThreadPoolExecutor(max_workers=len(haystack_values)) as executor:
                     futures = {}
                     for ht in haystack_values:
+                        runtime_ht = normalize_haystack_threshold(ht)
                         future = executor.submit(
                             run_single_configuration,
-                            orchestrator=thread_orchestrators[ht],
-                            dataset=preloaded_datasets[ht],
+                            orchestrator=thread_orchestrators[runtime_ht],
+                            dataset=preloaded_datasets[runtime_ht],
                             model=model,
                             memory=memory,
                             run_timestamp=run_timestamp,
                             resp_eval_runner=resp_eval_runner,
                             compact_threshold=compact_threshold,
-                            haystack_threshold=ht,
-                            shared_compare_class=thread_compare_classes[ht],
+                            haystack_threshold=runtime_ht,
+                            shared_compare_class=thread_compare_classes[runtime_ht],
                             progress=progress,
                         )
-                        futures[future] = ht
+                        futures[future] = runtime_ht
 
                     # Collect results and report any errors
                     for future in as_completed(futures):
@@ -766,21 +801,27 @@ def run_model_configs(
                 gc.collect()
                 logger.info("🧹 Thread resources released, GPU memory freed")
             else:
-                # No haystack thresholds configured — single baseline run
-                dataset = load_haystack_dataset(None, input_file=input_file)
-                if selected_ids is not None:
-                    dataset = [c for c in dataset if c.get("id") in selected_ids]
-                run_single_configuration(
-                    orchestrator=orchestrator,
-                    dataset=dataset,
-                    model=model,
-                    memory=memory,
-                    run_timestamp=run_timestamp,
-                    resp_eval_runner=resp_eval_runner,
-                    compact_threshold=compact_threshold,
-                    haystack_threshold=None,
-                    progress=progress,
-                )
+                # Sequential path (forced for memory_bank): run each haystack
+                # level in-order using config-declared thresholds.
+                for haystack_threshold in haystack_values:
+                    runtime_ht = normalize_haystack_threshold(haystack_threshold)
+                    dataset = load_haystack_dataset(
+                        runtime_ht,
+                        input_file=input_file,
+                    )
+                    if selected_ids is not None:
+                        dataset = [c for c in dataset if c.get("id") in selected_ids]
+                    run_single_configuration(
+                        orchestrator=orchestrator,
+                        dataset=dataset,
+                        model=model,
+                        memory=memory,
+                        run_timestamp=run_timestamp,
+                        resp_eval_runner=resp_eval_runner,
+                        compact_threshold=compact_threshold,
+                        haystack_threshold=runtime_ht,
+                        progress=progress,
+                    )
 
 
 def main(experiment_config: str):
