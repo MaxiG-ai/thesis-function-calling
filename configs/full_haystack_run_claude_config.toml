@@ -7,7 +7,8 @@ input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
 # benchmark_sample_size = 3
 
 # setting for max. context before compression
-compact_thresholds = [5_000, 10_000, 25_000, 50_000, 100_000, 150_000]
+# compact_thresholds = [5_000, 10_000, 25_000, 50_000, 100_000, 150_000]
+compact_thresholds = [5_000, 10_000]
 
 # NIAH haystack experiment: token count targets for distractor context injection.
 haystack_thresholds = [0, 15_000, 50_000, 100_000, 150_000]
@@ -26,8 +27,8 @@ enabled_models = [
 enabled_memory_methods = [
     # "no_strategy",
     # "truncation",
-    # "progressive_summarization",
-    "memory_bank",
+    "progressive_summarization",
+    # "memory_bank",
 ]
 
 # --- Memory Strategy Definitions ---
@@ -47,5 +48,5 @@ summary_prompt = "memorch/strategies/progressive_summarization/prog_sum.prompt.m
 type = "memory_bank"
 observer_model = "gpt-4-1-mini"             # Model for summarizing tool outputs
 embedding_model = "BAAI/bge-large-en-v1.5"  # Model for vector embeddings
-top_k = 3                                   # Number of past interactions to retrieve
+top_k = 5                                   # Number of past interactions to retrieve
 max_chars_per_record = 2000                 # Max characters per stored record
