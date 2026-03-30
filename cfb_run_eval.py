@@ -861,6 +861,7 @@ def main(experiment_config: str):
 
     # explicitly setting httpx and litellm to silent
     logging.getLogger("litellm").setLevel(logging.WARNING)
+    logging.getLogger("LiteLLM").setLevel(logging.WARNING)
     logging.getLogger("httpx").setLevel(logging.WARNING)
     logging.getLogger("transformers").setLevel(logging.WARNING)
 
