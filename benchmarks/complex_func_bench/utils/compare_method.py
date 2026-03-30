@@ -354,7 +354,7 @@ class CompareFC(CompareFCBase):
         return matching
 
     def compare_single_call(self, functions, history, pred_call, golden_call):
-        self.logger.info(f"Start compare_single_call: \n{pred_call}\n{golden_call}")
+        self.logger.debug(f"Start compare_single_call: \n{pred_call}\n{golden_call}")
         # rule-based
         if self.rule_based(pred_call, golden_call):
             self.logger.info("Rule-based compare success.")
@@ -362,7 +362,7 @@ class CompareFC(CompareFCBase):
 
         is_valid, error_message = self.value_checker(pred_call, golden_call)
         if not is_valid:
-            self.logger.info(f"{error_message}")
+            self.logger.debug(f"{error_message}")
             return False, error_message
 
         # Response-based

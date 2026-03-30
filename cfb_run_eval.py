@@ -859,6 +859,11 @@ def main(experiment_config: str):
             log_obj.addHandler(file_handler)
             log_obj.propagate = False
 
+    # explicitly setting httpx and litellm to silent
+    logging.getLogger("litellm").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("transformers").setLevel(logging.WARNING)
+
     # Start live dashboard.
     progress = ExperimentProgress()
     progress.start_experiment()
