@@ -27,8 +27,8 @@ enabled_models = [
 enabled_memory_methods = [
     # "no_strategy",
     # "truncation",
-    "progressive_summarization",
-    # "memory_bank",
+    # "progressive_summarization",
+    "memory_bank",
 ]
 
 # --- Memory Strategy Definitions ---
