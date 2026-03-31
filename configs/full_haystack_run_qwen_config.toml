@@ -3,25 +3,29 @@ results_dir = "results"
 log_dir = "results/logs"
 logging_level = "INFO"
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
+evaluation_model = "gpt-4-1-mini"
 # selected_test_cases = ['Cross-252'] # ["Car-Rental-131", "Cross-131", "Flights-91"]
 # benchmark_sample_size = 3
 
 # setting for max. context before compression
-# compact_thresholds = [5_000, 10_000, 25_000, 50_000, 100_000, 150_000]
-compact_thresholds = [5_000, 25_000, 100_000, 150_000]
+compact_thresholds = [5_000, 10_000, 25_000, 50_000, 100_000, 150_000]
 
 # NIAH haystack experiment: token count targets for distractor context injection.
-haystack_thresholds = [0, 15_000, 50_000, 100_000, 150_000]
+# Each threshold generates a separate dataset file (haystack_{N}.jsonl).
+# Baseline (no haystack) always runs alongside these. Comment out to disable.
+haystack_thresholds = [15_000, 50_000, 100_000, 150_000]
+# haystack_thresholds = [20_000, 40_000, 60_000, 80_000, 100_000]
 
 enabled_models = [
-    "qwen-35",
+    "qwen3-coder",
 ]
 
+
 enabled_memory_methods = [
-    # "no_strategy",
-#    "truncation",
-#    "progressive_summarization",
-   "memory_bank",
+    "no_strategy",
+    "truncation",
+    "progressive_summarization",
+    "memory_bank",
 ]
 
 # --- Memory Strategy Definitions ---

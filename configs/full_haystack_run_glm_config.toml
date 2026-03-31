@@ -3,6 +3,7 @@ results_dir = "results"
 log_dir = "results/logs"
 logging_level = "INFO"
 input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
+evaluation_model = "gpt-4-1-mini"
 # selected_test_cases = ['Cross-252'] # ["Car-Rental-131", "Cross-131", "Flights-91"]
 # benchmark_sample_size = 3
 
@@ -24,6 +25,7 @@ enabled_models = [
     # "qwen3-coder",
     "glm-4-7",
 ]
+
 
 enabled_memory_methods = [
 #    "no_strategy",

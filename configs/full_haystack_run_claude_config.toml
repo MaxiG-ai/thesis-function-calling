@@ -7,6 +7,7 @@ input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
 # benchmark_sample_size = 3
 
 # setting for max. context before compression
+evaluation_model = "gpt-4-1-mini"
 # compact_thresholds = [5_000, 10_000, 25_000, 50_000, 100_000, 150_000]
 compact_thresholds = [5_000, 10_000]
 
@@ -23,6 +24,7 @@ enabled_models = [
     # "qwen3-coder",
     # "glm-4-7",
 ]
+
 
 enabled_memory_methods = [
     # "no_strategy",
