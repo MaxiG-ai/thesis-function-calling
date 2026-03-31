@@ -21,7 +21,6 @@ class SAPGPTModel:
         prediction = self._predict(prefix, filled_prompt, **kwargs)
         return prediction
 
-    # @weave.op()
     @retry(max_attempts=10)
     def _predict(self, prefix, text, **kwargs):
         try:
