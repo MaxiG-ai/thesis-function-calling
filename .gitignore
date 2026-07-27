@@ -228,8 +228,7 @@ thesis_assets/
 .env
 uv.lock
 
-# Ignored project for sync with GitHub
-results/cfb/initial_tests/
-results/cfb/subset100/
-results/cfb/test_ace/
-results/cfb/testing/
+results
+
+logs/
+results/

@@ -1,7 +1,6 @@
 import re
 import copy
 import json
-import weave
 from benchmarks.complex_func_bench.models.sap_gpt import FunctionCallSAPGPT
 from benchmarks.complex_func_bench.runner.base_runner import ModelRunner
 from memorch.llm_orchestrator import LLMOrchestrator
@@ -10,9 +9,7 @@ from memorch.llm_orchestrator import LLMOrchestrator
 class SAPGPTRunner(ModelRunner):
     def __init__(
         self,
-        model_name,
         args,
-        logger,
         orchestrator: LLMOrchestrator,
         compare_class=None,
     ):
@@ -22,11 +19,10 @@ class SAPGPTRunner(ModelRunner):
         Args:
             model_name: Model identifier
             args: Runner arguments
-            logger: Logger instance
             orchestrator: Optional LLMOrchestrator for memory processing
             compare_class: Optional pre-built CompareFC to reuse across cases
         """
-        super().__init__(args, logger, compare_class=compare_class)
+        super().__init__(args, compare_class=compare_class)
         self.model_name = orchestrator.active_model_key
         self.model = FunctionCallSAPGPT(self.model_name, orchestrator=orchestrator)
 
@@ -65,11 +61,15 @@ class SAPGPTRunner(ModelRunner):
 
         return function_call
 
-    @weave.op(enable_code_capture=False)
     def run(self, data):
         convs, functions = data["conversations"], data["functions"]
         self.CompareClass.add_free_function(convs)
         gpt_functions = self.get_standard_functions(functions)
+
+        # Pass pre-computed haystack messages to model for NIAH injection.
+        # The model will prepend them to self.messages on the first LLM call.
+        # If absent (original ComplexFuncBench.jsonl), model behaves unchanged.
+        self.model.haystack_messages = data.get("haystack_messages")
 
         messages = []
         query = convs[0]["content"]

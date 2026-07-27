@@ -1,0 +1,49 @@
+experiment_name = "full_haystack_run"
+results_dir = "results"
+log_dir = "results/logs"
+logging_level = "INFO"
+input_file = "benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl"
+evaluation_model = "gpt-4-1-mini"
+# selected_test_cases = ['Cross-252'] # ["Car-Rental-131", "Cross-131", "Flights-91"]
+# benchmark_sample_size = 3
+
+# setting for max. context before compression
+compact_thresholds = [5_000, 10_000, 25_000, 50_000, 100_000, 150_000]
+
+# NIAH haystack experiment: token count targets for distractor context injection.
+# Each threshold generates a separate dataset file (haystack_{N}.jsonl).
+# Baseline (no haystack) always runs alongside these. Comment out to disable.
+haystack_thresholds = [15_000, 50_000, 100_000, 150_000]
+# haystack_thresholds = [20_000, 40_000, 60_000, 80_000, 100_000]
+
+enabled_models = [
+    "qwen3-coder",
+]
+
+
+enabled_memory_methods = [
+    "no_strategy",
+    "truncation",
+    "progressive_summarization",
+    "memory_bank",
+]
+
+# --- Memory Strategy Definitions ---
+
+[memory_strategies.truncation]
+type = "truncation"
+
+[memory_strategies.no_strategy]
+type = "no_strategy"
+
+[memory_strategies.progressive_summarization]
+type = "progressive_summarization"
+summarizer_model = "gpt-4-1-mini"           # Model for generating summaries
+summary_prompt = "memorch/strategies/progressive_summarization/prog_sum.prompt.md"
+
+[memory_strategies.memory_bank]
+type = "memory_bank"
+observer_model = "gpt-4-1-mini"             # Model for summarizing tool outputs
+embedding_model = "BAAI/bge-large-en-v1.5"  # Model for vector embeddings
+top_k = 5                                   # Number of past interactions to retrieve
+max_chars_per_record = 2000                 # Max characters per stored record

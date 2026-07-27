@@ -4,16 +4,18 @@ import os
 import copy
 import random
 import logging
-import threading
-import weave
-import tomllib
+import shutil
+import sys
 import torch
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, List, Optional
 from collections import defaultdict
 
+from memorch.utils import model_load_lock
 from memorch.utils.logger import get_logger
+from memorch.utils.config import load_configs
 from memorch.llm_orchestrator import LLMOrchestrator
 
 from benchmarks.complex_func_bench.runner.sap_gpt_runner import SAPGPTRunner
@@ -21,29 +23,88 @@ from benchmarks.complex_func_bench.utils.logger import Logger as FileLogger
 from benchmarks.complex_func_bench.runner.response_runner import RespEvalRunner
 from benchmarks.complex_func_bench.utils.compare_method import CompareFC
 from benchmarks.complex_func_bench.utils.utils import load_json
+from tools.progress_dashboard import ConfigKey, ExperimentProgress
 
 logger = get_logger("CFB_Runner")
 
-# Serializes CompareFC construction across threads.  CompareFC.__init__ calls
-# AutoModel.from_pretrained which (via accelerate's init_empty_weights) globally
-# monkey-patches nn.Module.register_parameter to redirect tensors to the meta
-# device.  Concurrent calls cause one thread's model to end up with data-less
-# meta tensors, producing "Cannot copy out of meta tensor" on the next .to().
-_model_load_lock = threading.Lock()
+CONFIGS_DIR = Path("configs")
+MODEL_CONFIG_NAME = "model_config.toml"
+BASELINE_HAYSTACK_SENTINEL = 0
 
 # ============================================================================
 # HELPER FUNCTIONS
 # ============================================================================
 
 
-def initialize_response_evaluator(log_dir: str) -> RespEvalRunner:
+def normalize_experiment_config_name(experiment_config: str) -> str:
+    """Normalize a CLI selector to a config file stem."""
+    config_name = Path(experiment_config).name
+    if config_name.endswith("_config.toml"):
+        return config_name[: -len("_config.toml")]
+    if config_name.endswith(".toml"):
+        return config_name[: -len(".toml")]
+    return experiment_config
+
+
+def resolve_config_paths(
+    experiment_config: str,
+    config_dir: Path = CONFIGS_DIR,
+) -> tuple[Path, Path]:
+    """Resolve experiment and model config paths under the configs directory."""
+    experiment_stem = normalize_experiment_config_name(experiment_config)
+    experiment_config_path = config_dir / f"{experiment_stem}_config.toml"
+    model_config_path = config_dir / MODEL_CONFIG_NAME
+
+    if not experiment_config_path.exists():
+        raise FileNotFoundError(
+            f"Experiment config not found: {experiment_config_path}"
+        )
+    if not model_config_path.exists():
+        raise FileNotFoundError(f"Model config not found: {model_config_path}")
+
+    return experiment_config_path, model_config_path
+
+
+def load_runtime_config(
+    experiment_config: str,
+    config_dir: Path = CONFIGS_DIR,
+):
+    """Load the experiment-specific config and the shared model config."""
+    experiment_config_path, model_config_path = resolve_config_paths(
+        experiment_config,
+        config_dir=config_dir,
+    )
+    config = load_configs(str(experiment_config_path), str(model_config_path))
+    return config, experiment_config_path, model_config_path
+
+
+def build_log_path(logs_dir: Path | str, experiment_name: str, run_timestamp: str) -> Path:
+    """Build a log path that includes the experiment name."""
+    safe_experiment_name = experiment_name.replace(os.sep, "_").replace(" ", "_")
+    return Path(logs_dir) / f"experiment_run_{safe_experiment_name}_{run_timestamp}.log"
+
+
+def save_config_snapshot(
+    run_dir: Path | str,
+    experiment_config_path: Path,
+    model_config_path: Path,
+) -> None:
+    """Copy the exact TOML inputs used for a run into the run directory."""
+    snapshot_dir = Path(run_dir) / "used_configs"
+    snapshot_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(experiment_config_path, snapshot_dir / experiment_config_path.name)
+    shutil.copy2(model_config_path, snapshot_dir / model_config_path.name)
+
+
+def initialize_response_evaluator(log_dir: str, config) -> RespEvalRunner:
     """Initialize the response quality evaluator."""
 
     class RespEvalArgs:
-        def __init__(self, log_dir):
+        def __init__(self, log_dir, config):
             self.log_dir = log_dir
+            self.config = config
 
-    return RespEvalRunner(args=RespEvalArgs(log_dir), logger=logger)
+    return RespEvalRunner(args=RespEvalArgs(log_dir, config), logger=logger)
 
 
 def setup_directories(
@@ -52,13 +113,24 @@ def setup_directories(
     model: str,
     memory: str,
     compact_threshold: Optional[int] = None,
+    haystack_threshold: Optional[int] = None,
 ) -> str:
-    """Create directory structure for results."""
-    # Include threshold in path when it is meaningful (threshold-sensitive strategies)
+    """Create directory structure for results.
+
+    Directory layout includes both compact and haystack threshold segments
+    so results are organized by all experimental axes.
+    """
+    # Include compact threshold in path for threshold-sensitive strategies
     threshold_segment = (
         f"threshold_{compact_threshold}"
         if compact_threshold is not None
         else "no_threshold"
+    )
+    # Include haystack threshold to separate NIAH experiment levels
+    haystack_segment = (
+        f"haystack_{haystack_threshold}"
+        if haystack_threshold is not None
+        else "no_haystack"
     )
     log_dir = os.path.join(
         "results",
@@ -67,6 +139,7 @@ def setup_directories(
         run_timestamp,
         memory,
         threshold_segment,
+        haystack_segment,
         model,
     )
     os.makedirs(log_dir, exist_ok=True)
@@ -99,14 +172,88 @@ def create_runner(
 
     # This routes all benchmark LLM calls through orchestrator with memory processing
     runner = SAPGPTRunner(
-        model_name=orchestrator.active_model_key,
         args=RunnerArgs(log_dir),
-        logger=runner_logger,
         orchestrator=orchestrator,
         compare_class=compare_class,
     )
 
     return runner
+
+
+def load_haystack_dataset(
+    haystack_threshold: Optional[int],
+    input_file: str = os.path.join(
+        "benchmarks", "complex_func_bench", "data", "ComplexFuncBench.jsonl"
+    ),
+) -> List[Dict]:
+    """Load the appropriate dataset for a haystack threshold.
+
+    For baseline (haystack_threshold=None), loads the original dataset at input_file.
+    For a specific threshold, loads the pre-generated haystack_{threshold}.jsonl file
+    from the same directory as input_file.
+
+    Args:
+        haystack_threshold: Token target for haystack context, or None for baseline.
+        input_file: Path to the original dataset file (from config.input_file).
+            Haystack files are expected in the same directory.
+
+    Returns:
+        List of case dicts, optionally with haystack_messages.
+
+    Raises:
+        FileNotFoundError: If the required data file does not exist.
+    """
+    if haystack_threshold is None:
+        # Baseline: use original dataset without haystack augmentation
+        file_path = input_file
+    else:
+        # Haystack files live alongside the original dataset
+        data_dir = os.path.dirname(input_file)
+        file_path = os.path.join(data_dir, f"haystack_{haystack_threshold}.jsonl")
+
+    if not os.path.exists(file_path):
+        raise FileNotFoundError(
+            f"Dataset file not found: {file_path}. "
+            f"Run the haystack generation script first."
+        )
+
+    return load_json(file_path)
+
+
+def filter_dataset_by_ids(
+    dataset: List[Dict], selected_ids: Optional[List[str]]
+) -> List[Dict]:
+    """Filter dataset by selected case IDs."""
+    if selected_ids is None:
+        return dataset
+    selected_id_set = set(selected_ids)
+    return [case for case in dataset if case.get("id") in selected_id_set]
+
+
+def normalize_haystack_threshold(haystack_threshold: int) -> Optional[int]:
+    """Map config-level sentinel values to runtime haystack thresholds."""
+    return None if haystack_threshold == BASELINE_HAYSTACK_SENTINEL else haystack_threshold
+
+
+def validate_haystack_thresholds_config(haystack_thresholds: Optional[List[int]]) -> List[int]:
+    """Validate explicit haystack config and return the ordered threshold list.
+
+    The config must explicitly include baseline via 0, for example:
+    haystack_thresholds = [0, 15000, 50000]
+    """
+    if not haystack_thresholds:
+        raise ValueError(
+            "haystack_thresholds must be explicitly configured and include baseline 0. "
+            "Example: haystack_thresholds = [0, 15000]"
+        )
+
+    if BASELINE_HAYSTACK_SENTINEL not in haystack_thresholds:
+        raise ValueError(
+            "haystack_thresholds must include baseline 0. "
+            "Example: haystack_thresholds = [0, 15000]"
+        )
+
+    return list(haystack_thresholds)
 
 
 def extract_ground_truth_metrics(case: Dict) -> Dict[str, int]:
@@ -131,62 +278,6 @@ def extract_actual_metrics(convs: List[Dict]) -> Dict[str, int]:
             turn_count += 1
 
     return {"turn_count": turn_count}
-
-
-def format_result_for_wandb(result: Dict) -> Dict:
-    """
-    Convert CFB result format to wandb-friendly format.
-
-    This is a helper to transform the backwards-compatible result structure
-    into a cleaner format for wandb logging.
-    """
-    wandb_result = {
-        "case_id": result["id"],
-        "status": result.get("status", "unknown"),
-        "success": result["message"] == "Success.",
-        "message": result["message"],
-    }
-
-    # Add count metrics
-    count_dict = result.get("count_dict", {})
-    if count_dict:
-        total_turns = count_dict.get("total_turn_num", 1)
-        total_calls = count_dict.get("total_call_num", 1)
-
-        wandb_result.update(
-            {
-                "turn_accuracy": count_dict.get("success_turn_num", 0) / total_turns
-                if total_turns > 0
-                else 0,
-                "call_accuracy": count_dict.get("correct_call_num", 0) / total_calls
-                if total_calls > 0
-                else 0,
-                "success_turns": count_dict.get("success_turn_num", 0),
-                "total_turns": total_turns,
-                "correct_calls": count_dict.get("correct_call_num", 0),
-                "total_calls": total_calls,
-            }
-        )
-
-    # Add response evaluation scores if available
-    resp_eval = result.get("resp_eval")
-    if resp_eval:
-        wandb_result.update(
-            {
-                "response_complete_score": resp_eval.get("complete", {}).get(
-                    "score", None
-                ),
-                "response_correct_score": resp_eval.get("correct", {}).get(
-                    "score", None
-                ),
-            }
-        )
-
-    # Extract domain from case ID (e.g., "Travel-001" -> "Travel")
-    domain = result["id"].rsplit("-", 1)[0]
-    wandb_result["domain"] = domain
-
-    return wandb_result
 
 
 def calculate_metrics(results: List[Dict]) -> Dict:
@@ -318,32 +409,6 @@ def save_results(
         logger.info(f"🧠 Compressed traces saved to {compressed_file}")
 
 
-def scrub_trace_args(inputs: Dict) -> Dict:
-    """
-    Filter out technical objects and redundant data from Weave logs.
-    Used in postprocess_inputs for evaluate_single_case.
-    """
-    scrubbed = inputs.copy()
-
-    # Remove technical objects that clutter logs
-    keys_to_remove = ["orchestrator", "resp_eval_runner", "log_dir", "compare_class"]
-    for key in keys_to_remove:
-        if key in scrubbed:
-            del scrubbed[key]
-
-    # Simplify the 'case' object to avoid logging full conversation history at the root level
-    if "case" in scrubbed and isinstance(scrubbed["case"], dict):
-        # Only keep the ID and domain, remove the heavy 'conversations' list
-        # This forces you to look at the child 'generate' trace for the actual messages
-        scrubbed["case"] = {
-            "id": scrubbed["case"].get("id"),
-            "domain": scrubbed["case"].get("id", "").split("-")[0],
-        }
-
-    return scrubbed
-
-
-@weave.op(postprocess_inputs=scrub_trace_args, enable_code_capture=False)
 def evaluate_single_case(
     case: Dict,
     orchestrator: LLMOrchestrator,
@@ -364,11 +429,6 @@ def evaluate_single_case(
         Result dictionary in backwards-compatible CFB format
     """
     case_id = case.get("id", "unknown")
-
-    # Set the trace name
-    weave.require_current_call().display_name = (
-        f"{case_id}_{orchestrator.active_model_key}_{orchestrator.active_memory_key}"
-    )
 
     # Create runner for this case with orchestrator injection
     runner = create_runner(
@@ -427,36 +487,6 @@ def evaluate_single_case(
     return result, compressed_trace
 
 
-def batch_log_to_weave(eval_logger, collected_results: List[Dict]):
-    """Log all collected results to Weave after case processing completes.
-
-    Decouples Weave network calls from the benchmark loop so they don't add
-    latency to each case and so thread-safety is simpler.
-
-    Args:
-        eval_logger: Weave EvaluationLogger instance
-        collected_results: List of formatted result dicts (from format_result_for_wandb)
-    """
-    for wandb_data in collected_results:
-        with eval_logger.log_prediction(
-            inputs={"case_id": wandb_data["case_id"], "domain": wandb_data["domain"]},
-            output={
-                "status": wandb_data["status"],
-                "message": wandb_data["message"],
-            },
-        ) as pred:
-            pred.log_score("success", 1.0 if wandb_data["success"] else 0.0)
-            pred.log_score("turn_accuracy", wandb_data.get("turn_accuracy", 0.0))
-            pred.log_score("call_accuracy", wandb_data.get("call_accuracy", 0.0))
-
-            if wandb_data.get("response_complete_score") is not None:
-                pred.log_score(
-                    "response_complete", wandb_data["response_complete_score"]
-                )
-            if wandb_data.get("response_correct_score") is not None:
-                pred.log_score("response_correct", wandb_data["response_correct_score"])
-
-
 def run_single_configuration(
     orchestrator: LLMOrchestrator,
     dataset: List[Dict],
@@ -465,6 +495,9 @@ def run_single_configuration(
     run_timestamp: str,
     resp_eval_runner: RespEvalRunner,
     compact_threshold: Optional[int] = None,
+    haystack_threshold: Optional[int] = None,
+    shared_compare_class=None,
+    progress: Optional[ExperimentProgress] = None,
 ) -> Optional[Dict]:
     """
     Run evaluation for a single model/memory/threshold configuration.
@@ -472,13 +505,12 @@ def run_single_configuration(
     This function:
     1. Sets the active context in the orchestrator (model, memory, threshold)
     2. Creates a shared CompareFC (FlagModel loaded once, reused across cases)
-    3. Processes all test cases
-    4. Batch-logs results to Weave (after case processing, not inline)
-    5. Saves results to disk
+    3. Processes all test cases, updating the live progress dashboard per case
+    4. Saves results to disk
 
     Args:
         orchestrator: LLM Orchestrator instance
-        dataset: List of test cases
+        dataset: List of test cases (may include haystack_messages)
         model: Model identifier
         memory: Memory method identifier
         run_timestamp: Timestamp string for this run
@@ -486,6 +518,14 @@ def run_single_configuration(
         compact_threshold: Token threshold for this run. None for threshold-insensitive
             strategies (ace, memory_bank, no_strategy); a value from
             config.compact_thresholds for truncation and progressive_summarization.
+        haystack_threshold: NIAH haystack token target for this run. None for baseline
+            (no distractor context injected).
+        shared_compare_class: Optional pre-built CompareFC instance. When provided,
+            skips internal CompareFC creation (avoids redundant FlagModel loading).
+            Each thread must receive its own instance since CompareFC has mutable
+            per-case state (free_functions, error_message).
+        progress: Optional live dashboard instance. When provided, progress is
+            reported per-case and per-configuration.
 
     Returns:
         Summary statistics dictionary, or None if failed
@@ -495,9 +535,26 @@ def run_single_configuration(
         if compact_threshold is not None
         else "no_threshold"
     )
-    logger.info(f"🚀 Starting evaluation: {model}/{memory}/{threshold_label}")
+    haystack_label = (
+        f"haystack={haystack_threshold}"
+        if haystack_threshold is not None
+        else "no_haystack"
+    )
+    logger.info(
+        f"🚀 Starting evaluation: {model}/{memory}/{threshold_label}/{haystack_label}"
+    )
 
-    # Set active context (including threshold for this run)
+    # Register configuration in dashboard.
+    config_key = ConfigKey(
+        model=model,
+        memory=memory,
+        compact_threshold=compact_threshold,
+        haystack_threshold=haystack_threshold,
+    )
+    if progress is not None:
+        progress.start_configuration(config_key, total_cases=len(dataset))
+
+    # Set active run context.
     try:
         orchestrator.set_active_context(
             model, memory, compact_threshold=compact_threshold
@@ -506,41 +563,20 @@ def run_single_configuration(
         logger.error(f"❌ Failed to switch context: {e}")
         return None
 
-    # Create a shared CompareFC for this configuration.
-    # This loads FlagModel (BAAI/bge-large-en-v1.5, ~1.3GB) once instead of per case.
-    # Per-case mutable state (free_functions, error_message) is reset at the start of
-    # each runner.run() call, so reuse is safe.
-    compare_class_args = type("Args", (), {"log_dir": orchestrator.cfg.results_dir})()
-    with _model_load_lock:
-        shared_compare_class = CompareFC(compare_class_args, logger)
-    logger.info("🔧 Shared CompareFC created (FlagModel loaded once for this config)")
+    # Build or reuse CompareFC for this configuration.
+    if shared_compare_class is None:
+        compare_class_args = type(
+            "Args", (), {"log_dir": orchestrator.cfg.results_dir, "config": orchestrator.cfg}
+        )()
+        with model_load_lock:
+            shared_compare_class = CompareFC(compare_class_args, logger)
+        logger.info("🔧 CompareFC created (FlagModel loaded for this config)")
+    else:
+        logger.info("🔧 Using pre-built CompareFC (FlagModel shared)")
 
-    # Name this evaluation run including threshold so wandb runs are distinguishable
-    eval_name = (
-        f"Eval_{model}_{memory}_t{compact_threshold}"
-        if compact_threshold is not None
-        else f"Eval_{model}_{memory}"
-    )
-
-    # Initialize weave evaluation logger for this configuration
-    # Note: experiment config is provided at the global level via weave.init()
-    eval_logger = weave.EvaluationLogger(
-        name=eval_name,
-        dataset="ComplexFuncBench",
-        scorers=[
-            "success",
-            "turn_accuracy",
-            "call_accuracy",
-            "response_complete",
-            "response_correct",
-        ],
-    )
-
-    # Process all cases -- collect results locally for batch Weave logging
+    # Process all cases.
     results = []
-    compressed_traces = []  # Separate list for memory-processed messages
-    collected_wandb_data = []  # Collected for batch Weave logging after loop
-    success_count = 0
+    compressed_traces = []  # Memory-processed messages.
 
     for i, case in enumerate(dataset):
         orchestrator.reset_session()
@@ -555,15 +591,16 @@ def run_single_configuration(
                 compare_class=shared_compare_class,
             )
 
-            # Track success
-            if result["message"] == "Success.":
-                success_count += 1
+            case_success = result["message"] == "Success."
 
-            # Add metadata
+            if progress is not None:
+                progress.complete_case(
+                    config_key, case_id=str(case_id), success=case_success
+                )
+
             result["memory_method"] = memory
             results.append(result)
 
-            # Collect compressed trace with case ID for reference
             compressed_traces.append(
                 {
                     "id": case_id,
@@ -572,234 +609,350 @@ def run_single_configuration(
                 }
             )
 
-            # Collect formatted result for batch Weave logging (no network calls here)
-            collected_wandb_data.append(format_result_for_wandb(result))
-
         except Exception as e:
             logger.error(f"❌ Failed on case {case_id}: {e}")
-            # Continue with remaining cases
+            if progress is not None:
+                progress.complete_case(config_key, case_id=str(case_id), success=False)
             continue
 
-    # Release shared CompareFC and its FlagModel GPU memory
+    # Release CompareFC and CUDA cache.
     del shared_compare_class
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
     gc.collect()
     logger.info("🧹 Shared CompareFC released, GPU memory freed")
 
-    # Batch-log all predictions to Weave (after case processing)
-    logger.info("📡 Batch-logging predictions to Weave...")
-    batch_log_to_weave(eval_logger, collected_wandb_data)
-
-    # Calculate aggregate metrics
     logger.info("🧮 Calculating aggregate metrics...")
     metrics = calculate_metrics(results)
 
-    # Setup directories (threshold included in path for threshold-sensitive strategies)
     log_dir = setup_directories(
         orchestrator.cfg.experiment_name,
         run_timestamp,
         model,
         memory,
         compact_threshold=compact_threshold,
+        haystack_threshold=haystack_threshold,
     )
 
-    # Save results to disk (including compressed traces)
     save_results(
         results, metrics, model, memory, log_dir, run_timestamp, compressed_traces
     )
 
-    # Log summary to wandb; include compact_threshold so runs are distinguishable
-    eval_logger.log_summary(
-        {
-            "model": model,
-            "memory": memory,
-            "compact_threshold": compact_threshold,
-            "total_cases": len(dataset),
-            "success_count": success_count,
-            "pass_rate": (success_count / len(dataset)) * 100 if dataset else 0,
-            **metrics,
-        }
-    )
+    if progress is not None:
+        progress.complete_configuration(config_key, metrics=metrics)
 
-    logger.info(f"✅ Completed evaluation: {model}/{memory}/{threshold_label}")
+    logger.info(
+        f"✅ Completed evaluation: {model}/{memory}/{threshold_label}/{haystack_label}"
+    )
 
 
 def run_model_configs(
     model: str,
     memory_methods: List[str],
     orchestrator: LLMOrchestrator,
-    dataset: List[Dict],
     run_timestamp: str,
     resp_eval_runner: RespEvalRunner,
+    selected_ids: Optional[List[str]] = None,
     threshold_sensitive: Optional[set] = None,
+    progress: Optional[ExperimentProgress] = None,
 ):
     """Run all memory method configurations for a single model.
 
-    This function is the unit of model-level parallelism: each model gets its own
-    thread running this function with its own orchestrator instance.
+        Execution order:
+    - Memory methods iterate sequentially (shared gpt-4-1-mini refinement endpoint)
+    - Compact thresholds iterate sequentially within each memory method
+        - Haystack thresholds (baseline explicitly configured as 0) run in PARALLEL within each
+      (memory, compact_threshold) combination. Each parallel thread gets its own
+      LLMOrchestrator instance and loads its own dataset via load_haystack_dataset().
 
     Args:
         model: Model identifier
         memory_methods: List of memory method keys to evaluate
-        orchestrator: LLM Orchestrator instance (must be unique per thread)
-        dataset: List of test cases
+        orchestrator: LLM Orchestrator instance (used for config reading;
+            parallel threads create their own instances)
         run_timestamp: Timestamp string for this run
         resp_eval_runner: Response quality evaluator (thread-safe, shared)
+        selected_ids: Optional list of case IDs to filter to. Applied after
+            loading each dataset. None means use full dataset.
         threshold_sensitive: Set of strategy types that require threshold sweeps
+        progress: Optional live dashboard instance passed through to each
+            run_single_configuration call.
     """
     if threshold_sensitive is None:
         threshold_sensitive = {"truncation", "progressive_summarization"}
 
+    # Build haystack threshold list from config.
+    haystack_values = validate_haystack_thresholds_config(
+        orchestrator.cfg.haystack_thresholds
+    )
+
+    # Resolve input_file from config for dataset loading
+    input_file = orchestrator.cfg.input_file
+
+    # Reuse immutable config for thread-specific orchestrators.
+    shared_config = orchestrator.cfg
+
     for memory in memory_methods:
         strategy_type = orchestrator.cfg.memory_strategies[memory].type
+        force_sequential_haystack = strategy_type == "memory_bank"
 
         # Only threshold-sensitive strategies produce one run per threshold value;
         # all others (ace, memory_bank, no_strategy) do a single run with no threshold.
         if strategy_type in threshold_sensitive:
-            thresholds = orchestrator.cfg.compact_thresholds
+            compact_thresholds = orchestrator.cfg.compact_thresholds
         else:
-            thresholds = [None]
+            compact_thresholds = [None]
 
-        for threshold in thresholds:
-            run_single_configuration(
-                orchestrator=orchestrator,
-                dataset=dataset,
-                model=model,
-                memory=memory,
-                run_timestamp=run_timestamp,
-                resp_eval_runner=resp_eval_runner,
-                compact_threshold=threshold,
-            )
+        for compact_threshold in compact_thresholds:
+            runtime_haystack_values = [
+                normalize_haystack_threshold(ht) for ht in haystack_values
+            ]
+
+            if len(haystack_values) > 1 and not force_sequential_haystack:
+                # Pre-create per-thread resources sequentially.
+                logger.info(
+                    f"🔀 Preparing {len(haystack_values)} haystack thresholds "
+                    f"for {model}/{memory}/compact={compact_threshold}"
+                )
+
+                # Pre-load datasets and orchestrators.
+                thread_orchestrators = {
+                    runtime_ht: LLMOrchestrator(config=shared_config)
+                    for runtime_ht in runtime_haystack_values
+                }
+                preloaded_datasets = {
+                    runtime_ht: filter_dataset_by_ids(
+                        load_haystack_dataset(runtime_ht, input_file=input_file),
+                        selected_ids,
+                    )
+                    for runtime_ht in runtime_haystack_values
+                }
+
+                compare_class_args = type(
+                    "Args", (), {"log_dir": shared_config.results_dir, "config": shared_config}
+                )()
+                thread_compare_classes = {}
+                for runtime_ht in runtime_haystack_values:
+                    with model_load_lock:
+                        thread_compare_classes[runtime_ht] = CompareFC(
+                            compare_class_args, logger
+                        )
+                logger.info(
+                    f"🔧 Pre-created {len(haystack_values)} orchestrators, "
+                    f"datasets, and CompareFC instances"
+                )
+
+                with ThreadPoolExecutor(max_workers=len(haystack_values)) as executor:
+                    futures = {}
+                    for runtime_ht in runtime_haystack_values:
+                        future = executor.submit(
+                            run_single_configuration,
+                            orchestrator=thread_orchestrators[runtime_ht],
+                            dataset=preloaded_datasets[runtime_ht],
+                            model=model,
+                            memory=memory,
+                            run_timestamp=run_timestamp,
+                            resp_eval_runner=resp_eval_runner,
+                            compact_threshold=compact_threshold,
+                            haystack_threshold=runtime_ht,
+                            shared_compare_class=thread_compare_classes[runtime_ht],
+                            progress=progress,
+                        )
+                        futures[future] = runtime_ht
+
+                    for future in as_completed(futures):
+                        haystack_threshold = futures[future]
+                        ht_label = (
+                            f"haystack={haystack_threshold}"
+                            if haystack_threshold is not None
+                            else "baseline"
+                        )
+                        try:
+                            future.result()
+                            logger.info(f"✅ {ht_label} completed")
+                        except Exception as e:
+                            logger.error(f"❌ {ht_label} failed: {e}")
+
+                del thread_compare_classes
+                del thread_orchestrators
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                gc.collect()
+                logger.info("🧹 Thread resources released, GPU memory freed")
+            else:
+                # Run haystack thresholds sequentially.
+                for runtime_ht in runtime_haystack_values:
+                    dataset = filter_dataset_by_ids(
+                        load_haystack_dataset(
+                            runtime_ht,
+                            input_file=input_file,
+                        ),
+                        selected_ids,
+                    )
+                    run_single_configuration(
+                        orchestrator=orchestrator,
+                        dataset=dataset,
+                        model=model,
+                        memory=memory,
+                        run_timestamp=run_timestamp,
+                        resp_eval_runner=resp_eval_runner,
+                        compact_threshold=compact_threshold,
+                        haystack_threshold=runtime_ht,
+                        progress=progress,
+                    )
 
 
-def main(experiment_name=None):
+def main(experiment_config: str):
     """
     Main orchestration function for ComplexFuncBench evaluation.
 
     This function:
-    1. Initializes wandb tracking
-    2. Loads the orchestrator and dataset
-    3. Runs models in parallel (each model gets its own thread + orchestrator)
-    4. Within each model, memory methods run sequentially (shared gpt-4-1-mini endpoint)
-    5. Aggregates and reports final results
+    1. Starts the live progress dashboard
+    2. Loads the orchestrator and determines which case IDs to evaluate
+    3. Runs models sequentially (parallelism is at the haystack threshold level)
+    4. Within each model, memory methods and compact thresholds run sequentially
+    5. Haystack thresholds run in parallel (each thread gets its own orchestrator + dataset)
     """
-    # Initialize orchestrator (used for config reading; each thread gets its own)
-    orchestrator = LLMOrchestrator()
+    config, experiment_config_path, model_config_path = load_runtime_config(
+        experiment_config
+    )
+
+    # Initialize base orchestrator.
+    orchestrator = LLMOrchestrator(config=config)
     run_timestamp = datetime.now().strftime("%Y%m%d_%H%M")
 
-    # Initialize weave for the entire experiment and attach experiment-level metadata
-    # (use a clear key name and include a run timestamp so traces can be correlated)
-    weave.init(
-        project_name=experiment_name or orchestrator.cfg.experiment_name,
-        global_attributes={
-            "experiment_config": orchestrator.get_exp_config(),
-            "run_timestamp": run_timestamp,
-        },
-        settings={"implicitly_patch_integrations": False},
-    )
-    logger.info(
-        f"📊 Weave initialized with global attributes: {orchestrator.cfg.experiment_name}"
+    # Route logs to timestamped file.
+    os.makedirs("logs", exist_ok=True)
+    log_path = build_log_path(
+        logs_dir="logs",
+        experiment_name=orchestrator.cfg.experiment_name,
+        run_timestamp=run_timestamp,
     )
 
-    # Load dataset
-    data_path = os.path.join(
-        "benchmarks", "complex_func_bench", "data", "ComplexFuncBench.jsonl"
+    run_dir = (
+        Path(orchestrator.cfg.results_dir)
+        / "cfb"
+        / orchestrator.cfg.experiment_name
+        / run_timestamp
     )
-    dataset = load_json(data_path)
+    save_config_snapshot(run_dir, experiment_config_path, model_config_path)
 
-    if not dataset:
-        logger.error("❌ No data loaded. Exiting.")
-        return
+    print(f"📝 Logs will be written to: {log_path}")
+    print(f"📊 Starting live progress dashboard...\n")
 
-    # Filter by specific test case IDs if configured
-    selected_test_cases = orchestrator.cfg.selected_test_cases
-    if selected_test_cases:
-        dataset = [case for case in dataset if case.get("id") in selected_test_cases]
-        if not dataset:
-            logger.error(
-                f"❌ No test cases found matching the selected IDs: {selected_test_cases}"
+    # Configure root logger to write to file.
+    file_handler = logging.FileHandler(log_path, mode="w")
+    file_handler.setFormatter(
+        logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
+    )
+
+    root_logger = logging.getLogger()
+    root_logger.handlers.clear()
+    root_logger.addHandler(file_handler)
+    root_logger.setLevel(logging.INFO)
+
+    # Configure all existing loggers.
+    for name in list(logging.Logger.manager.loggerDict):
+        if isinstance(logging.Logger.manager.loggerDict[name], logging.Logger):
+            log_obj = logging.getLogger(name)
+            log_obj.handlers.clear()
+            log_obj.addHandler(file_handler)
+            log_obj.propagate = False
+
+    # explicitly setting httpx and litellm to silent
+    logging.getLogger("litellm").setLevel(logging.WARNING)
+    logging.getLogger("LiteLLM").setLevel(logging.WARNING)
+    logging.getLogger("httpx").setLevel(logging.WARNING)
+    logging.getLogger("transformers").setLevel(logging.WARNING)
+
+    # Start live dashboard.
+    progress = ExperimentProgress()
+    progress.start_experiment()
+
+    try:
+        logger.info(f"Experiment run started: {run_timestamp}")
+        logger.info(f"Logs written to: {log_path}")
+        logger.info(
+            f"Saved config snapshot from {experiment_config_path} and {model_config_path}"
+        )
+        logger.info(
+            f"📊 Progress dashboard started for: {orchestrator.cfg.experiment_name}"
+        )
+
+        # Resolve optional case filtering/sampling.
+        selected_ids = None  # None = use full dataset (no filtering)
+        input_file = orchestrator.cfg.input_file
+        selected_test_cases = orchestrator.cfg.selected_test_cases
+        if selected_test_cases:
+            all_cases = load_json(input_file)
+            all_ids = {case.get("id") for case in all_cases}
+            missing = set(selected_test_cases) - all_ids
+            if missing:
+                logger.error(f"❌ Test case IDs not found in dataset: {missing}")
+                return
+            selected_ids = list(selected_test_cases)
+            logger.info(
+                f"🎯 Will filter to {len(selected_ids)} specific test case(s): {selected_ids}"
             )
-            return
-        logger.info(
-            f"🎯 Filtered to {len(dataset)} specific test case(s): {selected_test_cases}"
+        else:
+            sample_size = orchestrator.cfg.benchmark_sample_size
+            if sample_size is not None and sample_size > 0:
+                all_cases = load_json(input_file)
+                if sample_size > len(all_cases):
+                    logger.warning(
+                        f"⚠️ Sample size {sample_size} exceeds dataset size {len(all_cases)}, "
+                        "using full dataset"
+                    )
+                else:
+                    random.seed(42)
+                    sampled = random.sample(all_cases, sample_size)
+                    selected_ids = [case.get("id") for case in sampled]
+                    logger.info(f"📊 Sampled {sample_size} case IDs from dataset")
+
+        # Initialize shared response evaluator.
+        temp_log_dir = os.path.join(
+            "results", "cfb", orchestrator.cfg.experiment_name, run_timestamp, "temp"
         )
-    else:
-        # Sample subset if configured (only when not using specific test cases)
-        sample_size = orchestrator.cfg.benchmark_sample_size
-        if sample_size is not None and sample_size > 0:
-            if sample_size > len(dataset):
-                logger.warning(
-                    f"⚠️ Sample size {sample_size} exceeds dataset size {len(dataset)}, "
-                    "using full dataset"
-                )
-            else:
-                random.seed(42)
-                dataset = random.sample(dataset, sample_size)
-                logger.info(f"📊 Sampled {sample_size} cases from dataset")
+        os.makedirs(temp_log_dir, exist_ok=True)
+        resp_eval_runner = initialize_response_evaluator(temp_log_dir, orchestrator.cfg)
 
-    # Initialize response evaluator (shared across all configurations -- thread-safe)
-    temp_log_dir = os.path.join(
-        "results", "cfb", orchestrator.cfg.experiment_name, run_timestamp, "temp"
-    )
-    os.makedirs(temp_log_dir, exist_ok=True)
-    resp_eval_runner = initialize_response_evaluator(temp_log_dir)
+        enabled_models = orchestrator.cfg.enabled_models
+        memory_methods = orchestrator.cfg.enabled_memory_methods
 
-    enabled_models = orchestrator.cfg.enabled_models
-    memory_methods = orchestrator.cfg.enabled_memory_methods
+        # Run models sequentially.
+        for model in enabled_models:
+            logger.info(f"🚀 Starting model: {model}")
+            run_model_configs(
+                model=model,
+                memory_methods=memory_methods,
+                orchestrator=orchestrator,
+                run_timestamp=run_timestamp,
+                resp_eval_runner=resp_eval_runner,
+                selected_ids=selected_ids,
+                progress=progress,
+            )
+            logger.info(f"✅ Model '{model}' completed all configurations")
 
-    if len(enabled_models) > 1:
-        # Model-level parallelism: each model gets its own thread + orchestrator.
-        # Memory methods within a model run sequentially to avoid rate-limit
-        # spikes on the shared gpt-4-1-mini refinement endpoint.
-        logger.info(
-            f"🔀 Running {len(enabled_models)} models in parallel: {enabled_models}"
-        )
-        with ThreadPoolExecutor(max_workers=len(enabled_models)) as executor:
-            futures = {}
-            for model in enabled_models:
-                # Each thread needs its own orchestrator (mutable per-session state)
-                model_orchestrator = LLMOrchestrator()
-                future = executor.submit(
-                    run_model_configs,
-                    model=model,
-                    memory_methods=memory_methods,
-                    orchestrator=model_orchestrator,
-                    dataset=dataset,
-                    run_timestamp=run_timestamp,
-                    resp_eval_runner=resp_eval_runner,
-                )
-                futures[future] = model
+        progress.finish_experiment()
+        logger.info("=" * 80)
+        logger.info("🎉 All configurations completed!")
+        logger.info("=" * 80)
 
-            # Collect results and report any errors
-            for future in as_completed(futures):
-                model = futures[future]
-                try:
-                    future.result()
-                    logger.info(f"✅ Model '{model}' completed all configurations")
-                except Exception as e:
-                    logger.error(f"❌ Model '{model}' failed: {e}")
-    else:
-        # Single model -- no threading overhead needed
-        run_model_configs(
-            model=enabled_models[0],
-            memory_methods=memory_methods,
-            orchestrator=orchestrator,
-            dataset=dataset,
-            run_timestamp=run_timestamp,
-            resp_eval_runner=resp_eval_runner,
-        )
-
-    # Final summary
-    logger.info("\n" + "=" * 80)
-    logger.info("🎉 All configurations completed!")
-    logger.info("=" * 80)
+    except KeyboardInterrupt:
+        logger.info("\n⚠️ Experiment interrupted by user (Ctrl+C)")
+        progress._cleanup_alternate_screen()
+        raise
+    except Exception as e:
+        logger.error(f"❌ Experiment failed with error: {e}")
+        progress._cleanup_alternate_screen()
+        raise
 
 
 if __name__ == "__main__":
-    # import experiment name from toml config if available
-    experiment_name = tomllib.load(open("config.toml", "rb")).get("experiment_name")
-    if experiment_name:
-        main(experiment_name=experiment_name)
-    else:
-        main(experiment_name="No_Experiment_Name")
+    if len(sys.argv) < 2:
+        raise SystemExit(
+            "Usage: uv run cfb_run_eval.py <experiment_config_name>\n"
+            "Example: uv run cfb_run_eval.py full_haystack_run_claude"
+        )
+
+    main(experiment_config=sys.argv[1])

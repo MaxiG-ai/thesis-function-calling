@@ -1,0 +1,64 @@
+# --- Model Registry ---
+# Static definitions of available models 
+
+# Models set up using AI-Core (SAP's GenAI platform) through litellm 
+# see https://docs.litellm.ai/docs/providers/sap#step-2-set-your-credentials for setup instructions
+
+[models.gpt-5]
+litellm_name = "sap/gpt-5"
+context_window = 128000
+provider = "aicore"
+
+[models.gpt-5-mini]
+litellm_name = "sap/gpt-5-mini"
+context_window = 128000
+provider = "aicore"
+
+[models.gpt-4-1]
+litellm_name = "sap/gpt-4.1"
+context_window = 128000
+temperature = 0
+provider = "aicore"
+
+[models.gpt-4-1-mini]
+litellm_name = "sap/gpt-4.1-mini"
+context_window = 128000
+temperature = 0
+provider = "aicore"
+
+[models.claude-sonnet-4-5]
+litellm_name = "sap/anthropic--claude-4.5-sonnet"
+context_window = 128000
+temperature = 0
+provider = "aicore"
+
+[models.claude-sonnet-4-6]
+litellm_name = "sap/anthropic--claude-4.6-sonnet"
+context_window = 200000
+temperature = 0
+provider = "aicore"
+
+
+[models.gemini-2-5-pro]
+litellm_name = "sap/gemini-2.5-pro"
+context_window = 128000
+temperature = 0
+provider = "aicore"
+
+# models on GPU-Cluster running vLLM
+
+[models.qwen-35]
+litellm_name = "openai/Qwen/Qwen3.5-397B-A17B"
+context_window = 200000
+temperature = 0
+provider = "ollama"
+api_base = "http://10.237.166.249:8000/v1"
+api_key = "THINKTANK"
+
+[models.glm-4-7]
+litellm_name = "openai/zai-org/GLM-4.7"
+context_window = 200000
+temperature = 0
+provider = "ollama"
+api_base = "http://10.237.166.249:8000/v1"
+api_key = "THINKTANK"
