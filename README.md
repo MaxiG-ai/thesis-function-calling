@@ -2,9 +2,11 @@
 
 Evaluating the impact of different **Memory Architectures** on LLM Function Calling performance. Based on related package [MemOrch](https://github.com/MaxiG-ai/memory-orchestrator), this repo provides the integration and tests to run different Benchmarks and thus test the memory strategies implemented.
 
-## Benchmark: ComplexFuncBench
+## Prerequesits
 
-Currently integrated: **ComplexFuncBench** (CFB)
+This benchmark is designed to be evaluated on a Linux GPU-Cluster. In the case of the data for submission for AAAI, this was a 8*H200 GPU cluster on openSUSE, which took ~ 1 week for all configurations. 
+
+## Benchmark: ComplexFuncBench
 
 - Focus: Complex and repeated function calls
 - Data: `benchmarks/complex_func_bench/data/ComplexFuncBench.jsonl`
@@ -28,7 +30,7 @@ Currently integrated: **ComplexFuncBench** (CFB)
 
 ### Trace Viewer
 
-A privacy-friendly, local-first web interface for inspecting experiment traces. Replaces cloud-based solutions for offline trace analysis.
+A web interface for inspecting experiment traces. Replaces cloud-based solutions for offline trace analysis.
 
 ```bash
 uv run python tools/trace_viewer.py
