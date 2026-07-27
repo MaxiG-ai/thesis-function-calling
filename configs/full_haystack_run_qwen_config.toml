@@ -17,7 +17,14 @@ haystack_thresholds = [15_000, 50_000, 100_000, 150_000]
 # haystack_thresholds = [20_000, 40_000, 60_000, 80_000, 100_000]
 
 enabled_models = [
-    "qwen3-coder",
+    # "gpt-5",
+    # "gpt-4-1",
+    # "gpt-4-1-mini",
+    # "gpt-5-mini",
+    # "claude-sonnet-4-6",
+    # "gemini-2-5-pro",
+    # "glm-4-7",
+    "qwen-35",
 ]
 
 
