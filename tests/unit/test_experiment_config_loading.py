@@ -6,7 +6,7 @@ used for a run, and propagate the already-loaded config into helper classes
 that would otherwise fall back to default file locations.
 
 They also guard the evaluation model isolation fix: when benchmarking a
-non-OpenAI model (e.g. qwen35, glm-4-7), all judge/evaluation LLM calls must
+non-OpenAI model (e.g. qwen35), all judge/evaluation LLM calls must
 be routed through the configured evaluation_model (default: gpt-4-1-mini), not
 through the active benchmarked model whose output format may be incompatible
 with the structured-JSON evaluation prompts.
@@ -177,7 +177,7 @@ def _make_two_model_config(benchmarked: str = "qwen35") -> ExperimentConfig:
 
 def test_generate_plain_uses_evaluation_model_when_benchmarking_non_openai_model():
     """
-    When the benchmarked model is a non-OpenAI model (e.g. qwen35, glm-4-7),
+    When the benchmarked model is a non-OpenAI model (e.g. qwen35),
     LLMOrchestrator.generate_plain() must route evaluation calls through the
     configured evaluation_model ('gpt-4-1-mini'), not through the active
     benchmarked model.

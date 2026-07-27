@@ -18,7 +18,6 @@ enabled_models = [
     "gpt-4-1",
     "gpt-4-1-mini",
     "claude-sonnet-4-6",
-    "glm-4-7",
 ]
 
 enabled_memory_methods = [
